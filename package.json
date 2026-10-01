@@ -37,6 +37,15 @@
     "vitest": "^5.0.2"
   },
   "packageManager": "pnpm@11.6.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "tesseract.js"
+    ]
+  },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
   }
