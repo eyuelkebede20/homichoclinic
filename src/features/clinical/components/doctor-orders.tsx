@@ -71,22 +71,28 @@ export function DoctorOrders({
       <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Request Lab Tests</h3>
         <form onSubmit={handleLabSubmit} className="space-y-4">
-          <div className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-md p-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 bg-slate-50 dark:bg-slate-950">
-            {labTests.map(t => (
-              <label key={t.id} className="flex items-center space-x-2 text-sm text-slate-700 dark:text-slate-300 cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900"
-                  checked={selectedTests.has(t.id)}
-                  onChange={() => toggleTest(t.id)}
-                />
-                <span className="truncate" title={t.name}>{t.name}</span>
-              </label>
-            ))}
+          <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-md p-4 bg-slate-50 dark:bg-slate-950 flex flex-wrap gap-2">
+            {labTests.map(t => {
+              const isSelected = selectedTests.has(t.id);
+              return (
+                <button
+                  type="button"
+                  key={t.id}
+                  onClick={() => toggleTest(t.id)}
+                  className={`px-3 py-1.5 text-sm font-medium rounded-full border transition-all duration-200 ${
+                    isSelected 
+                      ? "bg-indigo-100 border-indigo-500 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-400 dark:text-indigo-300 shadow-sm" 
+                      : "bg-white border-slate-300 text-slate-700 hover:border-indigo-300 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:border-indigo-700"
+                  }`}
+                >
+                  {t.name}
+                </button>
+              );
+            })}
             {labTests.length === 0 && <span className="text-sm text-slate-500">No operational tests available.</span>}
           </div>
           <div className="flex justify-end">
-            <button type="submit" disabled={loading || selectedTests.size === 0} className="py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50">
+            <button type="submit" disabled={loading || selectedTests.size === 0} className="py-2 px-6 rounded-lg shadow-sm text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 transition-colors">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Send ${selectedTests.size > 0 ? selectedTests.size : ""} Test(s) to Lab`}
             </button>
           </div>

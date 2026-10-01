@@ -43,7 +43,7 @@ export default async function CatalogsPage() {
         
         {/* Drugs Section */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Drugs</h2>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Pharmacy Catalog (Drugs)</h2>
           <CatalogForm type="drug" />
           
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -58,7 +58,7 @@ export default async function CatalogsPage() {
 
         {/* Lab Tests Section */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Lab Tests</h2>
+          <h2 className="text-xl font-semibold text-slate-800 dark:text-slate-200">Laboratory Catalog (Tests)</h2>
           <CatalogForm type="labTest" />
           
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
