@@ -49,7 +49,6 @@ Test Child, , , 0911223344`;
         where: {
           doctorId: doctor.id,
           status: "in_progress",
-          labRequests: { some: { status: "completed" } }
         }
       });
       console.log("✅ Doctor Pending Review Aggregation works (Count: " + pendingReview + ")");

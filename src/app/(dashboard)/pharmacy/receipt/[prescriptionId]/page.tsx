@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
+import { AutoPrint } from "@/components/auto-print";
 
 export default async function PrescriptionReceiptPage({ params }: { params: Promise<{ prescriptionId: string }> }) {
   const resolvedParams = await params;
@@ -20,8 +21,8 @@ export default async function PrescriptionReceiptPage({ params }: { params: Prom
   return (
     <div className="bg-white text-black p-8 max-w-2xl mx-auto font-sans" suppressHydrationWarning>
       
-      {/* Auto-print script */}
-      <script dangerouslySetInnerHTML={{ __html: 'window.onload = function() { window.print(); }' }} />
+      {/* Auto-print component */}
+      <AutoPrint />
 
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {

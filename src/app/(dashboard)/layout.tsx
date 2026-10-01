@@ -39,12 +39,14 @@ export default async function DashboardLayout({
   }
   if (userPermissions.includes(PERMISSIONS.LAB_READ)) {
     navItems.push({ name: "Laboratory", href: "/laboratory", icon: FlaskConical });
+    navItems.push({ name: "Lab Catalog", href: "/laboratory/catalog", icon: Tags });
   }
   if (userPermissions.includes(PERMISSIONS.INVENTORY_READ)) {
     navItems.push({ name: "Pharmacy", href: "/pharmacy", icon: Pill });
+    navItems.push({ name: "Pharmacy Catalog", href: "/pharmacy/catalog", icon: Tags });
   }
-  if (userPermissions.includes(PERMISSIONS.CATALOG_REQUEST) || userPermissions.includes(PERMISSIONS.CATALOG_APPROVE)) {
-    navItems.push({ name: "Catalogs", href: "/catalogs", icon: Tags });
+  if (userPermissions.includes(PERMISSIONS.CATALOG_APPROVE)) {
+    navItems.push({ name: "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
     navItems.push({ name: "Billing", href: "/billing", icon: Receipt });

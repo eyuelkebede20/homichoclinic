@@ -53,7 +53,6 @@ export default async function DashboardPage() {
       where: {
         doctorId: session.user.id,
         status: "in_progress",
-        labRequests: { some: { status: "completed" } }
       }
     });
 
