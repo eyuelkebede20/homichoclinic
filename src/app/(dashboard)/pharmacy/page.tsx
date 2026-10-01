@@ -8,6 +8,8 @@ import { InventoryManager } from "@/features/pharmacy/components/inventory-manag
 import { PrintReceiptButton } from "@/features/pharmacy/components/print-receipt-button";
 import { Search } from "lucide-react";
 import { NotificationPing } from "@/components/notification-ping";
+import { PrintButton } from "@/components/print-button";
+import { PrintHeader } from "@/components/print-header";
 
 export default async function PharmacyDashboardPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolvedParams = await searchParams;
@@ -81,10 +83,11 @@ export default async function PharmacyDashboardPage({ searchParams }: { searchPa
   const dispensedPrescriptions = prescriptions.filter(rx => rx.status === "dispensed");
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-6">
+    <div className="p-8 max-w-7xl mx-auto space-y-6 print:p-0 print:max-w-none">
       <NotificationPing endpoint="/api/polling/pharmacy" />
+      <PrintHeader title="Pharmacy & Inventory Report" subtitle="Current stock levels and prescriptions" />
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             Pharmacy & Inventory
@@ -97,22 +100,25 @@ export default async function PharmacyDashboardPage({ searchParams }: { searchPa
           <p className="text-slate-500 dark:text-slate-400">Manage stock batches, dispense medications, and print receipts.</p>
         </div>
 
-        <form className="relative w-full md:w-72">
-          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-          <input 
-            name="q"
-            defaultValue={query}
-            type="text" 
-            placeholder="Search patient prescriptions..." 
-            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 focus:ring-blue-500 focus:border-blue-500"
-          />
-        </form>
+        <div className="flex gap-4">
+          <PrintButton label="Print Inventory" />
+          <form className="relative w-full md:w-72">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            <input 
+              name="q"
+              defaultValue={query}
+              type="text" 
+              placeholder="Search patient prescriptions..." 
+              className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 focus:ring-blue-500 focus:border-blue-500"
+            />
+          </form>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 print:block">
         
         {/* Prescriptions Queue */}
-        <div className="space-y-6">
+        <div className="space-y-6 print:hidden">
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col h-[600px]">
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Pending Prescriptions</h2>
             

@@ -46,12 +46,12 @@ export function InventoryManager({ drugs }: {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col h-[600px]">
+    <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col h-[600px] print:h-auto print:block print:shadow-none print:border-none print:w-full print:p-0">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Inventory Status</h2>
       </div>
 
-      <div className="relative mb-4">
+      <div className="relative mb-4 print:hidden">
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-4 w-4 text-slate-400" />
         </div>
@@ -64,13 +64,13 @@ export function InventoryManager({ drugs }: {
         />
       </div>
       
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto print:overflow-visible">
         <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
           <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
             <tr>
               <th className="text-left text-xs font-medium text-slate-500 uppercase py-2">Drug</th>
               <th className="text-right text-xs font-medium text-slate-500 uppercase py-2">Total Stock</th>
-              <th className="text-right text-xs font-medium text-slate-500 uppercase py-2">Action</th>
+              <th className="text-right text-xs font-medium text-slate-500 uppercase py-2 print:hidden">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -79,14 +79,14 @@ export function InventoryManager({ drugs }: {
               const isAdding = selectedDrug === drug.id;
 
               return (
-                <tr key={drug.id}>
+                <tr key={drug.id} className="print:break-inside-avoid">
                   <td className="py-3 text-sm font-medium text-slate-800 dark:text-slate-200">{drug.name}</td>
                   <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400">
                     {totalStock > 0 ? totalStock : (
                       <span className="text-red-500 font-bold text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">Out of Stock</span>
                     )}
                   </td>
-                  <td className="py-3 text-sm text-right">
+                  <td className="py-3 text-sm text-right print:hidden">
                     {isAdding ? (
                       <button onClick={() => setSelectedDrug(null)} className="text-slate-500 hover:text-slate-700 text-xs">Cancel</button>
                     ) : (

@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/features/billing/utils";
+import { PrintButton } from "@/components/print-button";
+import { PrintHeader } from "@/components/print-header";
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({
@@ -33,13 +35,18 @@ export default async function DashboardPage() {
   const totalRevenue = todayRevenue._sum.amount || 0;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Overview</h1>
-        <p className="text-slate-500 dark:text-slate-400">Welcome back, {session.user.name}</p>
+    <div className="p-8 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
+      <PrintHeader title="General Management Overview" subtitle="Daily executive summary report" />
+      
+      <div className="flex justify-between items-center print:hidden">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Overview</h1>
+          <p className="text-slate-500 dark:text-slate-400">Welcome back, {session.user.name}</p>
+        </div>
+        <PrintButton label="Print Overview" />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
           <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today's Visits</h3>
           <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{todayVisits}</p>

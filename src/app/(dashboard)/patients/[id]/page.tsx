@@ -8,6 +8,8 @@ import { PaperImportForm } from "@/features/clinical/components/paper-import-for
 import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { PrintButton } from "@/components/print-button";
+import { PrintHeader } from "@/components/print-header";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -72,15 +74,18 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center space-x-4 mb-6">
+    <div className="p-8 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none">
+      <PrintHeader title="Patient Medical Record" subtitle={`Record for ${patient.firstName} ${patient.lastName}`} />
+
+      <div className="flex items-center justify-between mb-6 print:hidden">
         <Link href="/patients" className="text-blue-600 hover:underline">&larr; Back to Patients</Link>
+        <PrintButton label="Print Medical History" />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">
         
         {/* Patient Info Card */}
-        <div className="col-span-1 md:col-span-2 space-y-6">
+        <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
           <div className="bg-white shadow rounded-lg border border-slate-200 p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900">Patient Profile</h2>
@@ -113,13 +118,15 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
             </dl>
           </div>
 
-          {canWriteHistory && (
-            <PaperImportForm patientId={patient.id} />
-          )}
+          <div className="print:hidden space-y-6">
+            {canWriteHistory && (
+              <PaperImportForm patientId={patient.id} />
+            )}
 
-          {(canPrescribe || canRequestLab) && (
-            <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />
-          )}
+            {(canPrescribe || canRequestLab) && (
+              <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />
+            )}
+          </div>
 
           <div className="bg-white shadow rounded-lg border border-slate-200 p-6">
             <h2 className="text-xl font-bold text-slate-900 mb-4">Medical History</h2>
@@ -213,7 +220,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         </div>
 
         {/* Sidebar / Manager Actions */}
-        <div className="col-span-1 space-y-6">
+        <div className="col-span-1 space-y-6 print:hidden">
           {canUpdateDiscount ? (
             <DiscountSlider patientId={patient.id} initialDiscount={patient.discountPercent} />
           ) : (

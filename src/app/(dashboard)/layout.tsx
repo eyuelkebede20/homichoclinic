@@ -59,10 +59,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 print:bg-white print:h-auto">
       
       {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 border-r border-slate-800">
+      <div className="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 border-r border-slate-800 print:hidden">
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
           <div className="flex items-center gap-2">
             <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center font-bold text-white shadow">
@@ -106,10 +106,10 @@ export default async function DashboardLayout({
       </div>
       
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground">
+      <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground print:overflow-visible print:block">
         
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shadow-sm">
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shadow-sm print:hidden">
           <div className="flex items-center gap-4">
             <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Top Nav</h2>
             {role === "Doctor" && (
@@ -119,7 +119,7 @@ export default async function DashboardLayout({
           <ThemeToggle />
         </header>
 
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto print:overflow-visible print:p-0">
           {children}
         </main>
       </div>

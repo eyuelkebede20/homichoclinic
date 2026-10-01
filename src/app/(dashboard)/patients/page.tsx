@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Pagination } from "@/components/pagination";
+import { PrintButton } from "@/components/print-button";
+import { PrintHeader } from "@/components/print-header";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const resolvedParams = await searchParams;
@@ -51,11 +53,14 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
 
   return (
-    <div className="p-8">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div className="p-8 print:p-0 print:max-w-none">
+      <PrintHeader title="Patient Directory Report" subtitle="Complete registry of registered patients" />
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 print:hidden">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Patients</h1>
         
         <div className="flex w-full md:w-auto gap-4">
+          <PrintButton label="Print Directory" />
           <form className="relative flex-1 md:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
             <input 
@@ -116,15 +121,17 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
             </tbody>
           </table>
         </div>
-        {totalItems > 0 && (
-          <Pagination 
-            currentPage={page} 
-            totalItems={totalItems} 
-            pageSize={PAGE_SIZE} 
-            baseUrl="/patients" 
-            searchQuery={query} 
-          />
-        )}
+        <div className="print:hidden">
+          {totalItems > 0 && (
+            <Pagination 
+              currentPage={page} 
+              totalItems={totalItems} 
+              pageSize={PAGE_SIZE} 
+              baseUrl="/patients" 
+              searchQuery={query} 
+            />
+          )}
+        </div>
       </div>
     </div>
   );
