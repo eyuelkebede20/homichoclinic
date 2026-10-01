@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-50">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
-          {process.env.NODE_ENV === "development" && <TestUserSwitcher />}
+          <TestUserSwitcher />
         </ThemeProvider>
       </body>
     </html>
