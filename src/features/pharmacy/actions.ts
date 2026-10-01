@@ -120,3 +120,30 @@ export const dispensePrescription = createSafeAction({
     return result;
   },
 });
+
+import { z } from "zod";
+
+export const cancelPrescription = createSafeAction({
+  schema: z.object({ prescriptionId: z.string() }),
+  requiredPermission: PERMISSIONS.PRESCRIPTION_DISPENSE,
+  handler: async (data, ctx) => {
+    const rx = await prisma.prescription.findUnique({ where: { id: data.prescriptionId } });
+    if (!rx) throw new Error("Prescription not found");
+    if (rx.status === "dispensed") throw new Error("Cannot cancel a dispensed prescription");
+
+    const updated = await prisma.prescription.update({
+      where: { id: data.prescriptionId },
+      data: { status: "cancelled" }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CANCEL_PRESCRIPTION",
+      resourceId: updated.id,
+      newValue: { status: "cancelled" },
+    });
+
+    revalidatePath("/pharmacy");
+    return updated;
+  }
+});

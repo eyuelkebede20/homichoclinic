@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { DispenseButton } from "@/features/pharmacy/components/dispense-button";
+import { CancelPrescriptionButton } from "@/features/pharmacy/components/cancel-prescription-button";
 import { InventoryManager } from "@/features/pharmacy/components/inventory-manager";
 import { PrintReceiptButton } from "@/features/pharmacy/components/print-receipt-button";
 import { Search } from "lucide-react";
@@ -142,7 +143,7 @@ export default async function PharmacyDashboardPage({ searchParams }: { searchPa
                       ))}
                     </ul>
                     <div className="flex gap-3">
-                      {canDispense && <DispenseButton prescriptionId={rx.id} />}
+                      {canDispense && <><DispenseButton prescriptionId={rx.id} /><CancelPrescriptionButton prescriptionId={rx.id} /></>}
                       <PrintReceiptButton prescriptionId={rx.id} />
                     </div>
                   </div>

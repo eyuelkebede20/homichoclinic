@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { LayoutDashboard, Users, FlaskConical, Pill, Receipt, LogOut, Shield, Tags, Calendar, Activity } from "lucide-react";
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { GlobalNotifications } from "@/components/global-notifications";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { DoctorOpdSelector } from "@/features/clinical/components/doctor-opd-selector";
@@ -115,6 +116,7 @@ export default async function DashboardLayout({
           {role === "Doctor" && (
             <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
           )}
+          <GlobalNotifications />
           <ThemeToggle />
         </header>
 

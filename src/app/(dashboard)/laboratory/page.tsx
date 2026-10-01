@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { LabResultForm } from "@/features/clinical/components/lab-result-form";
+import { CancelLabRequestButton } from "@/features/clinical/components/cancel-lab-request-button";
 import { Search } from "lucide-react";
 import { NotificationPing } from "@/components/notification-ping";
 
@@ -118,9 +119,9 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
                     <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">
                       Test: {req.test.name}
                     </div>
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
                       {canResult ? (
-                        <LabResultForm requestId={req.id} />
+                        <LabResultForm requestId={req.id} /> <CancelLabRequestButton requestId={req.id} />
                       ) : (
                         <span className="text-slate-400 text-xs">View Only</span>
                       )}

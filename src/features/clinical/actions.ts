@@ -224,3 +224,28 @@ export const updateDoctorOpd = createSafeAction({
     return user;
   }
 });
+
+export const cancelLabRequest = createSafeAction({
+  schema: z.object({ requestId: z.string() }),
+  requiredPermission: PERMISSIONS.LAB_SUBMIT,
+  handler: async (data, ctx) => {
+    const req = await prisma.labRequest.findUnique({ where: { id: data.requestId } });
+    if (!req) throw new Error("Lab request not found");
+    if (req.status === "completed") throw new Error("Cannot cancel a completed lab request");
+
+    const updated = await prisma.labRequest.update({
+      where: { id: data.requestId },
+      data: { status: "cancelled" }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CANCEL_LAB_REQUEST",
+      resourceId: updated.id,
+      newValue: { status: "cancelled" },
+    });
+
+    revalidatePath("/laboratory");
+    return updated;
+  }
+});
