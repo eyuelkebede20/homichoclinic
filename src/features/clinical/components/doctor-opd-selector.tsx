@@ -41,13 +41,11 @@ export function DoctorOpdSelector({
         disabled={loading}
         className="text-sm font-bold bg-transparent border-none text-blue-900 dark:text-blue-200 focus:ring-0 cursor-pointer p-0 pr-4"
       >
-        <option value="" disabled>Select OPD</option>
-        <option value="1">OPD 1</option>
-        <option value="2">OPD 2</option>
-        <option value="3">OPD 3</option>
-        <option value="4">OPD 4</option>
-        <option value="5">OPD 5</option>
-        <option value="6">OPD 6</option>
+        <option className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value="" disabled>Select OPD</option>
+        <option className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value="1">OPD 1</option>
+        <option className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value="2">OPD 2</option>
+        <option className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value="3">OPD 3</option>
+        <option className="bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100" value="4">OPD 4</option>
       </select>
     </div>
   );

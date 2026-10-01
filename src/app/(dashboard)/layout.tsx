@@ -111,13 +111,10 @@ export default async function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground print:overflow-visible print:block">
         
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shadow-sm print:hidden">
-          <div className="flex items-center gap-4">
-            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Top Nav</h2>
-            {role === "Doctor" && (
-              <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
-            )}
-          </div>
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-8 shadow-sm print:hidden gap-4">
+          {role === "Doctor" && (
+            <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
+          )}
           <ThemeToggle />
         </header>
 
