@@ -24,6 +24,7 @@ model User {
   accounts      Account[]
   
   role          String?   // Maps to Role.name below
+  currentOpdRoom Int?     // Currently active OPD room for this doctor
 }
 
 model Session {

@@ -5,6 +5,8 @@ import { LayoutDashboard, Users, FlaskConical, Pill, Receipt, LogOut, Shield, Ta
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+import { DoctorOpdSelector } from "@/features/clinical/components/doctor-opd-selector";
 
 export default async function DashboardLayout({
   children,
@@ -22,6 +24,9 @@ export default async function DashboardLayout({
   const role = session.user.role || "User";
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
+  // Fetch full user for custom fields like currentOpdRoom
+  const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ];
@@ -49,9 +54,7 @@ export default async function DashboardLayout({
     navItems.push({ name: "Audit Logs", href: "/audit", icon: Activity });
   }
 
-  // Optionally add Admin if permitted
   if (userPermissions.includes(PERMISSIONS.USER_MANAGE)) {
-    // We'll import Shield icon for Admin
     navItems.push({ name: "Admin", href: "/admin", icon: Shield });
   }
 
@@ -67,7 +70,6 @@ export default async function DashboardLayout({
             </div>
             <span className="font-bold text-lg tracking-wide">Clinic System</span>
           </div>
-          <ThemeToggle />
         </div>
         
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
@@ -105,6 +107,18 @@ export default async function DashboardLayout({
       
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground">
+        
+        {/* Top Navbar */}
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8 shadow-sm">
+          <div className="flex items-center gap-4">
+            <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">Top Nav</h2>
+            {role === "Doctor" && (
+              <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
+            )}
+          </div>
+          <ThemeToggle />
+        </header>
+
         <main className="flex-1 overflow-y-auto">
           {children}
         </main>

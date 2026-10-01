@@ -12,19 +12,25 @@ export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
-    // 1. Fetch available OPD rooms
-    const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
-    const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
+    let assignedRoom = 1;
 
-    // 2. Count today's visits to round-robin
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todaysVisitsCount = await prisma.visit.count({
-      where: { visitDate: { gte: today } }
-    });
-
-    // 3. Assign room
-    const assignedRoom = (todaysVisitsCount % opdRoomCount) + 1;
+    // If a doctor is selected, try to get their active OPD room
+    if (data.doctorId) {
+      const doc = await prisma.user.findUnique({ where: { id: data.doctorId } });
+      if (doc?.currentOpdRoom) {
+        assignedRoom = doc.currentOpdRoom;
+      }
+    } else {
+      // Fallback: round-robin if no doctor or no room set
+      const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
+      const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todaysVisitsCount = await prisma.visit.count({
+        where: { visitDate: { gte: today } }
+      });
+      assignedRoom = (todaysVisitsCount % opdRoomCount) + 1;
+    }
 
     const visit = await prisma.visit.create({
       data: {
@@ -204,5 +210,17 @@ export const saveOpdCount = createSafeAction({
     
     revalidatePath("/visits");
     return setting;
+  }
+});
+
+export const updateDoctorOpd = createSafeAction({
+  schema: z.object({ room: z.number().nullable() }),
+  requiredPermission: PERMISSIONS.VISIT_READ,
+  handler: async (data, ctx) => {
+    const user = await prisma.user.update({
+      where: { id: ctx.userId },
+      data: { currentOpdRoom: data.room },
+    });
+    return user;
   }
 });
