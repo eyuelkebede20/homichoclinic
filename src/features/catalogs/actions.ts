@@ -1,75 +1,241 @@
 "use server";
 
+import { z } from "zod";
 import { createSafeAction } from "@/lib/safe-action";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { catalogCreateSchema, catalogUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 
+async function hasApprovePermission(userId: string) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) return false;
+  const perms = ROLE_PERMISSIONS[user.role || "User"] || [];
+  return perms.includes(PERMISSIONS.CATALOG_APPROVE as any);
+}
+
 export const createDrug = createSafeAction({
   schema: catalogCreateSchema,
-  requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
   handler: async (data, ctx) => {
-    const drug = await prisma.drug.create({ data });
+    const canApprove = await hasApprovePermission(ctx.userId);
 
-    await logAudit({
-      actorId: ctx.userId,
-      action: PERMISSIONS.INVENTORY_ADJUST,
-      resourceId: drug.id,
-      newValue: JSON.stringify(drug),
-      reason: "Created new drug in catalog",
-    });
-
-    revalidatePath("/catalogs");
-    revalidatePath("/patients/[id]"); // Update dropdowns
-    return drug;
+    if (canApprove) {
+      const drug = await prisma.drug.create({ data });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: drug.id,
+        newValue: JSON.stringify(drug),
+        reason: "Directly created new drug in catalog",
+      });
+      revalidatePath("/catalogs");
+      return drug;
+    } else {
+      // Create request
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "DRUG",
+          action: "CREATE",
+          requestedData: JSON.stringify(data),
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      return { success: "Approval request submitted." };
+    }
   },
 });
 
 export const createLabTest = createSafeAction({
   schema: catalogCreateSchema,
-  requiredPermission: PERMISSIONS.INVENTORY_ADJUST, // Using INVENTORY_ADJUST for general pricing catalog edit for simplicity
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
   handler: async (data, ctx) => {
-    const test = await prisma.labTest.create({ data });
+    const canApprove = await hasApprovePermission(ctx.userId);
 
-    await logAudit({
-      actorId: ctx.userId,
-      action: PERMISSIONS.INVENTORY_ADJUST,
-      resourceId: test.id,
-      newValue: JSON.stringify(test),
-      reason: "Created new lab test in catalog",
-    });
-
-    revalidatePath("/catalogs");
-    revalidatePath("/patients/[id]");
-    return test;
+    if (canApprove) {
+      const test = await prisma.labTest.create({ data });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: test.id,
+        newValue: JSON.stringify(test),
+        reason: "Directly created new lab test in catalog",
+      });
+      revalidatePath("/catalogs");
+      return test;
+    } else {
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "LAB_TEST",
+          action: "CREATE",
+          requestedData: JSON.stringify(data),
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      return { success: "Approval request submitted." };
+    }
   },
 });
 
 export const updateDrug = createSafeAction({
   schema: catalogUpdateSchema,
-  requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
   handler: async (data, ctx) => {
-    const drug = await prisma.drug.update({
-      where: { id: data.id },
-      data: {
-        name: data.name,
-        description: data.description,
-        category: data.category,
-        price: data.price,
+    const canApprove = await hasApprovePermission(ctx.userId);
+
+    if (canApprove) {
+      const drug = await prisma.drug.update({
+        where: { id: data.id },
+        data: {
+          name: data.name,
+          description: data.description,
+          category: data.category,
+          price: data.price,
+        }
+      });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: drug.id,
+        newValue: JSON.stringify(drug),
+        reason: "Directly updated drug details/price",
+      });
+      revalidatePath("/catalogs");
+      return drug;
+    } else {
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "DRUG",
+          action: "UPDATE",
+          targetId: data.id,
+          requestedData: JSON.stringify(data),
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      return { success: "Approval request submitted." };
+    }
+  }
+});
+
+export const deleteDrug = createSafeAction({
+  schema: z.object({ id: z.string() }),
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
+  handler: async (data, ctx) => {
+    const canApprove = await hasApprovePermission(ctx.userId);
+
+    if (canApprove) {
+      await prisma.drug.delete({ where: { id: data.id } });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: data.id,
+        reason: "Directly deleted drug from catalog",
+      });
+      revalidatePath("/catalogs");
+      return { success: "Deleted." };
+    } else {
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "DRUG",
+          action: "DELETE",
+          targetId: data.id,
+          requestedData: "{}",
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      return { success: "Deletion request submitted." };
+    }
+  }
+});
+
+export const processCatalogApproval = createSafeAction({
+  schema: z.object({ id: z.string(), approve: z.boolean() }),
+  requiredPermission: PERMISSIONS.CATALOG_APPROVE,
+  handler: async (data, ctx) => {
+    const req = await prisma.catalogChangeRequest.findUnique({ where: { id: data.id } });
+    if (!req || req.status !== "PENDING") throw new Error("Invalid request");
+
+    if (!data.approve) {
+      await prisma.catalogChangeRequest.update({
+        where: { id: data.id },
+        data: { status: "REJECTED", evaluatedById: ctx.userId }
+      });
+      revalidatePath("/catalogs/approvals");
+      return { success: "Rejected." };
+    }
+
+    // Process approval
+    const payload = JSON.parse(req.requestedData);
+
+    if (req.type === "DRUG") {
+      if (req.action === "CREATE") {
+        await prisma.drug.create({ data: payload });
+      } else if (req.action === "UPDATE") {
+        await prisma.drug.update({ where: { id: req.targetId! }, data: payload });
+      } else if (req.action === "DELETE") {
+        await prisma.drug.delete({ where: { id: req.targetId! } });
       }
+    } else if (req.type === "LAB_TEST") {
+      if (req.action === "CREATE") {
+        await prisma.labTest.create({ data: payload });
+      } else if (req.action === "UPDATE") {
+        await prisma.labTest.update({ where: { id: req.targetId! }, data: payload });
+      } else if (req.action === "DELETE") {
+        await prisma.labTest.delete({ where: { id: req.targetId! } });
+      }
+    }
+
+    await prisma.catalogChangeRequest.update({
+      where: { id: data.id },
+      data: { status: "APPROVED", evaluatedById: ctx.userId }
     });
 
     await logAudit({
       actorId: ctx.userId,
-      action: PERMISSIONS.INVENTORY_ADJUST,
-      resourceId: drug.id,
-      newValue: JSON.stringify(drug),
-      reason: "Updated drug details/price",
+      action: PERMISSIONS.CATALOG_APPROVE,
+      resourceId: req.targetId || "NEW",
+      reason: `Approved ${req.action} for ${req.type}`,
     });
 
     revalidatePath("/catalogs");
-    return drug;
-  },
+    revalidatePath("/catalogs/approvals");
+    return { success: "Approved and applied." };
+  }
+});
+
+export const deleteLabTest = createSafeAction({
+  schema: z.object({ id: z.string() }),
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
+  handler: async (data, ctx) => {
+    const canApprove = await hasApprovePermission(ctx.userId);
+
+    if (canApprove) {
+      await prisma.labTest.delete({ where: { id: data.id } });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: data.id,
+        reason: "Directly deleted lab test from catalog",
+      });
+      revalidatePath("/catalogs");
+      return { success: "Deleted." };
+    } else {
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "LAB_TEST",
+          action: "DELETE",
+          targetId: data.id,
+          requestedData: "{}",
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      return { success: "Deletion request submitted." };
+    }
+  }
 });

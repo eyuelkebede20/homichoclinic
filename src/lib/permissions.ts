@@ -33,6 +33,10 @@ export const PERMISSIONS = {
   INVENTORY_READ: 'inventory:read',
   INVENTORY_ADJUST: 'inventory:adjust',
 
+  // Catalogs
+  CATALOG_REQUEST: 'catalog:request',
+  CATALOG_APPROVE: 'catalog:approve',
+
   // Billing
   INVOICE_CREATE: 'invoice:create',
   INVOICE_READ: 'invoice:read',
@@ -56,6 +60,8 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.PATIENT_READ,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.INVOICE_READ,
+    PERMISSIONS.CATALOG_APPROVE,
+    PERMISSIONS.CATALOG_REQUEST,
   ],
   Reception: [
     PERMISSIONS.PATIENT_CREATE,
@@ -85,6 +91,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
   Laboratory: [
     PERMISSIONS.LAB_READ,
     PERMISSIONS.LAB_RESULT,
+    PERMISSIONS.CATALOG_REQUEST,
   ],
   Testing: [
     PERMISSIONS.TEST_READ,
@@ -94,5 +101,6 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.PRESCRIPTION_DISPENSE,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.INVENTORY_ADJUST,
+    PERMISSIONS.CATALOG_REQUEST,
   ],
 };

@@ -25,6 +25,9 @@ model User {
   
   role          String?   // Maps to Role.name below
   currentOpdRoom Int?     // Currently active OPD room for this doctor
+
+  requestedChanges CatalogChangeRequest[] @relation("RequestedChanges")
+  evaluatedChanges CatalogChangeRequest[] @relation("EvaluatedChanges")
 }
 
 model Session {
@@ -345,4 +348,22 @@ model AuditLog {
 model SystemSetting {
   key   String @id
   value String
+}
+
+model CatalogChangeRequest {
+  id            String   @id @default(cuid())
+  type          String   // "DRUG" or "LAB_TEST"
+  action        String   // "CREATE", "UPDATE", "DELETE"
+  targetId      String?  // The Drug/LabTest ID if editing/deleting
+  requestedData String   // JSON stringified data
+  status        String   @default("PENDING") // "PENDING", "APPROVED", "REJECTED"
+  
+  requestedById String
+  requestedBy   User     @relation("RequestedChanges", fields: [requestedById], references: [id])
+  
+  evaluatedById String?
+  evaluatedBy   User?    @relation("EvaluatedChanges", fields: [evaluatedById], references: [id])
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 }

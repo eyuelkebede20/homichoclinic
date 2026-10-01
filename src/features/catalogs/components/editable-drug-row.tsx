@@ -24,9 +24,12 @@ export function EditableDrugRow({ drug }: {
       price: Math.round(parseFloat(priceStr) * 100)
     });
     setLoading(false);
-    if (res.error) {
+    if (res?.error) {
       alert(res.error);
     } else {
+      if ((res as any)?.success) {
+        alert((res as any).success);
+      }
       setIsEditing(false);
     }
   }
@@ -75,9 +78,24 @@ export function EditableDrugRow({ drug }: {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-mono text-slate-500">{(drug.price / 100).toFixed(2)} ETB</span>
-          <button onClick={() => setIsEditing(true)} className="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-blue-600 transition-opacity">
-            <Edit2 className="w-4 h-4" />
-          </button>
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 print:hidden">
+            <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-blue-600" title="Edit">
+              <Edit2 className="w-4 h-4" />
+            </button>
+            <button 
+              onClick={async () => {
+                if(confirm("Are you sure you want to remove this drug?")) {
+                  const { deleteDrug } = await import("../actions");
+                  const res = await deleteDrug({ id: drug.id });
+                  if (res?.error) alert(res.error);
+                  else if ((res as any)?.success) alert((res as any).success);
+                }
+              }} 
+              className="text-slate-400 hover:text-red-600" title="Remove"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
       {drug.description && <p className="text-xs text-slate-500 mt-1">{drug.description}</p>}

@@ -26,8 +26,12 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     const res = type === "drug" ? await createDrug(data) : await createLabTest(data);
     
     setLoading(false);
-    if (res.error) alert(res.error);
-    else {
+    if (res?.error) {
+      alert(res.error);
+    } else if ((res as any)?.success) {
+      alert((res as any).success);
+      (e.target as HTMLFormElement).reset();
+    } else {
       (e.target as HTMLFormElement).reset();
     }
   }

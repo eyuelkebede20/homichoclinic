@@ -43,7 +43,7 @@ export default async function DashboardLayout({
   if (userPermissions.includes(PERMISSIONS.INVENTORY_READ)) {
     navItems.push({ name: "Pharmacy", href: "/pharmacy", icon: Pill });
   }
-  if (userPermissions.includes(PERMISSIONS.INVENTORY_ADJUST)) {
+  if (userPermissions.includes(PERMISSIONS.CATALOG_REQUEST) || userPermissions.includes(PERMISSIONS.CATALOG_APPROVE)) {
     navItems.push({ name: "Catalogs", href: "/catalogs", icon: Tags });
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
