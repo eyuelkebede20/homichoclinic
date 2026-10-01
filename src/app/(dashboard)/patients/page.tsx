@@ -1,0 +1,131 @@
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
+import { Search } from "lucide-react";
+import { Pagination } from "@/components/pagination";
+
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
+  const page = parseInt(resolvedParams.page || "1", 10);
+  const PAGE_SIZE = 20;
+
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session) redirect("/login");
+
+  const role = session.user.role || "User";
+  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  
+  if (!userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
+    return (
+      <div className="p-8 text-center text-red-600">
+        <h2 className="text-2xl font-bold">Access Denied</h2>
+      </div>
+    );
+  }
+
+  const whereClause = query ? {
+    OR: [
+      { firstName: { contains: query, mode: "insensitive" } as const },
+      { lastName: { contains: query, mode: "insensitive" } as const },
+      { contactNumber: { contains: query, mode: "insensitive" } as const }
+    ]
+  } : undefined;
+
+  const [patients, totalItems] = await Promise.all([
+    prisma.patient.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+    }),
+    prisma.patient.count({ where: whereClause })
+  ]);
+
+  const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
+
+  return (
+    <div className="p-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Patients</h1>
+        
+        <div className="flex w-full md:w-auto gap-4">
+          <form className="relative flex-1 md:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
+            <input 
+              name="q"
+              defaultValue={query}
+              type="text" 
+              placeholder="Search by name or phone..." 
+              className="pl-9 pr-4 py-2 w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900"
+            />
+          </form>
+          {canCreate && (
+            <Link href="/patients/new" className="whitespace-nowrap px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 text-sm flex items-center">
+              + New Patient
+            </Link>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-900 shadow rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+            <thead className="bg-slate-50 dark:bg-slate-950">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Discount</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+              {patients.map(patient => (
+                <tr key={patient.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+                    {patient.firstName} {patient.lastName}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
+                    {patient.contactNumber || "N/A"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300">
+                      {patient.discountPercent}%
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <Link href={`/patients/${patient.id}`} className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400">
+                      View
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+              {patients.length === 0 && (
+                <tr>
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
+                    {query ? "No patients match your search." : "No patients found."}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        {totalItems > 0 && (
+          <Pagination 
+            currentPage={page} 
+            totalItems={totalItems} 
+            pageSize={PAGE_SIZE} 
+            baseUrl="/patients" 
+            searchQuery={query} 
+          />
+        )}
+      </div>
+    </div>
+  );
+}

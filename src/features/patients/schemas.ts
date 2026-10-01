@@ -1,0 +1,23 @@
+import { z } from "zod";
+import { zSafeString } from "@/lib/sanitize";
+
+export const patientCreateSchema = z.object({
+  firstName: zSafeString().pipe(z.string().min(1, "First name is required")),
+  lastName: zSafeString().pipe(z.string().min(1, "Last name is required")),
+  dateOfBirth: z.string().optional(),
+  gender: zSafeString().optional(),
+  contactNumber: zSafeString().optional(),
+});
+
+export const patientUpdateSchema = patientCreateSchema.extend({
+  patientId: z.string().min(1, "Patient ID is required")
+});
+
+export const discountUpdateSchema = z.object({
+  patientId: z.string().min(1, "Patient ID is required"),
+  discountPercent: z.number().int().min(0).max(99),
+  reason: zSafeString().optional(),
+});
+
+export type PatientCreateInput = z.infer<typeof patientCreateSchema>;
+export type DiscountUpdateInput = z.infer<typeof discountUpdateSchema>;

@@ -1,0 +1,340 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// Authentication & RBAC (Better Auth / Custom)
+// ==========================================
+
+model User {
+  id            String    @id
+  name          String
+  email         String
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime
+  updatedAt     DateTime
+  
+  sessions      Session[]
+  accounts      Account[]
+  
+  role          String?   // Maps to Role.name below
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime
+  updatedAt DateTime
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime
+  updatedAt             DateTime
+}
+
+model Verification {
+  id         String    @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime
+  updatedAt  DateTime
+}
+
+model Role {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  permissions Permission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  action      String   // e.g., "patient:create", "discount:update"
+  roleId      String
+  role        Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([action, roleId])
+}
+
+// ==========================================
+// Clinical Core
+// ==========================================
+
+model Patient {
+  id              String    @id @default(cuid())
+  firstName       String
+  lastName        String
+  dateOfBirth     DateTime?
+  gender          String?
+  contactNumber   String?
+  
+  // Core Feature: Discount
+  discountPercent Int       @default(0) // 0 to 99
+
+  visits          Visit[]
+  medicalRecords  MedicalRecord[]
+  labRequests     LabRequest[]
+  prescriptions   Prescription[]
+  invoices        Invoice[]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime? // Soft delete
+}
+
+model Visit {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  doctorId      String?
+  notes         String?
+  visitDate     DateTime  @default(now())
+  status        String    @default("scheduled") // scheduled, in_progress, completed
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model MedicalRecord {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  
+  source        String    @default("system") // "system" or "paper_import"
+  originalDate  DateTime? // for paper imports
+  attachments   String?   // URLs to files/scans
+  content       String    // Text content, JSON, notes, diagnoses, allergies
+
+  enteredById   String    // Actor ID who entered the record
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+// ==========================================
+// Laboratory & Testing
+// ==========================================
+
+model LabTest {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  price         Int       // Integer minor units (cents/santim)
+  isOperational Boolean   @default(true) // Can be toggled off if machine breaks
+  
+  requests      LabRequest[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model LabRequest {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  testId        String
+  test          LabTest   @relation(fields: [testId], references: [id])
+  
+  status        String    @default("requested") // requested, in_progress, completed
+  requestedBy   String    // Doctor's User ID
+  
+  result        LabResult?
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model LabResult {
+  id            String    @id @default(cuid())
+  requestId     String    @unique
+  request       LabRequest @relation(fields: [requestId], references: [id])
+  
+  findings      String
+  enteredBy     String    // Lab Technician's User ID
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+// ==========================================
+// Pharmacy & Inventory
+// ==========================================
+
+model Drug {
+  id            String    @id @default(cuid())
+  name          String
+  description   String?
+  category      String?
+  price         Int       // Minor units
+
+  batches       StockBatch[]
+  prescriptions PrescriptionItem[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model StockBatch {
+  id            String    @id @default(cuid())
+  drugId        String
+  drug          Drug      @relation(fields: [drugId], references: [id])
+  batchNumber   String
+  expiryDate    DateTime
+  quantity      Int
+  cost          Int       // Minor units
+
+  movements     StockMovement[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model StockMovement {
+  id            String    @id @default(cuid())
+  batchId       String
+  batch         StockBatch @relation(fields: [batchId], references: [id])
+  
+  type          String    // receive, dispense, adjust, expire_waste
+  quantity      Int       // positive or negative
+  reason        String?
+  actorId       String    
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Prescription {
+  id            String    @id @default(cuid())
+  patientId     String
+  patient       Patient   @relation(fields: [patientId], references: [id])
+  doctorId      String
+  
+  items         PrescriptionItem[]
+
+  status        String    @default("pending") // pending, dispensed
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+model PrescriptionItem {
+  id              String    @id @default(cuid())
+  prescriptionId  String
+  prescription    Prescription @relation(fields: [prescriptionId], references: [id])
+  drugId          String
+  drug            Drug      @relation(fields: [drugId], references: [id])
+  
+  quantity        Int
+  instructions    String
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+}
+
+// ==========================================
+// Billing
+// ==========================================
+
+model Invoice {
+  id                     String    @id @default(cuid())
+  patientId              String
+  patient                Patient   @relation(fields: [patientId], references: [id])
+  
+  discountPercentApplied Int       // Snapshotted at checkout
+  subtotal               Int       // Minor units
+  total                  Int       // Minor units, computed after discount
+
+  status                 String    @default("pending") // pending, paid, cancelled
+  
+  items                  InvoiceItem[]
+  payments               Payment[]
+
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  deletedAt              DateTime?
+}
+
+model InvoiceItem {
+  id            String    @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id])
+  
+  description   String
+  quantity      Int
+  unitPrice     Int       // Minor units
+  isDiscountable Boolean  @default(true)
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Payment {
+  id            String    @id @default(cuid())
+  invoiceId     String
+  invoice       Invoice   @relation(fields: [invoiceId], references: [id])
+  
+  amount        Int
+  method        String    // cash, card, transfer
+  cashierId     String    // Who took the payment
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+}
+
+// ==========================================
+// System Audit
+// ==========================================
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  actorId       String    
+  action        String    // e.g. "discount:update", "patient:create"
+  resourceId    String?   // ID of affected entity
+  oldValue      String?   // JSON string
+  newValue      String?   // JSON string
+  reason        String?
+
+  createdAt     DateTime  @default(now())
+}
+
+model SystemSetting {
+  key   String @id
+  value String
+}
