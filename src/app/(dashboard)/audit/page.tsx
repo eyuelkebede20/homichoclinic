@@ -48,6 +48,48 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
     prisma.auditLog.count({ where: whereClause })
   ]);
 
+  // Fetch actor details for human readability
+  const actorIds = [...new Set(logs.map(l => l.actorId))];
+  const actors = await prisma.user.findMany({
+    where: { id: { in: actorIds } },
+    select: { id: true, name: true, role: true }
+  });
+  const actorMap = Object.fromEntries(actors.map(a => [a.id, a]));
+
+  function getHumanReadableDetail(log: typeof logs[0], actorName: string) {
+    try {
+      const newVal = log.newValue ? JSON.parse(log.newValue) : null;
+      const actionParts = log.action.split(':');
+      const domain = actionParts[0]; // e.g. patient, discount, visit
+      const action = actionParts[1]; // e.g. update, create
+
+      if (log.action === "discount:update" && newVal) {
+        return `Updated patient discount to ${newVal.discountPercent}%`;
+      }
+      if (log.action === "patient:create") {
+        return `Registered a new patient`;
+      }
+      if (log.action === "visit:create") {
+        return `Scheduled a visit (Status: ${newVal?.status})`;
+      }
+      if (log.action === "lab:request" && newVal) {
+        return `Requested ${newVal.testCount} lab test(s)`;
+      }
+      if (log.action === "lab:result") {
+        return `Submitted lab test results`;
+      }
+      
+      // Fallback
+      if (newVal) {
+        const keys = Object.keys(newVal);
+        if (keys.length > 0) return `Updated fields: ${keys.join(", ")}`;
+      }
+      return log.reason || "Performed system action";
+    } catch (e) {
+      return log.reason || "Performed system action";
+    }
+  }
+
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -80,36 +122,37 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Timestamp</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Actor ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Resource ID</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Details</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">User (Role)</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action Type</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Event Details</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
-              {logs.map(log => (
-                <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
-                    {log.createdAt.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-900 dark:text-slate-300">
-                    {log.actorId}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-blue-600 dark:text-blue-400">
-                    {log.action}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-xs font-mono text-slate-500 dark:text-slate-400">
-                    {log.resourceId}
-                  </td>
-                  <td className="px-6 py-4 text-xs text-slate-600 dark:text-slate-400 max-w-md truncate">
-                    {log.reason && <span className="font-semibold block">{log.reason}</span>}
-                    <span className="font-mono text-[10px]">{JSON.stringify(log.newValue)}</span>
-                  </td>
-                </tr>
-              ))}
+              {logs.map(log => {
+                const actor = actorMap[log.actorId];
+                const actorDisplay = actor ? `${actor.name} (${actor.role})` : `Unknown User (${log.actorId.slice(0, 8)})`;
+                
+                return (
+                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-xs text-slate-500 dark:text-slate-400">
+                      {log.createdAt.toLocaleString()}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {actorDisplay}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-xs font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/10 rounded-full px-2">
+                      {log.action}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-400">
+                      <span className="block text-slate-900 dark:text-slate-100">{getHumanReadableDetail(log, actorDisplay)}</span>
+                      {log.resourceId && <span className="text-[10px] text-slate-400 font-mono mt-1 block">Ref ID: {log.resourceId}</span>}
+                    </td>
+                  </tr>
+                );
+              })}
               {logs.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
                     {query ? "No audit logs match your search." : "No audit logs found."}
                   </td>
                 </tr>
