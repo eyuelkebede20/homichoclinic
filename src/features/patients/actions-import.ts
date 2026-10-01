@@ -39,8 +39,11 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
 
   // Skip header if present
   let startIndex = 0;
-  if (lines[0].toLowerCase().includes("name") || lines[0].toLowerCase().includes("id")) {
+  if (lines[0].toLowerCase().includes("name") || lines[0].toLowerCase().includes("id") || lines[0].toLowerCase().includes("phone")) {
     startIndex = 1;
+  } else {
+    // If we can't find a standard header, let's assume it's data without header, but it's risky.
+    // Actually, if it's completely alien, maybe warn them. But we'll just parse from row 0.
   }
 
   let importedCount = 0;

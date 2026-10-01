@@ -24,6 +24,14 @@ export const importPatientsCSV = createSafeAction({
     // Parse headers
     const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
     
+    // Validate that we found at least some expected headers
+    const hasKnownHeader = headers.some(h => 
+      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact'].includes(h)
+    );
+    if (!hasKnownHeader) {
+      throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the sample file format.`);
+    }
+    
     // Map of phone numbers to Primary Patient IDs (so we can link dependents instantly)
     const phoneToPatientId = new Map<string, string>();
     
@@ -53,15 +61,18 @@ export const importPatientsCSV = createSafeAction({
 
     // Function to process a single row
     async function processRow(row: Record<string, string>, isDependent: boolean) {
-      let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["name"];
+      let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["name"] || row["fullname"] || row["full name"];
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
-      const phone = row["phone"] || row["contact"] || row["contactnumber"];
+      const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"];
       const dobStr = row["dob"] || row["dateofbirth"];
       const gender = row["gender"];
-      const discount = parseInt(row["discount"] || "0", 10);
+      const rawDiscount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
       const primaryPhone = row["primaryphone"] || row["familyphone"];
       const promoCode = row["promocode"] || row["promo_code"];
+      const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"];
+      const hiredYearECStr = row["hiredyearec"] || row["hired year"] || row["hired_year"];
+      const hiredYearEC = hiredYearECStr ? parseInt(hiredYearECStr, 10) : null;
 
       if (firstName && !lastName && firstName.includes(' ')) {
         const parts = firstName.split(' ');
@@ -121,6 +132,8 @@ export const importPatientsCSV = createSafeAction({
         if (phone) {
           phoneToPatientId.set(phone, newPat.id);
         }
+      } else {
+        errors.push(`Skipped duplicate patient: ${firstName} ${lastName} (Phone: ${phone || 'N/A'})`);
       }
     }
 

@@ -24,10 +24,15 @@ export function PatientImporter() {
     setResult(null);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const workbook = XLSX.read(buffer);
-      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-      const text = XLSX.utils.sheet_to_csv(worksheet);
+      let text = "";
+      if (file.name.toLowerCase().endsWith(".csv")) {
+        text = await file.text();
+      } else {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        text = XLSX.utils.sheet_to_csv(worksheet);
+      }
 
       const res = await importPatientsCSV({ csvText: text });
       
@@ -37,7 +42,8 @@ export function PatientImporter() {
         setResult(res.data);
       }
     } catch (err: any) {
-      alert("Failed to read file: Please ensure it's a valid Excel or CSV file.");
+      console.error("XLSX parsing error:", err);
+      alert("Failed to read file: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
       setFile(null);

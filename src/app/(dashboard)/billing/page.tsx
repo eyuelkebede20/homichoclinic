@@ -33,7 +33,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
 
   const canTakePayment = userPermissions.includes(PERMISSIONS.PAYMENT_CREATE);
 
-  const [invoices, totalItems] = await Promise.all([
+  const [invoices, totalItems, unbilledVisits, unbilledLabRequests, unbilledPrescriptions] = await Promise.all([
     prisma.invoice.findMany({
       include: {
         patient: true,
@@ -43,8 +43,41 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    prisma.invoice.count()
+    prisma.invoice.count(),
+    prisma.visit.findMany({
+      where: { invoiceId: null },
+      include: { patient: true }
+    }),
+    prisma.labRequest.findMany({
+      where: { invoiceId: null },
+      include: { patient: true, test: true }
+    }),
+    prisma.prescriptionItem.findMany({
+      where: { invoiceId: null },
+      include: { prescription: { include: { patient: true } }, drug: true }
+    })
   ]);
+
+  // Group unbilled items by patient
+  const unbilledByPatient = new Map<string, any>();
+  
+  const getPatientGroup = (patient: any) => {
+    if (!unbilledByPatient.has(patient.id)) {
+      unbilledByPatient.set(patient.id, {
+        patient,
+        visits: [],
+        labRequests: [],
+        prescriptions: []
+      });
+    }
+    return unbilledByPatient.get(patient.id);
+  };
+
+  unbilledVisits.forEach(v => getPatientGroup(v.patient).visits.push(v));
+  unbilledLabRequests.forEach(l => getPatientGroup(l.patient).labRequests.push(l));
+  unbilledPrescriptions.forEach(p => getPatientGroup(p.prescription.patient).prescriptions.push(p));
+
+  const unbilledQueue = Array.from(unbilledByPatient.values());
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -67,6 +100,53 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
           )}
         </div>
       </div>
+
+      {unbilledQueue.length > 0 && (
+        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col mb-8">
+          <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border-b border-yellow-200 dark:border-yellow-800 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-yellow-800 dark:text-yellow-500">Action Required: Unbilled Patient Activity</h2>
+              <p className="text-sm text-yellow-700 dark:text-yellow-600">The following patients have pending charges (visits, labs, or prescriptions) that need to be invoiced.</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-950">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Patient</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Pending Items</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Action</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+                {unbilledQueue.map(group => (
+                  <tr key={group.patient.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {group.patient.firstName} {group.patient.lastName}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400">
+                      <div className="flex gap-2 flex-wrap">
+                        {group.visits.length > 0 && <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300">{group.visits.length} Visit(s)</span>}
+                        {group.labRequests.length > 0 && <span className="inline-flex items-center rounded-full bg-purple-100 dark:bg-purple-900/30 px-2.5 py-0.5 text-xs font-medium text-purple-800 dark:text-purple-300">{group.labRequests.length} Lab Test(s)</span>}
+                        {group.prescriptions.length > 0 && <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">{group.prescriptions.length} Drug(s)</span>}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium flex justify-end">
+                      {userPermissions.includes(PERMISSIONS.INVOICE_CREATE) && (
+                        <form action={`/api/billing/generate-auto-invoice?patientId=${group.patient.id}`} method="POST">
+                          <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-xs">
+                            Generate Invoice
+                          </button>
+                        </form>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col">
         <div className="overflow-x-auto">

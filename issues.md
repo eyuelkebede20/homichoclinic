@@ -11,9 +11,9 @@ After reviewing the current state of the application architecture, codebase, and
 *   **The Fix:** **(Resolved)** We have implemented strict server-side pagination (20 patients per page) on the patient directory, and replaced the in-memory static dropdowns in the scheduling and billing screens with a dedicated `/api/patients/search` API for async combobox searching.
 
 
-## 4. Missing: The "Cashier" Workflow
+## 4. Fixed: The "Cashier" Workflow
 *   **The Problem:** The app manages Doctors, Lab Techs, and Pharmacy Techs. However, the final loop of the visit—billing and payments—is disjointed. We have a robust discount calculation system, but we haven't mapped out exactly who processes the final payment invoice. Does Reception handle Cashier duties? 
-*   **The Fix:** We need a dedicated `Cashier` role, or we need to explicitly build an "Invoicing / Checkout" dashboard for Receptionists to collect the post-discount ETB amounts.
+*   **The Fix:** **(Resolved)** The Cashier role and permissions are fully implemented. The `/billing` dashboard now acts as a central "money trail" hub featuring an "Unbilled Patient Activity" queue. This queue aggregates unbilled visits, lab requests, and prescriptions in real-time, allowing Cashiers to auto-generate aggregated invoices with a single click.
 
 ## 5. Fixed: React Hydration Script Error
 *   **The Problem:** Next.js threw a console error: `Encountered a script tag while rendering React component`. This was caused by the auto-print `<script>` injected into the Pharmacy Receipt page.

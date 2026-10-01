@@ -142,6 +142,9 @@ model Visit {
   visitDate     DateTime  @default(now())
   status        String    @default("scheduled") // scheduled, in_progress, completed
 
+  invoiceId     String?
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   deletedAt     DateTime?
@@ -193,6 +196,9 @@ model LabRequest {
   requestedBy   String    // Doctor's User ID
   
   result        LabResult?
+
+  invoiceId     String?
+  invoice       Invoice?  @relation(fields: [invoiceId], references: [id])
 
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -286,6 +292,9 @@ model PrescriptionItem {
   quantity        Int
   instructions    String
 
+  invoiceId       String?
+  invoice         Invoice?  @relation(fields: [invoiceId], references: [id])
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
@@ -308,6 +317,9 @@ model Invoice {
   
   items                  InvoiceItem[]
   payments               Payment[]
+  visits                 Visit[]
+  labRequests            LabRequest[]
+  prescriptionItems      PrescriptionItem[]
 
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
