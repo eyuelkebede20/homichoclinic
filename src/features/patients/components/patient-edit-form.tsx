@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export function PatientEditForm({ patient }: { 
-  patient: { id: string; firstName: string; lastName: string; dateOfBirth: Date | null; gender: string | null; contactNumber: string | null; } 
+  patient: { id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; } 
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,6 +41,7 @@ export function PatientEditForm({ patient }: {
       yob: yob || undefined,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
+      since: formData.get("since") as string || undefined,
     });
 
     setLoading(false);
@@ -123,8 +124,8 @@ export function PatientEditForm({ patient }: {
           <input defaultValue={patient.contactNumber || ""} name="contactNumber" type="tel" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Role - Work Branch</label>
-          <input disabled type="text" value="" placeholder="HR Integration Pending..." className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-sm text-slate-400 cursor-not-allowed" />
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Since (Year)</label>
+          <input defaultValue={patient.since || ""} name="since" type="text" placeholder="e.g. 2019" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
       </div>
 

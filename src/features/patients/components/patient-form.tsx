@@ -41,7 +41,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       militaryId: formData.get("militaryId") as string || undefined,
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
-      hiredYearEC: formData.get("hiredYearEC") ? parseInt(formData.get("hiredYearEC") as string, 10) : undefined,
+      since: formData.get("since") as string || undefined,
     });
 
     setLoading(false);
@@ -152,9 +152,9 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
 
       {patientType === "Civilian Staff" && (
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Hired Year (EC)</label>
-          <input required name="hiredYearEC" type="number" min="1900" max="2100" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" placeholder="e.g. 2010" />
-          <p className="text-[10px] text-slate-500 mt-1">Used to automatically calculate staff discounts.</p>
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Since (Year)</label>
+          <input name="since" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" placeholder="e.g. 2019" />
+          <p className="text-[10px] text-slate-500 mt-1">Leave empty to default to 2019. Used to calculate staff discounts.</p>
         </div>
       )}
 

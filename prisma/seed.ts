@@ -99,7 +99,7 @@ async function main() {
         firstName: 'John',
         lastName: 'Doe',
         gender: 'male',
-        dateOfBirth: new Date('1985-05-15'),
+        yob: "1985",
         contactNumber: '555-0192',
         discountPercent: 10,
       }

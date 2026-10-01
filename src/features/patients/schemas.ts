@@ -12,6 +12,7 @@ export const patientCreateSchema = z.object({
   rank: zSafeString().optional(),
   division: zSafeString().optional(),
   hiredYearEC: z.number().int().min(1900).max(2100).optional().nullable(),
+  since: z.string().optional(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({

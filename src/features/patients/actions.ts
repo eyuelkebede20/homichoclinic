@@ -13,15 +13,20 @@ export const createPatient = createSafeAction({
   handler: async (data, ctx) => {
     const dob = data.yob || null;
     
+    // Default Since to 2019 if empty
+    let since = data.since || "2019";
+    let hiredYearEC = parseInt(since, 10);
+    if (isNaN(hiredYearEC)) hiredYearEC = 2019;
+    
     let discountPercent = 0;
     if (data.patientType === "Soldier") {
       discountPercent = 100;
     } else if (data.patientType === "Civilian Family") {
       discountPercent = 95;
-    } else if ((data.patientType === "Civilian Staff" || !data.patientType) && data.hiredYearEC) {
+    } else {
       const d = new Date();
       const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
-      const yearsOfService = Math.max(0, currentECYear - data.hiredYearEC);
+      const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
       else if (yearsOfService >= 10) discountPercent = 65;
@@ -42,7 +47,8 @@ export const createPatient = createSafeAction({
         militaryId: data.militaryId,
         rank: data.rank,
         division: data.division,
-        hiredYearEC: data.hiredYearEC,
+        hiredYearEC: hiredYearEC,
+        since: since,
         discountPercent: discountPercent,
       },
     });
@@ -63,14 +69,42 @@ export const updatePatient = createSafeAction({
   schema: patientUpdateSchema,
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
-    // Only Admin can update patient data
     const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
+    const existingPatient = await prisma.patient.findUnique({ where: { id: data.patientId } });
+    if (!existingPatient) throw new Error("Patient not found.");
+
     if (user?.role !== "Admin") {
-      throw new Error("Access Denied: Only Admins can modify patient demographics.");
+      if (user?.role === "Receptionist") {
+        if (new Date().getTime() - existingPatient.createdAt.getTime() >= 86400000) {
+          throw new Error("Access Denied: Receptionists can only modify patient data within 24 hours of creation.");
+        }
+      } else {
+        throw new Error("Access Denied: You do not have permission to modify patient demographics.");
+      }
     }
 
     const dob = data.yob || null;
+    let since = data.since || "2019";
+    let hiredYearEC = parseInt(since, 10);
+    if (isNaN(hiredYearEC)) hiredYearEC = 2019;
     
+    // Recalculate discount based on patient type and new hire year
+    let discountPercent = existingPatient.discountPercent;
+    if (existingPatient.patientType === "Soldier") {
+      discountPercent = 100;
+    } else if (existingPatient.patientType === "Civilian Family") {
+      discountPercent = 95;
+    } else {
+      const d = new Date();
+      const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
+      const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
+      if (yearsOfService >= 20) discountPercent = 100;
+      else if (yearsOfService >= 15) discountPercent = 75;
+      else if (yearsOfService >= 10) discountPercent = 65;
+      else if (yearsOfService >= 6) discountPercent = 55;
+      else discountPercent = 50;
+    }
+
     const updatedPatient = await prisma.patient.update({
       where: { id: data.patientId },
       data: {
@@ -79,6 +113,9 @@ export const updatePatient = createSafeAction({
         yob: dob,
         gender: data.gender,
         contactNumber: data.contactNumber,
+        since: since,
+        hiredYearEC: hiredYearEC,
+        discountPercent: discountPercent,
       },
     });
 
