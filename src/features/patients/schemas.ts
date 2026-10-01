@@ -4,7 +4,7 @@ import { zSafeString } from "@/lib/sanitize";
 export const patientCreateSchema = z.object({
   firstName: zSafeString().pipe(z.string().min(1, "First name is required")),
   lastName: zSafeString().pipe(z.string().min(1, "Last name is required")),
-  dateOfBirth: z.string().optional(),
+  yob: z.string().optional(),
   gender: zSafeString().optional(),
   contactNumber: zSafeString().optional(),
   patientType: zSafeString().optional(),

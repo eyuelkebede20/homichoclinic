@@ -8,6 +8,7 @@ import { Search } from "lucide-react";
 import { Pagination } from "@/components/pagination";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
+import { PatientRow } from "./patient-row";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const resolvedParams = await searchParams;
@@ -94,44 +95,22 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Salutation</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Gender</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">DOB</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Permanent</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">YOB</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Since</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">C/M</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Department</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Contact</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
               {patients.map(patient => (
-                <tr key={patient.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.id.slice(-6)}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.salutation || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {patient.firstName} {patient.lastName}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {patient.dateOfBirth || "-"}
-                  </td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.permanent || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.department || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.contactNumber || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyContact || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyMobile || "-"}</td>
-                  <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <Link href={`/patients/${patient.id}`} className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400">
-                      View
-                    </Link>
-                  </td>
-                </tr>
+                <PatientRow key={patient.id} patient={patient} />
               ))}
               {patients.length === 0 && (
                 <tr>
-                  <td colSpan={12} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
                     {query ? "No patients match your search." : "No patients found."}
                   </td>
                 </tr>

@@ -2,7 +2,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
-import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, ROLE_PERMISSIONS, PermissionString } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
@@ -17,7 +17,7 @@ async function hasApprovePermission(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return false;
   const perms = ROLE_PERMISSIONS[user.role || "User"] || [];
-  return perms.includes(PERMISSIONS.CATALOG_APPROVE as string);
+  return perms.includes(PERMISSIONS.CATALOG_APPROVE as PermissionString);
 }
 
 export const toggleLabTestOperational = createSafeAction({

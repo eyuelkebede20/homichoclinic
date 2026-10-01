@@ -95,7 +95,7 @@ model Patient {
   id              String    @id @default(cuid())
   firstName       String
   lastName        String
-  dateOfBirth     String?
+  yob             String?
   gender          String?
   contactNumber   String?
   
@@ -112,7 +112,7 @@ model Patient {
 
   salutation        String?
   department        String?
-  permanent         String?
+  since             String?
   c_m               String?
   emergencyContact  String?
   emergencyMobile   String?

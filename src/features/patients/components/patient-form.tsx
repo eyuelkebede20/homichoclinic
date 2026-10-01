@@ -18,8 +18,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    
-    let dateOfBirth = formData.get("dateOfBirth") as string;
+    let yob = formData.get("yob") as string;
     
     if (ageMode) {
       const ageStr = formData.get("age") as string;
@@ -27,7 +26,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          dateOfBirth = `${currentYear - age}`;
+          yob = `${currentYear - age}`;
         }
       }
     }
@@ -35,7 +34,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
     const result = await createPatient({
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      dateOfBirth: dateOfBirth,
+      yob: yob,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
       patientType: patientType,
@@ -79,7 +78,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="flex flex-col">
           <div className="flex justify-between items-end mb-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              {ageMode ? "Age (Years)" : "Date of Birth"}
+              {ageMode ? "Age (Years)" : "Year of Birth (YOB)"}
             </label>
             <button 
               type="button" 
@@ -100,7 +99,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
             />
           ) : (
             <input 
-              name="dateOfBirth" 
+              name="yob" 
               type="text"
               placeholder="e.g. 1990"
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 

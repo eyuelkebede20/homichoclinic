@@ -39,7 +39,7 @@ export const importPatientsCSV = createSafeAction({
     
     // Validate that we found at least some expected headers
     const hasKnownHeader = headers.some(h => 
-      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile', 'primarymobile', 'gov_id'].includes(h)
+      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'since', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile', 'primarymobile', 'gov_id', 'yob'].includes(h)
     );
     if (!hasKnownHeader) {
       throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the sample file format.`);
@@ -80,7 +80,7 @@ export const importPatientsCSV = createSafeAction({
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
       const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
       const finalPhone = phone || "-";
-      const dobStr = row["dob"] || row["dateofbirth"];
+      const yobStr = row["yob"] || row["dob"] || row["dateofbirth"];
       const gender = row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
@@ -93,9 +93,9 @@ export const importPatientsCSV = createSafeAction({
       const salutation = row["salutation"] || row["title"] || "-";
       const department = row["department"] || row["dept"] || "-";
       
-      let permanent = row["permanent"] || "";
-      const yearMatch = permanent.match(/\b\d{4}\b/);
-      permanent = yearMatch ? yearMatch[0] : "2019";
+      let since = row["since"] || row["permanent"] || "";
+      const yearMatch = since.match(/\b\d{4}\b/);
+      since = yearMatch ? yearMatch[0] : "2019";
       
       const c_m = row["c_m"] || row["c/m"] || row["cm"] || "-";
       const emergencyContact = row["emergencycontact"] || row["emergency contact"] || "-";
@@ -110,23 +110,21 @@ export const importPatientsCSV = createSafeAction({
       if (!firstName) firstName = "-";
       if (!lastName) lastName = "-";
 
-      let dob = "-";
-      if (dobStr) {
-        const yearMatch = dobStr.match(/\b(19|20)\d{2}\b/);
-        if (yearMatch) {
-          dob = yearMatch[0];
+      let yob = "-";
+      if (yobStr) {
+        const parsedYearMatch = yobStr.match(/\b(19|20)\d{2}\b/);
+        if (parsedYearMatch) {
+          yob = parsedYearMatch[0];
         } else {
-          dob = dobStr.trim(); // fallback to whatever they typed if no 4-digit year is found
+          yob = yobStr.trim(); 
         }
       }
 
       let primaryPatientId = null;
       if (isDependent && primaryPhone) {
-        // Try to find the primary patient ID from our local map
         if (phoneToPatientId.has(primaryPhone)) {
           primaryPatientId = phoneToPatientId.get(primaryPhone);
         } else {
-          // Look up in database
           const existingPrimary = await prisma.patient.findFirst({
             where: { contactNumber: primaryPhone }
           });
@@ -139,19 +137,17 @@ export const importPatientsCSV = createSafeAction({
         }
       }
 
-      // Compute smart discount based on newpatient.md rules
       let computedDiscount = 0;
       if (!isNaN(rawDiscount) && rawDiscount > 0) {
         computedDiscount = rawDiscount;
       } else if (c_m.toLowerCase().startsWith("m")) {
-        computedDiscount = 100; // Soldier/Military
+        computedDiscount = 100;
       } else if (isDependent) {
-        computedDiscount = 95; // Civilian Family
+        computedDiscount = 95; 
       } else {
-        computedDiscount = calculateDiscount(parseInt(permanent, 10)); // Civilian Staff
+        computedDiscount = calculateDiscount(parseInt(since, 10)); 
       }
 
-      // Check if patient already exists (by name + phone to prevent duplicates)
       const existing = await prisma.patient.findFirst({
         where: { firstName, lastName, contactNumber: finalPhone }
       });
@@ -163,16 +159,16 @@ export const importPatientsCSV = createSafeAction({
             lastName,
             contactNumber: finalPhone,
             gender: gender,
-            dateOfBirth: dob,
+            yob: yob,
             discountPercent: computedDiscount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
             primaryPatientId: primaryPatientId,
             promoCode: promoCode || "-",
             employeeId: employeeId || null,
-            hiredYearEC: parseInt(permanent, 10),
+            hiredYearEC: parseInt(since, 10),
             salutation: salutation,
             department: department,
-            permanent: permanent,
+            since: since,
             c_m: c_m,
             emergencyContact: emergencyContact,
             emergencyMobile: emergencyMobile
