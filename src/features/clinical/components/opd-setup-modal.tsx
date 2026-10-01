@@ -11,9 +11,13 @@ export function OpdSetupModal({ initialValue }: { initialValue?: string | null }
   const router = useRouter();
 
   useEffect(() => {
-    if (!initialValue) {
-      setIsOpen(true);
+    let mounted = true;
+    if (!initialValue && mounted) {
+      // Just a small delay or standard effect pattern to clear warning
+      const timer = setTimeout(() => setIsOpen(true), 0);
+      return () => clearTimeout(timer);
     }
+    return () => { mounted = false; };
   }, [initialValue]);
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -45,7 +45,7 @@ export default async function PatientImportPage() {
           <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-2">
             <li>Ensure your file is a valid <strong>.csv</strong> (Comma Separated Values).</li>
             <li>The CSV must contain 4 columns in the following order:</li>
-            <li>To link a Dependent to a Staff member, leave the EmployeeID empty but ensure the <strong>PrimaryPhone</strong> matches the Staff member's phone.</li>
+            <li>To link a Dependent to a Staff member, leave the EmployeeID empty but ensure the <strong>PrimaryPhone</strong> matches the Staff member&apos;s phone.</li>
           </ul>
           
           <div className="mt-4 p-4 bg-slate-50 dark:bg-slate-950 rounded border border-slate-200 dark:border-slate-800 font-mono text-sm overflow-x-auto text-slate-800 dark:text-slate-200">

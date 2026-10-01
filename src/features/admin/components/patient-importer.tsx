@@ -63,7 +63,7 @@ export function PatientImporter() {
         </code>
         
         <p className="mt-3 text-xs opacity-90">
-          <strong>Tip:</strong> If importing families, set the staff member's <code className="px-1">Phone</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. "Child") and put the staff member's phone number in <code className="px-1">PrimaryPhone</code>. The system will automatically link them!
+          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">Phone</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">PrimaryPhone</code>. The system will automatically link them!
         </p>
       </div>
 
