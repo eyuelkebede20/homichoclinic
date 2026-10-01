@@ -95,7 +95,7 @@ model Patient {
   id              String    @id @default(cuid())
   firstName       String
   lastName        String
-  dateOfBirth     DateTime?
+  dateOfBirth     String?
   gender          String?
   contactNumber   String?
   

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -52,7 +53,7 @@ export function GlobalNotifications() {
             <div className="max-h-80 overflow-y-auto">
               {data.items.length === 0 ? (
                 <div className="px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
-                  You're all caught up!
+                  You&apos;re all caught up!
                 </div>
               ) : (
                 <div className="divide-y divide-slate-100 dark:divide-slate-800">

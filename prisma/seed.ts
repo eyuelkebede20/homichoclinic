@@ -1,18 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { auth } from '../src/lib/auth';
 
 const prisma = new PrismaClient();
 
-function generateId() {
-  return Math.random().toString(36).substring(2, 15);
-}
-
 async function main() {
   console.log('Starting seed...');
-
-  // 1. Hash the universal testing password
-  const plainPassword = 'password123';
-  const hashedPassword = await bcrypt.hash(plainPassword, 10);
 
   // 2. Define the staff we want to create
   const staffToCreate = [
@@ -33,8 +25,6 @@ async function main() {
     
     if (!existingUser) {
       try {
-        const { auth } = require('../src/lib/auth');
-        
         // Use better-auth natively so it handles the complex hashing correctly
         await auth.api.signUpEmail({
           body: {

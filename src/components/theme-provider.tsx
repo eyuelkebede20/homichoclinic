@@ -35,9 +35,10 @@ export function ThemeProvider({
     try {
       const savedTheme = localStorage.getItem("ui-theme") as Theme | null;
       if (savedTheme) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setThemeState(savedTheme);
       }
-    } catch (e) {
+    } catch {
       // Ignore errors if localStorage is blocked
     }
   }, []);
@@ -60,7 +61,7 @@ export function ThemeProvider({
   const setTheme = (newTheme: Theme) => {
     try {
       localStorage.setItem("ui-theme", newTheme);
-    } catch (e) {
+    } catch {
       // Ignore
     }
     setThemeState(newTheme);

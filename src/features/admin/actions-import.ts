@@ -39,7 +39,7 @@ export const importPatientsCSV = createSafeAction({
     
     // Validate that we found at least some expected headers
     const hasKnownHeader = headers.some(h => 
-      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile'].includes(h)
+      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile', 'primarymobile', 'gov_id'].includes(h)
     );
     if (!hasKnownHeader) {
       throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the sample file format.`);
@@ -78,23 +78,28 @@ export const importPatientsCSV = createSafeAction({
     async function processRow(row: Record<string, string>, isDependent: boolean) {
       let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["name"] || row["fullname"] || row["full name"];
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
-      const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"];
+      const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
+      const finalPhone = phone || "-";
       const dobStr = row["dob"] || row["dateofbirth"];
-      const gender = row["gender"];
+      const gender = row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
-      const primaryPhone = row["primaryphone"] || row["familyphone"];
+      const primaryPhone = row["primaryphone"] || row["familyphone"] || row["primarymobile"];
       const promoCode = row["promocode"] || row["promo_code"];
-      const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"];
+      const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"] || row["gov_id"] || row["govid"];
       const hiredYearECStr = row["hiredyearec"] || row["hired year"] || row["hired_year"];
       const hiredYearEC = hiredYearECStr ? parseInt(hiredYearECStr, 10) : null;
       
-      const salutation = row["salutation"] || row["title"];
-      const department = row["department"] || row["dept"];
-      const permanent = row["permanent"];
-      const c_m = row["c_m"] || row["c/m"] || row["cm"];
-      const emergencyContact = row["emergencycontact"] || row["emergency contact"];
-      const emergencyMobile = row["emergencymobile"] || row["emergency mobile"];
+      const salutation = row["salutation"] || row["title"] || "-";
+      const department = row["department"] || row["dept"] || "-";
+      
+      let permanent = row["permanent"] || "";
+      const yearMatch = permanent.match(/\b\d{4}\b/);
+      permanent = yearMatch ? yearMatch[0] : "2019";
+      
+      const c_m = row["c_m"] || row["c/m"] || row["cm"] || "-";
+      const emergencyContact = row["emergencycontact"] || row["emergency contact"] || "-";
+      const emergencyMobile = row["emergencymobile"] || row["emergency mobile"] || "-";
 
       if (firstName && !lastName && firstName.includes(' ')) {
         const parts = firstName.split(' ');
@@ -102,20 +107,16 @@ export const importPatientsCSV = createSafeAction({
         lastName = parts.slice(1).join(' ');
       }
 
-      if (!firstName) firstName = "Unknown";
-      if (!lastName) lastName = "Unknown";
+      if (!firstName) firstName = "-";
+      if (!lastName) lastName = "-";
 
-      let dob = null;
+      let dob = "-";
       if (dobStr) {
-        const parsed = new Date(dobStr);
-        if (!isNaN(parsed.getTime())) {
-          const year = parsed.getFullYear();
-          // Ensure the date is realistic (between 1900 and 2100) to prevent Prisma DB overflow errors
-          if (year > 1900 && year < 2100) {
-            dob = parsed;
-          } else {
-            errors.push(`Skipped invalid date of birth '${dobStr}' for ${firstName} ${lastName}`);
-          }
+        const yearMatch = dobStr.match(/\b(19|20)\d{2}\b/);
+        if (yearMatch) {
+          dob = yearMatch[0];
+        } else {
+          dob = dobStr.trim(); // fallback to whatever they typed if no 4-digit year is found
         }
       }
 
@@ -138,9 +139,21 @@ export const importPatientsCSV = createSafeAction({
         }
       }
 
+      // Compute smart discount based on newpatient.md rules
+      let computedDiscount = 0;
+      if (!isNaN(rawDiscount) && rawDiscount > 0) {
+        computedDiscount = rawDiscount;
+      } else if (c_m.toLowerCase().startsWith("m")) {
+        computedDiscount = 100; // Soldier/Military
+      } else if (isDependent) {
+        computedDiscount = 95; // Civilian Family
+      } else {
+        computedDiscount = calculateDiscount(parseInt(permanent, 10)); // Civilian Staff
+      }
+
       // Check if patient already exists (by name + phone to prevent duplicates)
       const existing = await prisma.patient.findFirst({
-        where: { firstName, lastName, contactNumber: phone || undefined }
+        where: { firstName, lastName, contactNumber: finalPhone }
       });
 
       if (!existing) {
@@ -148,30 +161,30 @@ export const importPatientsCSV = createSafeAction({
           data: {
             firstName,
             lastName,
-            contactNumber: phone,
-            gender: gender || null,
+            contactNumber: finalPhone,
+            gender: gender,
             dateOfBirth: dob,
-            discountPercent: (!isNaN(rawDiscount) && rawDiscount > 0) ? rawDiscount : (hiredYearEC ? calculateDiscount(hiredYearEC) : 0),
+            discountPercent: computedDiscount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
             primaryPatientId: primaryPatientId,
-            promoCode: promoCode || null,
+            promoCode: promoCode || "-",
             employeeId: employeeId || null,
-            hiredYearEC: hiredYearEC || null,
-            salutation: salutation || null,
-            department: department || null,
-            permanent: permanent || null,
-            c_m: c_m || null,
-            emergencyContact: emergencyContact || null,
-            emergencyMobile: emergencyMobile || null
+            hiredYearEC: parseInt(permanent, 10),
+            salutation: salutation,
+            department: department,
+            permanent: permanent,
+            c_m: c_m,
+            emergencyContact: emergencyContact,
+            emergencyMobile: emergencyMobile
           }
         });
         createdCount++;
         
-        if (phone) {
-          phoneToPatientId.set(phone, newPat.id);
+        if (finalPhone !== "-") {
+          phoneToPatientId.set(finalPhone, newPat.id);
         }
       } else {
-        errors.push(`Skipped duplicate patient: ${firstName} ${lastName} (Phone: ${phone || 'N/A'})`);
+        errors.push(`Skipped duplicate patient: ${firstName} ${lastName} (Phone: ${finalPhone})`);
       }
     }
 

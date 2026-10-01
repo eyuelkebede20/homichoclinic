@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -27,8 +28,8 @@ export function EditableDrugRow({ drug }: {
     if (res?.error) {
       alert(res.error);
     } else {
-      if ((res as any)?.success) {
-        alert((res as any).success);
+      if (res?.data && typeof res.data === "object" && "success" in res.data) {
+        alert(res.data.success as string);
       }
       setIsEditing(false);
     }
@@ -88,7 +89,7 @@ export function EditableDrugRow({ drug }: {
                   const { deleteDrug } = await import("../actions");
                   const res = await deleteDrug({ id: drug.id });
                   if (res?.error) alert(res.error);
-                  else if ((res as any)?.success) alert((res as any).success);
+                  else if (res?.data && typeof res.data === "object" && "success" in res.data) alert(res.data.success as string);
                 }
               }} 
               className="text-slate-400 hover:text-red-600" title="Remove"

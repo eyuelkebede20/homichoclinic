@@ -260,7 +260,7 @@ export default async function DashboardPage() {
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today's Visits</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today&apos;s Visits</h3>
           <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{todayVisits}</p>
         </div>
         
@@ -275,7 +275,7 @@ export default async function DashboardPage() {
         </div>
         
         <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today's Revenue</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today&apos;s Revenue</h3>
           <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalRevenue)}</p>
         </div>
       </div>

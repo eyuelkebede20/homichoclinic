@@ -201,7 +201,7 @@ export const updateVisitStatus = createSafeAction({
 export const saveOpdCount = createSafeAction({
   schema: z.object({ count: z.string() }),
   requiredPermission: PERMISSIONS.VISIT_CREATE, // Receptionist needs this
-  handler: async (data, ctx) => {
+  handler: async (data, _ctx) => {
     const setting = await prisma.systemSetting.upsert({
       where: { key: "activeOpdRooms" },
       update: { value: data.count },

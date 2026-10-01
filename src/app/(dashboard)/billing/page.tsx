@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -115,13 +117,12 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
 
           <a href="/api/export/billing" className="px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-sm flex items-center">
             <Download className="w-4 h-4 mr-2" />
-            Export CSV
-          </a>
+            Export CSV</a>
           
           {userPermissions.includes(PERMISSIONS.INVOICE_CREATE) && (
-            <a href="/billing/new" className="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-sm">
+            <Link href="/billing/new" className="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-sm">
               + Generate Invoice
-            </a>
+            </Link>
           )}
         </div>
       </div>
@@ -220,7 +221,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                     {invoice.status === "pending" && canTakePayment ? (
                       <PaymentButton invoiceId={invoice.id} amountStr={formatCurrency(invoice.total)} />
                     ) : (
-                        <a href={`/billing/${invoice.id}`} className="text-blue-600 hover:underline">View</a>
+                        <Link href={`/billing/${invoice.id}`} className="text-blue-600 hover:underline">View</Link>
                     )}
                   </td>
                 </tr>

@@ -108,7 +108,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Date of Birth</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {patient.dateOfBirth ? patient.dateOfBirth.toLocaleDateString() : 'N/A'}
+                  {patient.dateOfBirth || 'N/A'}
                 </dd>
               </div>
               <div>

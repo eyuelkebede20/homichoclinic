@@ -114,7 +114,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {patient.dateOfBirth ? patient.dateOfBirth.toLocaleDateString() : "-"}
+                    {patient.dateOfBirth || "-"}
                   </td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.permanent || "-"}</td>
                   <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>

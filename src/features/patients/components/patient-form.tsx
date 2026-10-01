@@ -27,7 +27,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          dateOfBirth = `${currentYear - age}-01-01`;
+          dateOfBirth = `${currentYear - age}`;
         }
       }
     }
@@ -101,7 +101,8 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
           ) : (
             <input 
               name="dateOfBirth" 
-              type="date" 
+              type="text"
+              placeholder="e.g. 1990"
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />
           )}

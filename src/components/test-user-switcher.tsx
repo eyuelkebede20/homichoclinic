@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { signIn, useSession, signOut } from "@/lib/auth-client";
-import { Users, LogOut, ChevronUp, ChevronDown, Loader2 } from "lucide-react";
+import { Users, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 const TEST_ACCOUNTS = [
@@ -35,7 +35,7 @@ export function TestUserSwitcher() {
         { email, password: "password123" },
         {
           onSuccess: () => {
-            window.location.href = "/dashboard";
+            router.push("/dashboard"); router.refresh();
           },
           onError: (ctx) => {
             alert("Error logging in: " + ctx.error.message);
@@ -54,7 +54,7 @@ export function TestUserSwitcher() {
     setLoadingEmail("logout");
     try {
       await signOut();
-      window.location.href = "/login";
+      router.push("/login"); router.refresh();
     } catch (err) {
       console.error(err);
       setLoadingEmail(null);

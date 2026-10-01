@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { z } from "zod";
@@ -12,7 +13,7 @@ async function hasApprovePermission(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) return false;
   const perms = ROLE_PERMISSIONS[user.role || "User"] || [];
-  return perms.includes(PERMISSIONS.CATALOG_APPROVE as any);
+  return perms.includes(PERMISSIONS.CATALOG_APPROVE as string);
 }
 
 export const createDrug = createSafeAction({

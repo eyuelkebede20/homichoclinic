@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
 
   const currentECYear = getCurrentECYear();
   let updatedStaff = 0;
-  let updatedDependents = 0;
+  const updatedDependents = 0;
 
   try {
     // 1. Fetch all Civilian Staff

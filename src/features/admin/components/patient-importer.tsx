@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -51,7 +52,7 @@ export function PatientImporter() {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 shadow-sm">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 shadow-sm h-full flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">
@@ -70,17 +71,17 @@ export function PatientImporter() {
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
         <p className="font-medium mb-1">Supported Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
-          FirstName, LastName, FullName, Phone, EmployeeID, HiredYearEC, DOB, Gender, Discount, Relationship, PrimaryPhone
+          gov_id, fullName, gender, dob, permanent, c_m, Salutation, Department, primaryMobile, emergencyContact, emergencyMobile
         </code>
         
         <p className="mt-3 text-xs opacity-90">
-          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">Phone</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">PrimaryPhone</code>.
+          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">primaryMobile</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">primaryMobile</code>.
           <br /><br />
-          If you provide <code className="px-1">HiredYearEC</code>, the system will automatically compute the staff discount!
+          If you provide a <code className="px-1">permanent</code> year, the system will automatically compute the staff discount!
         </p>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center">
+      <div className="flex flex-col xl:flex-row gap-4 items-center mt-auto">
         <input 
           type="file" 
           accept=".csv,.xlsx,.xls"
@@ -133,3 +134,4 @@ export function PatientImporter() {
     </div>
   );
 }
+

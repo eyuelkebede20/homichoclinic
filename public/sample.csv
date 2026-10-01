@@ -1,5 +1,3 @@
-FirstName,LastName,Phone,DOB,Gender,Discount,Relationship,PrimaryPhone
-አበበ,በሶ,0911223344,1990-01-01,Male,0,Staff,
-Kebede,Unknown,0922334455,1985-05-05,Male,10,Staff,
-Almaz,Unknown,0933445566,,Female,0,Dependent,0911223344
-,Unknown,0944556677,,,,Guest,
+gov_id,fullName,gender,dob,permanent,c_m,Salutation,Department,primaryMobile,emergencyContact,emergencyMobile
+GOV-1001,Abebe Kebede,M,1990-01-01,2015,Civilian,Mr,Engineering,0911223344,0911223355,0911223366
+GOV-1002,Kebede Abebe,M,,,Military,Dr,Medical,0988776655,,-

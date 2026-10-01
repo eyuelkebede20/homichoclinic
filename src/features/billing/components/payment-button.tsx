@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { recordPayment } from "../actions";
-import { Loader2 } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 
 export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amountStr: string }) {
