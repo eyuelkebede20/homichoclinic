@@ -58,7 +58,7 @@ export function createSafeAction<TInput, TOutput>({
       if (!validationResult.success) {
         return {
           error: "Invalid input.",
-          fieldErrors: validationResult.error.flatten().fieldErrors,
+          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
         };
       }
 

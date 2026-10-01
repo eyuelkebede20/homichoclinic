@@ -28,7 +28,7 @@ export function TestUserSwitcher() {
     setLoadingEmail(email);
     try {
       if (session?.user) {
-        await signOut({ fetchOptions: { silent: true } }).catch(() => {});
+        await signOut().catch(() => {});
       }
       
       await signIn.email(
