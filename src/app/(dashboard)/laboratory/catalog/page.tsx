@@ -61,21 +61,23 @@ export default async function LaboratoryCatalogPage() {
         <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-none">
           <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-screen overflow-y-auto print:max-h-none print:overflow-visible">
             {labTests.map(t => (
-              <li key={t.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 print:p-2 group">
+              <li key={t.id} className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 print:p-2 group ${!t.isOperational ? "opacity-70 bg-slate-50 dark:bg-slate-800/20" : ""}`}>
                 <div className="flex justify-between items-start">
-                  <div>
-                    <span className="font-medium text-sm text-slate-900 dark:text-slate-100 mr-3">{t.name}</span>
-                    {!t.isOperational && <span className="hidden print:inline-block text-red-500 text-xs ml-2">(Out of Service)</span>}
-                  </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="print:hidden flex items-center">
                       <LabTestToggle id={t.id} initialStatus={t.isOperational} />
                     </div>
+                    <div>
+                      <span className={`font-medium text-sm mr-3 ${!t.isOperational ? "line-through text-slate-500 dark:text-slate-400" : "text-slate-900 dark:text-slate-100"}`}>{t.name}</span>
+                      {!t.isOperational && <span className="hidden print:inline-block text-red-500 text-xs ml-2">(Out of Service)</span>}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
                     <span className="text-sm font-mono text-slate-500 w-20 text-right">{(t.price / 100).toFixed(2)} ETB</span>
                     <RemoveLabTestButton id={t.id} />
                   </div>
                 </div>
-                {t.description && <p className="text-xs text-slate-500 mt-2">{t.description}</p>}
+                {t.description && <p className="text-xs text-slate-500 mt-2 ml-11">{t.description}</p>}
               </li>
             ))}
             {labTests.length === 0 && <li className="p-4 text-sm text-slate-500">No tests found.</li>}

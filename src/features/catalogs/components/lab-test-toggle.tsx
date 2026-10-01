@@ -14,7 +14,7 @@ export function LabTestToggle({ id, initialStatus }: { id: string, initialStatus
   }
 
   return (
-    <label className="flex items-center cursor-pointer opacity-90 hover:opacity-100">
+    <label className="flex items-center cursor-pointer opacity-90 hover:opacity-100" title={initialStatus ? 'Operational' : 'Offline'}>
       <div className="relative">
         <input 
           type="checkbox" 
@@ -26,7 +26,6 @@ export function LabTestToggle({ id, initialStatus }: { id: string, initialStatus
         <div className={`block w-8 h-5 rounded-full transition-colors ${initialStatus ? 'bg-green-500' : 'bg-slate-300 dark:bg-slate-600'}`}></div>
         <div className={`dot absolute left-1 top-1 bg-white w-3 h-3 rounded-full transition-transform ${initialStatus ? 'transform translate-x-3' : ''}`}></div>
       </div>
-      <span className="ml-2 text-xs font-medium text-slate-500">{initialStatus ? 'Operational' : 'Offline'}</span>
     </label>
   );
 }
