@@ -1,0 +1,1 @@
+for the opds/diagnosis rooms 1 - 4 the it must assign automatically but for it to automatically assign the reception on her/his first login must select the number of OPDS then when the reception accepts the user a popup will apear with their assigned OPDs and they will go there.

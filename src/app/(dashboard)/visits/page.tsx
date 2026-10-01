@@ -5,6 +5,7 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { VisitStatusActions } from "@/features/clinical/components/visit-status-actions";
+import { OpdSetupModal } from "@/features/clinical/components/opd-setup-modal";
 
 export default async function VisitsQueuePage() {
   const session = await auth.api.getSession({
@@ -31,14 +32,15 @@ export default async function VisitsQueuePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const [visits, patients, doctors] = await Promise.all([
+  const [visits, patients, doctors, opdSetting] = await Promise.all([
     prisma.visit.findMany({
       where: { visitDate: { gte: today } },
       include: { patient: true },
       orderBy: { visitDate: "asc" }
     }),
     canCreateVisit ? prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } }) : [],
-    canCreateVisit ? prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true } }) : []
+    canCreateVisit ? prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true } }) : [],
+    prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } })
   ]);
 
   const patientList = patients.map(p => ({ id: p.id, name: `${p.firstName} ${p.lastName}` }));
@@ -51,7 +53,10 @@ export default async function VisitsQueuePage() {
       </div>
 
       {canCreateVisit && (
-        <VisitForm patients={patientList} doctors={doctors} />
+        <>
+          <OpdSetupModal initialValue={opdSetting?.value} />
+          <VisitForm patients={patientList} doctors={doctors} />
+        </>
       )}
 
       <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
@@ -60,6 +65,7 @@ export default async function VisitsQueuePage() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Patient</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Room</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Notes</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
@@ -73,6 +79,9 @@ export default async function VisitsQueuePage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                   {v.patient.firstName} {v.patient.lastName}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {v.opdRoom ? `OPD ${v.opdRoom}` : "-"}
                 </td>
                 <td className="px-6 py-4 text-sm text-slate-500 dark:text-slate-400 truncate max-w-xs">
                   {v.notes || "-"}
@@ -93,7 +102,7 @@ export default async function VisitsQueuePage() {
             ))}
             {visits.length === 0 && (
               <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-sm text-slate-500">No visits scheduled for today.</td>
+                <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">No visits scheduled for today.</td>
               </tr>
             )}
           </tbody>

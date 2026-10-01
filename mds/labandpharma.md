@@ -1,0 +1,1 @@
+for the labratory and pharmacy notification must work, and keep the logs sent, and from those logs they can search and send and if a patient didn't come at all it must auto remove pings after a week so the table won't clutter.

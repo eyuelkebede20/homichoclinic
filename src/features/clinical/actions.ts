@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { createSafeAction } from "@/lib/safe-action";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
@@ -11,12 +12,27 @@ export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
+    // 1. Fetch available OPD rooms
+    const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
+    const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
+
+    // 2. Count today's visits to round-robin
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const todaysVisitsCount = await prisma.visit.count({
+      where: { visitDate: { gte: today } }
+    });
+
+    // 3. Assign room
+    const assignedRoom = (todaysVisitsCount % opdRoomCount) + 1;
+
     const visit = await prisma.visit.create({
       data: {
         patientId: data.patientId,
         doctorId: data.doctorId,
         notes: data.notes,
         status: data.status,
+        opdRoom: assignedRoom,
         visitDate: data.visitDate ? new Date(data.visitDate) : new Date(),
       },
     });
@@ -25,7 +41,7 @@ export const createVisit = createSafeAction({
       actorId: ctx.userId,
       action: PERMISSIONS.VISIT_CREATE,
       resourceId: visit.id,
-      newValue: { patientId: visit.patientId, status: visit.status },
+      newValue: { patientId: visit.patientId, opdRoom: assignedRoom },
     });
 
     revalidatePath(`/patients/${data.patientId}`);
@@ -173,5 +189,20 @@ export const updateVisitStatus = createSafeAction({
 
     revalidatePath("/visits");
     return visit;
+  }
+});
+
+export const saveOpdCount = createSafeAction({
+  schema: z.object({ count: z.string() }),
+  requiredPermission: PERMISSIONS.VISIT_CREATE, // Receptionist needs this
+  handler: async (data, ctx) => {
+    const setting = await prisma.systemSetting.upsert({
+      where: { key: "activeOpdRooms" },
+      update: { value: data.count },
+      create: { key: "activeOpdRooms", value: data.count, description: "Number of active OPD rooms for auto-assignment" }
+    });
+    
+    revalidatePath("/visits");
+    return setting;
   }
 });
