@@ -90,27 +90,39 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Contact</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Discount</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Salutation</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Gender</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">DOB</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Permanent</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">C/M</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Department</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Contact</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
+                <th className="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
               {patients.map(patient => (
                 <tr key={patient.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.id.slice(-6)}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.salutation || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                     {patient.firstName} {patient.lastName}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                    {patient.contactNumber || "N/A"}
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {patient.dateOfBirth ? patient.dateOfBirth.toLocaleDateString() : "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-300">
-                      {patient.discountPercent}%
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.permanent || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.department || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.contactNumber || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyContact || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyMobile || "-"}</td>
+                  <td className="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <Link href={`/patients/${patient.id}`} className="text-blue-600 hover:text-blue-900 dark:hover:text-blue-400">
                       View
                     </Link>
@@ -119,7 +131,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               ))}
               {patients.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={12} className="px-6 py-8 text-center text-sm text-slate-500">
                     {query ? "No patients match your search." : "No patients found."}
                   </td>
                 </tr>

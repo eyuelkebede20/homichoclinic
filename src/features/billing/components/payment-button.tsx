@@ -21,7 +21,7 @@ export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amo
     if (result.error) {
       alert(`Error: ${result.error}`);
     } else {
-      router.refresh();
+      router.push(`/billing/${invoiceId}?print=true`);
     }
   }
 

@@ -6,6 +6,19 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
+function calculateDiscount(hiredYearEC: number | null): number {
+  if (!hiredYearEC) return 50;
+  const d = new Date();
+  const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
+  const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
+  
+  if (yearsOfService >= 20) return 100;
+  if (yearsOfService >= 15) return 75;
+  if (yearsOfService >= 10) return 65;
+  if (yearsOfService >= 6) return 55;
+  return 50;
+}
+
 const csvImportSchema = z.object({
   csvText: z.string().min(1, "CSV text cannot be empty"),
 });
@@ -26,7 +39,7 @@ export const importPatientsCSV = createSafeAction({
     
     // Validate that we found at least some expected headers
     const hasKnownHeader = headers.some(h => 
-      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact'].includes(h)
+      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile'].includes(h)
     );
     if (!hasKnownHeader) {
       throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the sample file format.`);
@@ -51,8 +64,10 @@ export const importPatientsCSV = createSafeAction({
         row[h] = values[idx] || "";
       });
 
-      const rel = (row["relationship"] || row["role"] || "staff").toLowerCase();
-      if (rel === "staff" || rel === "primary" || rel === "employee") {
+      const rel = (row["relationship"] || row["role"] || "").toLowerCase();
+      const hasPrimaryPhone = !!(row["primaryphone"] || row["familyphone"]);
+      
+      if (rel === "staff" || rel === "primary" || rel === "employee" || (!rel && !hasPrimaryPhone)) {
         staffRows.push(row);
       } else {
         dependentRows.push(row);
@@ -73,6 +88,13 @@ export const importPatientsCSV = createSafeAction({
       const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"];
       const hiredYearECStr = row["hiredyearec"] || row["hired year"] || row["hired_year"];
       const hiredYearEC = hiredYearECStr ? parseInt(hiredYearECStr, 10) : null;
+      
+      const salutation = row["salutation"] || row["title"];
+      const department = row["department"] || row["dept"];
+      const permanent = row["permanent"];
+      const c_m = row["c_m"] || row["c/m"] || row["cm"];
+      const emergencyContact = row["emergencycontact"] || row["emergency contact"];
+      const emergencyMobile = row["emergencymobile"] || row["emergency mobile"];
 
       if (firstName && !lastName && firstName.includes(' ')) {
         const parts = firstName.split(' ');
@@ -86,7 +108,15 @@ export const importPatientsCSV = createSafeAction({
       let dob = null;
       if (dobStr) {
         const parsed = new Date(dobStr);
-        if (!isNaN(parsed.getTime())) dob = parsed;
+        if (!isNaN(parsed.getTime())) {
+          const year = parsed.getFullYear();
+          // Ensure the date is realistic (between 1900 and 2100) to prevent Prisma DB overflow errors
+          if (year > 1900 && year < 2100) {
+            dob = parsed;
+          } else {
+            errors.push(`Skipped invalid date of birth '${dobStr}' for ${firstName} ${lastName}`);
+          }
+        }
       }
 
       let primaryPatientId = null;
@@ -121,10 +151,18 @@ export const importPatientsCSV = createSafeAction({
             contactNumber: phone,
             gender: gender || null,
             dateOfBirth: dob,
-            discountPercent: isNaN(discount) ? 0 : discount,
+            discountPercent: (!isNaN(rawDiscount) && rawDiscount > 0) ? rawDiscount : (hiredYearEC ? calculateDiscount(hiredYearEC) : 0),
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
             primaryPatientId: primaryPatientId,
-            promoCode: promoCode || null
+            promoCode: promoCode || null,
+            employeeId: employeeId || null,
+            hiredYearEC: hiredYearEC || null,
+            salutation: salutation || null,
+            department: department || null,
+            permanent: permanent || null,
+            c_m: c_m || null,
+            emergencyContact: emergencyContact || null,
+            emergencyMobile: emergencyMobile || null
           }
         });
         createdCount++;

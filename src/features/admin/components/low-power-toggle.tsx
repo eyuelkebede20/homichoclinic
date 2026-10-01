@@ -17,7 +17,7 @@ export function LowPowerToggle({ initial }: { initial: boolean }) {
     <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-4 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm mb-6">
       <div>
         <h3 className="font-semibold text-slate-800 dark:text-slate-200">Old Browser / Low Power Mode</h3>
-        <p className="text-xs text-slate-500 max-w-md mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mt-1">
           Enable this if clinic computers are old or have low RAM (e.g. Dell OptiPlex 320s). This will globally disable heavy animations, simplify the UI, and turn off intensive client-side features like OCR to save memory.
         </p>
       </div>

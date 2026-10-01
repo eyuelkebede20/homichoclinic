@@ -11,7 +11,11 @@ export const createPatient = createSafeAction({
   schema: patientCreateSchema,
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
-    const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    let dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    if (dob) {
+      const year = dob.getFullYear();
+      if (year < 1900 || year > 2100) dob = null;
+    }
     
     let discountPercent = 0;
     if (data.patientType === "Soldier") {
@@ -66,10 +70,14 @@ export const updatePatient = createSafeAction({
     // Only Admin can update patient data
     const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
     if (user?.role !== "Admin") {
-      return { error: "Access Denied: Only Admins can modify patient demographics." };
+      throw new Error("Access Denied: Only Admins can modify patient demographics.");
     }
 
-    const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    let dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+    if (dob) {
+      const year = dob.getFullYear();
+      if (year < 1900 || year > 2100) dob = null;
+    }
     
     const updatedPatient = await prisma.patient.update({
       where: { id: data.patientId },

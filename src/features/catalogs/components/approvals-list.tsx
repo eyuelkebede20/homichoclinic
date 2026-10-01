@@ -12,8 +12,8 @@ export function ApprovalsList({ requests, isPending }: { requests: any[], isPend
     setLoadingId(id);
     const res = await processCatalogApproval({ id, approve });
     setLoadingId(null);
-    if (res?.serverError) alert(res.serverError);
-    if (res?.validationErrors) alert("Validation error.");
+    if (res?.error) alert(res.error);
+    if (res?.fieldErrors) alert("Validation error.");
   }
 
   if (requests.length === 0) {

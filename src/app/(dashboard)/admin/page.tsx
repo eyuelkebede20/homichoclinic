@@ -7,6 +7,7 @@ import { UserActionsRow } from "@/features/admin/components/user-actions";
 import { LowPowerToggle } from "@/features/admin/components/low-power-toggle";
 
 import { PatientImporter } from "@/features/admin/components/patient-importer";
+import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 
 export default async function AdminDashboardPage() {
   const session = await auth.api.getSession({
@@ -20,9 +21,9 @@ export default async function AdminDashboardPage() {
   
   if (!userPermissions.includes(PERMISSIONS.USER_MANAGE)) {
     return (
-      <div className="p-8 text-center text-red-600">
+      <div className="p-8 text-center text-red-600 dark:text-red-400">
         <h2 className="text-2xl font-bold">Access Denied</h2>
-        <p>You do not have permission to manage users.</p>
+        <p className="text-slate-600 dark:text-slate-400 mt-2">You do not have permission to manage users.</p>
       </div>
     );
   }
@@ -41,37 +42,38 @@ export default async function AdminDashboardPage() {
         <p className="text-slate-500 dark:text-slate-400">Manage clinic staff, assign roles, and configure global settings.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <LowPowerToggle initial={isLowPower} />
         <PatientImporter />
+        <DevWipePatients />
       </div>
 
       <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200">
-          <thead className="bg-slate-50">
+        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+          <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Name</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Email</th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Management Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Email</th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Management Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-slate-200">
+          <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-700">
             {users.map(user => (
-              <tr key={user.id} className="hover:bg-slate-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
+              <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                   {user.name}
                   {session.user.id === user.id && (
-                    <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">You</span>
+                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full">You</span>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                   {user.email}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 flex justify-end">
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 flex justify-end">
                   {session.user.id !== user.id ? (
                     <UserActionsRow user={user} />
                   ) : (
-                    <span className="text-slate-400 text-xs italic">Cannot manage own account</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-xs italic">Cannot manage own account</span>
                   )}
                 </td>
               </tr>

@@ -56,7 +56,7 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
         defaultValue={user.role || "User"}
         onChange={handleRoleChange}
         disabled={loading}
-        className="text-xs rounded border border-slate-300 py-1 px-2"
+        className="text-xs rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 py-1 px-2"
       >
         {["User", "Admin", "Manager", "Reception", "Cashier", "Doctor", "Laboratory", "Testing", "Pharmacy"].map((r) => (
           <option key={r} value={r}>{r}</option>
@@ -69,12 +69,12 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
           placeholder="New pass..."
           value={newPassword}
           onChange={e => setNewPassword(e.target.value)}
-          className="text-xs border rounded p-1 w-24"
+          className="text-xs border border-slate-200 dark:border-slate-700 rounded p-1 w-24 dark:bg-slate-800 dark:text-slate-200"
         />
         <button
           onClick={handleResetPassword}
           disabled={loading || !newPassword}
-          className="text-xs bg-yellow-100 text-yellow-800 hover:bg-yellow-200 px-2 py-1 rounded disabled:opacity-50"
+          className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 hover:bg-yellow-200 dark:hover:bg-yellow-900/50 px-2 py-1 rounded disabled:opacity-50"
         >
           Reset
         </button>
@@ -83,7 +83,7 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
       <button
         onClick={handleDelete}
         disabled={loading}
-        className="text-xs bg-red-100 text-red-800 hover:bg-red-200 px-2 py-1 rounded disabled:opacity-50"
+        className="text-xs bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 px-2 py-1 rounded disabled:opacity-50"
       >
         {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : "Delete"}
       </button>

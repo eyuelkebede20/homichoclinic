@@ -110,6 +110,13 @@ model Patient {
   rank            String?
   division        String?
 
+  salutation        String?
+  department        String?
+  permanent         String?
+  c_m               String?
+  emergencyContact  String?
+  emergencyMobile   String?
+
   // Guest specifics
   promoCode       String?
   // Core Feature: Discount

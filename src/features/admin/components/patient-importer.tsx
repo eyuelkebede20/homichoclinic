@@ -68,16 +68,15 @@ export function PatientImporter() {
       </div>
 
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
-        <p className="font-medium mb-1">Standard Columns (All Optional):</p>
-        <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs">FirstName, LastName</code>
-        
-        <p className="font-medium mt-3 mb-1">Additional Columns (All Optional):</p>
+        <p className="font-medium mb-1">Supported Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
-          Phone, DateOfBirth, Gender, Discount, Relationship, PrimaryPhone
+          FirstName, LastName, FullName, Phone, EmployeeID, HiredYearEC, DOB, Gender, Discount, Relationship, PrimaryPhone
         </code>
         
         <p className="mt-3 text-xs opacity-90">
-          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">Phone</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">PrimaryPhone</code>. The system will automatically link them!
+          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">Phone</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">PrimaryPhone</code>.
+          <br /><br />
+          If you provide <code className="px-1">HiredYearEC</code>, the system will automatically compute the staff discount!
         </p>
       </div>
 

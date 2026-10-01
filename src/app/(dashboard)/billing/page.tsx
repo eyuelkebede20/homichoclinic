@@ -8,9 +8,10 @@ import { formatCurrency } from "@/features/billing/utils";
 import { Pagination } from "@/components/pagination";
 import { Download } from "lucide-react";
 
-export default async function BillingDashboardPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+export default async function BillingDashboardPage({ searchParams }: { searchParams: Promise<{ page?: string, search?: string }> }) {
   const resolvedParams = await searchParams;
   const page = parseInt(resolvedParams.page || "1", 10);
+  const search = resolvedParams.search || "";
   const PAGE_SIZE = 20;
 
   const session = await auth.api.getSession({
@@ -33,8 +34,17 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
 
   const canTakePayment = userPermissions.includes(PERMISSIONS.PAYMENT_CREATE);
 
+  const patientWhere = search ? {
+    OR: [
+      { firstName: { contains: search, mode: "insensitive" as const } },
+      { lastName: { contains: search, mode: "insensitive" as const } },
+      { contactNumber: { contains: search, mode: "insensitive" as const } },
+    ]
+  } : undefined;
+
   const [invoices, totalItems, unbilledVisits, unbilledLabRequests, unbilledPrescriptions] = await Promise.all([
     prisma.invoice.findMany({
+      where: patientWhere ? { patient: patientWhere } : undefined,
       include: {
         patient: true,
         items: true,
@@ -43,17 +53,19 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    prisma.invoice.count(),
+    prisma.invoice.count({
+      where: patientWhere ? { patient: patientWhere } : undefined,
+    }),
     prisma.visit.findMany({
-      where: { invoiceId: null },
+      where: patientWhere ? { invoiceId: null, patient: patientWhere } : { invoiceId: null },
       include: { patient: true }
     }),
     prisma.labRequest.findMany({
-      where: { invoiceId: null },
+      where: patientWhere ? { invoiceId: null, patient: patientWhere } : { invoiceId: null },
       include: { patient: true, test: true }
     }),
     prisma.prescriptionItem.findMany({
-      where: { invoiceId: null },
+      where: patientWhere ? { invoiceId: null, prescription: { patient: patientWhere } } : { invoiceId: null },
       include: { prescription: { include: { patient: true } }, drug: true }
     })
   ]);
@@ -81,13 +93,26 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Billing & Checkout</h1>
           <p className="text-slate-500 dark:text-slate-400">Manage invoices, apply discounts, and process payments.</p>
         </div>
         
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          <form action="/billing" method="GET" className="flex">
+            <input 
+              type="text" 
+              name="search" 
+              placeholder="Search by name or phone..." 
+              defaultValue={search}
+              className="px-3 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-950 rounded-l-md text-sm w-64 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+            />
+            <button type="submit" className="px-3 py-2 bg-slate-100 dark:bg-slate-800 border-y border-r border-slate-300 dark:border-slate-700 rounded-r-md text-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700">
+              Search
+            </button>
+          </form>
+
           <a href="/api/export/billing" className="px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-sm flex items-center">
             <Download className="w-4 h-4 mr-2" />
             Export CSV
@@ -195,7 +220,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                     {invoice.status === "pending" && canTakePayment ? (
                       <PaymentButton invoiceId={invoice.id} amountStr={formatCurrency(invoice.total)} />
                     ) : (
-                      <span className="text-slate-400">View</span>
+                        <a href={`/billing/${invoice.id}`} className="text-blue-600 hover:underline">View</a>
                     )}
                   </td>
                 </tr>

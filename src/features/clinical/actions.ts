@@ -205,7 +205,7 @@ export const saveOpdCount = createSafeAction({
     const setting = await prisma.systemSetting.upsert({
       where: { key: "activeOpdRooms" },
       update: { value: data.count },
-      create: { key: "activeOpdRooms", value: data.count, description: "Number of active OPD rooms for auto-assignment" }
+      create: { key: "activeOpdRooms", value: data.count }
     });
     
     revalidatePath("/visits");
@@ -227,7 +227,7 @@ export const updateDoctorOpd = createSafeAction({
 
 export const cancelLabRequest = createSafeAction({
   schema: z.object({ requestId: z.string() }),
-  requiredPermission: PERMISSIONS.LAB_SUBMIT,
+  requiredPermission: PERMISSIONS.LAB_REQUEST,
   handler: async (data, ctx) => {
     const req = await prisma.labRequest.findUnique({ where: { id: data.requestId } });
     if (!req) throw new Error("Lab request not found");

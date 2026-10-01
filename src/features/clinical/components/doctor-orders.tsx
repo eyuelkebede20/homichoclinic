@@ -14,7 +14,7 @@ export function DoctorOrders({
   drugs: { id: string; name: string }[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [rxItems, setRxItems] = useState([{ drugId: "", search: "", search: "", quantity: 1, instructions: "" }]);
+  const [rxItems, setRxItems] = useState([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
 
   async function handleLabSubmit(e: React.FormEvent<HTMLFormElement>) {
