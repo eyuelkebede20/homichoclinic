@@ -6,8 +6,13 @@ import { prisma } from "@/lib/prisma";
 import { DispenseButton } from "@/features/pharmacy/components/dispense-button";
 import { InventoryManager } from "@/features/pharmacy/components/inventory-manager";
 import { PrintReceiptButton } from "@/features/pharmacy/components/print-receipt-button";
+import { Search } from "lucide-react";
+import { NotificationPing } from "@/components/notification-ping";
 
-export default async function PharmacyDashboardPage() {
+export default async function PharmacyDashboardPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
+
   const session = await auth.api.getSession({
     headers: await headers()
   });
@@ -39,8 +44,29 @@ export default async function PharmacyDashboardPage() {
     }
   });
 
-  // Fetch prescriptions (both pending and recently dispensed)
+  // Auto-remove pings after a week (7 days) for pending items
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+  const whereClause: any = {
+    OR: [
+      { status: "dispensed" },
+      { status: "pending", createdAt: { gte: oneWeekAgo } }
+    ]
+  };
+
+  if (query) {
+    whereClause.patient = {
+      OR: [
+        { firstName: { contains: query, mode: "insensitive" } },
+        { lastName: { contains: query, mode: "insensitive" } },
+      ]
+    };
+  }
+
+  // Fetch prescriptions
   const prescriptions = await prisma.prescription.findMany({
+    where: whereClause,
     include: {
       patient: true,
       items: {
@@ -48,17 +74,39 @@ export default async function PharmacyDashboardPage() {
       }
     },
     orderBy: { createdAt: "desc" },
-    take: 50 // Limit to 50 recent prescriptions
+    take: 100
   });
 
   const pendingPrescriptions = prescriptions.filter(rx => rx.status === "pending");
   const dispensedPrescriptions = prescriptions.filter(rx => rx.status === "dispensed");
 
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pharmacy & Inventory</h1>
-        <p className="text-slate-500 dark:text-slate-400">Manage stock batches, dispense medications, and print receipts.</p>
+    <div className="p-8 max-w-7xl mx-auto space-y-6">
+      <NotificationPing endpoint="/api/polling/pharmacy" />
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+            Pharmacy & Inventory
+            {pendingPrescriptions.length > 0 && (
+              <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                {pendingPrescriptions.length} New
+              </span>
+            )}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage stock batches, dispense medications, and print receipts.</p>
+        </div>
+
+        <form className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+          <input 
+            name="q"
+            defaultValue={query}
+            type="text" 
+            placeholder="Search patient prescriptions..." 
+            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </form>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
