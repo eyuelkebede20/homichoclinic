@@ -99,6 +99,9 @@ model Patient {
   gender          String?
   contactNumber   String?
   
+  employeeId      String?   @unique // The staff ID number
+  hiredYearEC     Int?      // Ethiopian Calendar year hired
+
   // Core Feature: Discount
   discountPercent Int       @default(0) // 0 to 99
 

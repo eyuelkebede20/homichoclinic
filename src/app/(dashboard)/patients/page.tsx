@@ -51,6 +51,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   ]);
 
   const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
+  const canManageUsers = userPermissions.includes(PERMISSIONS.USER_MANAGE) || role === "Admin" || role === "Manager";
 
   return (
     <div className="p-8 print:p-0 print:max-w-none">
@@ -71,6 +72,11 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               className="pl-9 pr-4 py-2 w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900"
             />
           </form>
+          {canManageUsers && (
+            <Link href="/patients/import" className="whitespace-nowrap px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-900 text-sm flex items-center">
+              Import CSV
+            </Link>
+          )}
           {canCreate && (
             <Link href="/patients/new" className="whitespace-nowrap px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 text-sm flex items-center">
               + New Patient
