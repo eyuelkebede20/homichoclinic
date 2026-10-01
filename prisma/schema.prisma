@@ -98,6 +98,12 @@ model Patient {
   // Core Feature: Discount
   discountPercent Int       @default(0) // 0 to 99
 
+  // Family & Staff tracking
+  primaryPatientId String?
+  primaryPatient   Patient?  @relation("FamilyMembers", fields: [primaryPatientId], references: [id])
+  dependents       Patient[] @relation("FamilyMembers")
+  relationship     String?   // e.g., "Staff", "Spouse", "Child"
+
   visits          Visit[]
   medicalRecords  MedicalRecord[]
   labRequests     LabRequest[]

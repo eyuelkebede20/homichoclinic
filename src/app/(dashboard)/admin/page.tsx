@@ -6,6 +6,8 @@ import { prisma } from "@/lib/prisma";
 import { UserActionsRow } from "@/features/admin/components/user-actions";
 import { LowPowerToggle } from "@/features/admin/components/low-power-toggle";
 
+import { PatientImporter } from "@/features/admin/components/patient-importer";
+
 export default async function AdminDashboardPage() {
   const session = await auth.api.getSession({
     headers: await headers()
@@ -39,7 +41,10 @@ export default async function AdminDashboardPage() {
         <p className="text-slate-500 dark:text-slate-400">Manage clinic staff, assign roles, and configure global settings.</p>
       </div>
 
-      <LowPowerToggle initial={isLowPower} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <LowPowerToggle initial={isLowPower} />
+        <PatientImporter />
+      </div>
 
       <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
         <table className="min-w-full divide-y divide-slate-200">
