@@ -5,7 +5,20 @@ import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/features/billing/utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
-import { endOfWeek, startOfWeek } from "date-fns";
+
+function startOfWeek(date: Date) {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+  return new Date(d.setDate(diff));
+}
+
+function endOfWeek(date: Date) {
+  const d = startOfWeek(date);
+  d.setDate(d.getDate() + 6);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
 
 export default async function DashboardPage() {
   const session = await auth.api.getSession({
