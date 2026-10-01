@@ -4,11 +4,12 @@ import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff, User } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -25,7 +26,7 @@ export default function LoginPage() {
       },
       {
         onSuccess: () => {
-          router.push("/dashboard"); // We will create this later
+          router.push("/dashboard");
         },
         onError: (ctx) => {
           setError(ctx.error.message || "Invalid credentials");
@@ -35,69 +36,95 @@ export default function LoginPage() {
     );
   };
 
+  const handleForgotPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
+    alert("Please contact the system administrator to reset your password.");
+  };
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-medium leading-6 text-slate-900">Sign in to your account</h3>
-        <p className="mt-1 text-sm text-slate-500">Welcome back to the clinic system.</p>
+    <div className="w-full">
+      <div className="mb-8">
+        <h2 className="text-[30px] font-bold text-[#112233] mb-2 tracking-tight">Welcome Back</h2>
+        <p className="text-[#777] text-[15px]">Sign in to your account</p>
       </div>
 
-      <form className="space-y-4" onSubmit={handleLogin}>
+      <form className="space-y-5" onSubmit={handleLogin}>
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+          <div className="p-3.5 text-sm text-[#c62828] bg-[#ffebee] rounded-lg border-l-4 border-[#c62828]">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="email">
-            Email address
+          <label className="block text-[15px] font-bold text-[#444] mb-2" htmlFor="email">
+            Username / Email
           </label>
-          <div className="mt-1">
+          <div className="relative">
             <input
               id="email"
               type="email"
               required
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              autoComplete="username"
+              placeholder="Enter your username or email"
+              className="block w-full py-[14px] pl-[15px] pr-[45px] border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
+            <div className="absolute right-[15px] top-1/2 -translate-y-1/2 text-[#777] pointer-events-none">
+              <User className="w-5 h-5 opacity-70" />
+            </div>
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="password">
+          <label className="block text-[15px] font-bold text-[#444] mb-2" htmlFor="password">
             Password
           </label>
-          <div className="mt-1">
+          <div className="relative">
             <input
               id="password"
-              type="password"
+              type={showPassword ? "text" : "password"}
               required
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              autoComplete="current-password"
+              placeholder="Enter your password"
+              className="block w-full py-[14px] pl-[15px] pr-[45px] border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-[15px] top-1/2 -translate-y-1/2 text-[#777] hover:text-[#444] transition-colors focus:outline-none"
+            >
+              {showPassword ? <EyeOff className="w-5 h-5 opacity-70" /> : <Eye className="w-5 h-5 opacity-70" />}
+            </button>
           </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-1 pb-3 text-[14px]">
+          <label className="flex items-center gap-2 cursor-pointer text-[#555]">
+            <input type="checkbox" className="rounded border-[#ddd] text-[#1565c0] focus:ring-[#1565c0]" />
+            <span>Remember me</span>
+          </label>
+          <button 
+            type="button" 
+            onClick={handleForgotPassword}
+            className="text-[#1565c0] hover:underline font-medium"
+          >
+            Forgot Password?
+          </button>
         </div>
 
         <div>
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-[15px] px-4 rounded-xl text-[16px] font-bold text-white bg-gradient-to-br from-[#1565c0] to-[#0d47a1] hover:-translate-y-[2px] hover:shadow-[0_8px_20px_rgba(13,71,161,0.3)] transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign in"}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "LOGIN"}
           </button>
         </div>
       </form>
-      
-      <div className="text-center text-sm">
-        <span className="text-slate-500">Don't have an account?</span>{" "}
-        <Link href="/register" className="font-medium text-blue-600 hover:text-blue-500">
-          Register here
-        </Link>
-      </div>
     </div>
   );
 }

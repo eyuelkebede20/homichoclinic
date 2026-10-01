@@ -1,19 +1,59 @@
+import { CheckCircle2 } from "lucide-react";
+
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-slate-900">
-          Clinic Management
-        </h2>
+    <div className="min-h-screen bg-slate-50 flex flex-col sm:flex-row">
+      {/* LEFT SIDE: Branding & Features */}
+      <div className="hidden sm:flex sm:w-1/2 lg:w-5/12 bg-gradient-to-br from-blue-700 to-blue-900 flex-col justify-center px-12 lg:px-20 text-white relative overflow-hidden">
+        {/* Abstract background shapes */}
+        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full">
+            <polygon fill="currentColor" points="0,0 100,0 100,20 0,100" />
+          </svg>
+        </div>
+
+        <div className="relative z-10 space-y-8">
+          <div>
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30">
+              <span className="text-2xl font-bold text-white">✚</span>
+            </div>
+            <h1 className="text-4xl font-extrabold tracking-tight mb-2">
+              Clinic ERP
+            </h1>
+            <p className="text-blue-100 text-lg leading-relaxed max-w-md">
+              Integrated Healthcare Management System for Industrial Clinic.
+            </p>
+          </div>
+
+          <div className="space-y-4 pt-6">
+            {[
+              "Patient Registration",
+              "OPD & Doctor Consultation",
+              "Laboratory & Pharmacy",
+              "Billing & Payment",
+              "Reports & Management",
+            ].map((feature, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                <CheckCircle2 className="w-5 h-5 text-blue-300" />
+                <span className="text-blue-50 font-medium">{feature}</span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 border border-slate-200">
+      {/* RIGHT SIDE: Form */}
+      <div className="w-full sm:w-1/2 lg:w-7/12 flex items-center justify-center p-6 sm:p-12 bg-white">
+        <div className="w-full max-w-md space-y-8">
           {children}
+          
+          <div className="text-center text-slate-400 text-xs mt-12">
+            Clinic ERP System &copy; 2026
+          </div>
         </div>
       </div>
     </div>
