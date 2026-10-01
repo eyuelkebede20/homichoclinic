@@ -13,8 +13,7 @@ export function PatientEditForm({ patient }: {
   const [ageMode, setAgeMode] = useState(false);
   const router = useRouter();
 
-  // Parse initial DOB
-  const initialDobStr = patient.dateOfBirth ? new Date(patient.dateOfBirth.getTime() - (patient.dateOfBirth.getTimezoneOffset() * 60000)).toISOString().split("T")[0] : "";
+  const initialDobStr = patient.dateOfBirth || "";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -30,7 +29,7 @@ export function PatientEditForm({ patient }: {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          dateOfBirth = `${currentYear - age}-01-01`;
+          dateOfBirth = `${currentYear - age}`;
         }
       }
     }
@@ -100,7 +99,8 @@ export function PatientEditForm({ patient }: {
           ) : (
             <input 
               name="dateOfBirth" 
-              type="date" 
+              type="text" 
+              placeholder="e.g. 1990"
               defaultValue={initialDobStr}
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />

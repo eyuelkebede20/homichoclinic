@@ -88,7 +88,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
         {/* Pending Requests Column */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Pending Tests</h2>
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[400px]">
+          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden min-h-100">
             {pendingRequests.length === 0 ? (
               <div className="p-8 text-center text-slate-500">No active lab requests.</div>
             ) : (
@@ -116,7 +116,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
         {/* Completed Logs Column */}
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Recent Completed Logs</h2>
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden min-h-[400px]">
+          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden min-h-100">
             {completedRequests.length === 0 ? (
               <div className="p-8 text-center text-slate-500">No completed logs found.</div>
             ) : (

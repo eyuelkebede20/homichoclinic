@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Loader2, Eye, EyeOff, User } from "lucide-react";
 
 export default function LoginPage() {
@@ -66,11 +65,11 @@ export default function LoginPage() {
               required
               autoComplete="username"
               placeholder="Enter your username or email"
-              className="block w-full py-[14px] pl-[15px] pr-[45px] border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
+              className="block w-full py-3.5 pl-3.75 pr-11.25 border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            <div className="absolute right-[15px] top-1/2 -translate-y-1/2 text-[#777] pointer-events-none">
+            <div className="absolute right-3.75 top-1/2 -translate-y-1/2 text-[#777] pointer-events-none">
               <User className="w-5 h-5 opacity-70" />
             </div>
           </div>
@@ -87,14 +86,14 @@ export default function LoginPage() {
               required
               autoComplete="current-password"
               placeholder="Enter your password"
-              className="block w-full py-[14px] pl-[15px] pr-[45px] border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
+              className="block w-full py-3.5 pl-3.75 pr-11.25 border border-[#ddd] rounded-xl text-[15px] text-[#333] transition-all duration-300 outline-none focus:border-[#1565c0] focus:ring-[3px] focus:ring-[#1565c0]/10"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-[15px] top-1/2 -translate-y-1/2 text-[#777] hover:text-[#444] transition-colors focus:outline-none"
+              className="absolute right-3.75 top-1/2 -translate-y-1/2 text-[#777] hover:text-[#444] transition-colors focus:outline-none"
             >
               {showPassword ? <EyeOff className="w-5 h-5 opacity-70" /> : <Eye className="w-5 h-5 opacity-70" />}
             </button>
@@ -119,7 +118,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-[15px] px-4 rounded-xl text-[16px] font-bold text-white bg-gradient-to-br from-[#1565c0] to-[#0d47a1] hover:-translate-y-[2px] hover:shadow-[0_8px_20px_rgba(13,71,161,0.3)] transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
+            className="w-full flex justify-center py-3.75 px-4 rounded-xl text-[16px] font-bold text-white bg-linear-to-br from-[#1565c0] to-[#0d47a1] hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(13,71,161,0.3)] transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "LOGIN"}
           </button>
