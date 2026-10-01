@@ -65,13 +65,13 @@ export default async function LaboratoryCatalogPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <span className="font-medium text-sm text-slate-900 dark:text-slate-100 mr-3">{t.name}</span>
-                    <div className="print:hidden inline-block">
-                      <LabTestToggle id={t.id} initialStatus={t.isOperational} />
-                    </div>
                     {!t.isOperational && <span className="hidden print:inline-block text-red-500 text-xs ml-2">(Out of Service)</span>}
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-mono text-slate-500">{(t.price / 100).toFixed(2)} ETB</span>
+                  <div className="flex items-center gap-4">
+                    <div className="print:hidden flex items-center">
+                      <LabTestToggle id={t.id} initialStatus={t.isOperational} />
+                    </div>
+                    <span className="text-sm font-mono text-slate-500 w-20 text-right">{(t.price / 100).toFixed(2)} ETB</span>
                     <RemoveLabTestButton id={t.id} />
                   </div>
                 </div>
