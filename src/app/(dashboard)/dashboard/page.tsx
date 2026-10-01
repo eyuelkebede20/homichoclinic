@@ -39,6 +39,9 @@ export default async function DashboardPage() {
 
   // 2. Doctor Dashboard
   if (role === "Doctor") {
+    const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const currentOpdRoom = fullUser?.currentOpdRoom || null;
+
     const weekStart = startOfWeek(today);
     const weekEnd = endOfWeek(today);
     
@@ -51,8 +54,11 @@ export default async function DashboardPage() {
 
     const pendingVisits = await prisma.visit.findMany({
       where: {
-        doctorId: session.user.id,
-        status: "in_progress",
+        OR: [
+          { doctorId: session.user.id },
+          ...(currentOpdRoom ? [{ opdRoom: currentOpdRoom }] : [])
+        ],
+        status: { in: ["scheduled", "in_progress"] },
       },
       include: {
         patient: {
@@ -104,6 +110,10 @@ export default async function DashboardPage() {
                 {visit.patient.labRequests.length > 0 ? (
                   <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-400">
                     {visit.patient.labRequests.length} Lab Result(s) Ready
+                  </span>
+                ) : visit.status === "scheduled" ? (
+                  <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-400">
+                    New Patient
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
