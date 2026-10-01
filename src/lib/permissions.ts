@@ -49,13 +49,7 @@ export type PermissionString = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 
 // Map standard Roles to their default Permission sets
 export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
-  Admin: [
-    PERMISSIONS.USER_MANAGE,
-    PERMISSIONS.ROLE_MANAGE,
-    PERMISSIONS.AUDIT_READ,
-    // Note: Admins likely get all permissions dynamically, but explicitly defining here
-    PERMISSIONS.DISCOUNT_UPDATE,
-  ],
+  Admin: Object.values(PERMISSIONS),
   Manager: [
     PERMISSIONS.DISCOUNT_UPDATE,
     PERMISSIONS.DISCOUNT_READ,
