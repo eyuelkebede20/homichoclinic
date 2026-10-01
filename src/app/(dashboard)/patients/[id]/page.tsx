@@ -152,6 +152,64 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               )}
             </div>
           </div>
+          <div className="bg-white shadow rounded-lg border border-slate-200 p-6">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Laboratory Results</h2>
+            <div className="space-y-4">
+              {patient.labRequests.length === 0 ? (
+                <p className="text-sm text-slate-500">No lab requests found.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-slate-200">
+                    <thead className="bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Date</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Test</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 uppercase">Result / Notes</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-slate-200">
+                      {patient.labRequests.map(req => (
+                        <tr key={req.id}>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500">
+                            {req.createdAt.toLocaleDateString()}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900">
+                            {req.test.name}
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm">
+                            {req.status === "completed" ? (
+                              <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">
+                                Completed
+                              </span>
+                            ) : req.status === "cancelled" ? (
+                              <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">
+                                Cancelled
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-0.5 text-xs font-medium text-yellow-800">
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-slate-700 whitespace-pre-wrap max-w-xs">
+                            {req.result ? (
+                              <div>
+                                {req.result.findings}
+                              </div>
+                            ) : (
+                              <span className="text-slate-400 italic">Awaiting lab</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+          
         </div>
 
         {/* Sidebar / Manager Actions */}
