@@ -14,7 +14,7 @@ export function DoctorOrders({
   drugs: { id: string; name: string }[];
 }) {
   const [loading, setLoading] = useState(false);
-  const [rxItems, setRxItems] = useState([{ drugId: "", quantity: 1, instructions: "" }]);
+  const [rxItems, setRxItems] = useState([{ drugId: "", search: "", search: "", quantity: 1, instructions: "" }]);
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
 
   async function handleLabSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,7 +60,7 @@ export function DoctorOrders({
     if (res.error) alert(res.error);
     else {
       alert("Prescription sent to pharmacy.");
-      setRxItems([{ drugId: "", quantity: 1, instructions: "" }]);
+      setRxItems([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
     }
   }
 
@@ -107,22 +107,30 @@ export function DoctorOrders({
           {rxItems.map((item, index) => (
             <div key={index} className="flex gap-4 items-start border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Drug</label>
-                <select 
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Search Drug</label>
+                <input 
+                  type="text"
                   required
-                  value={item.drugId}
+                  placeholder="Type to search..."
+                  value={item.search || ""}
                   onChange={e => {
                     const newItems = [...rxItems];
-                    newItems[index].drugId = e.target.value;
+                    newItems[index].search = e.target.value;
+                    const match = drugs.find(d => d.name.toLowerCase() === e.target.value.toLowerCase());
+                    newItems[index].drugId = match ? match.id : "";
                     setRxItems(newItems);
                   }}
+                  list={`drug-list-${index}`}
                   className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm"
-                >
-                  <option value="">-- Choose a Drug --</option>
+                />
+                <datalist id={`drug-list-${index}`}>
                   {drugs.map(d => (
-                    <option key={d.id} value={d.id}>{d.name}</option>
+                    <option key={d.id} value={d.name} />
                   ))}
-                </select>
+                </datalist>
+                {!item.drugId && item.search && (
+                  <p className="text-xs text-red-500 mt-1">Please select a valid drug from the list.</p>
+                )}
               </div>
               <div className="w-24">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Qty</label>
@@ -157,7 +165,7 @@ export function DoctorOrders({
           <div className="flex justify-between items-center pt-2">
             <button 
               type="button" 
-              onClick={() => setRxItems([...rxItems, { drugId: "", quantity: 1, instructions: "" }])}
+              onClick={() => setRxItems([...rxItems, { drugId: "", search: "", quantity: 1, instructions: "" }])}
               className="text-sm text-indigo-600 dark:text-indigo-400 hover:underline font-medium"
             >
               + Add another drug

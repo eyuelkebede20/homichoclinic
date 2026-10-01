@@ -49,11 +49,24 @@ export default async function DashboardPage() {
       }
     });
 
-    const pendingReview = await prisma.visit.count({
+    const pendingVisits = await prisma.visit.findMany({
       where: {
         doctorId: session.user.id,
         status: "in_progress",
-      }
+      },
+      include: {
+        patient: {
+          include: {
+            labRequests: {
+              where: {
+                status: "completed",
+                createdAt: { gte: today }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { updatedAt: "desc" }
     });
 
     return (
@@ -71,8 +84,38 @@ export default async function DashboardPage() {
           </div>
           <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-orange-200 dark:border-orange-800">
             <h3 className="text-sm font-medium text-orange-600 dark:text-orange-400">Patients Awaiting Review</h3>
-            <p className="mt-2 text-4xl font-bold text-slate-900 dark:text-slate-100">{pendingReview}</p>
+            <p className="mt-2 text-4xl font-bold text-slate-900 dark:text-slate-100">{pendingVisits.length}</p>
           </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Active Patient Queue</h2>
+          </div>
+          <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-96 overflow-y-auto">
+            {pendingVisits.map(visit => (
+              <li key={visit.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex justify-between items-center">
+                <div>
+                  <a href={`/patients/${visit.patientId}`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
+                    {visit.patient.firstName} {visit.patient.lastName}
+                  </a>
+                  <p className="text-xs text-slate-500 mt-1">Waiting since: {visit.updatedAt.toLocaleTimeString()}</p>
+                </div>
+                {visit.patient.labRequests.length > 0 ? (
+                  <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-400">
+                    {visit.patient.labRequests.length} Lab Result(s) Ready
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
+                    In Progress
+                  </span>
+                )}
+              </li>
+            ))}
+            {pendingVisits.length === 0 && (
+              <li className="p-8 text-center text-slate-500">No active patients in your queue.</li>
+            )}
+          </ul>
         </div>
       </div>
     );
