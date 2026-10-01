@@ -33,6 +33,9 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
     return { error: "The CSV file is empty." };
   }
 
+  // Detect delimiter
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+
   // Skip header if present
   let startIndex = 0;
   if (lines[0].toLowerCase().includes("name") || lines[0].toLowerCase().includes("id")) {
@@ -42,15 +45,13 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
   let importedCount = 0;
   let errorCount = 0;
 
-  // Pass 1: Import Staff (with EmployeeID)
+  // Process rows
   for (let i = startIndex; i < lines.length; i++) {
-    const columns = lines[i].split(',').map(c => c.trim());
-    if (columns.length < 2) continue; // Skip invalid lines
-    
-    const employeeId = columns[1];
-    if (!employeeId || employeeId.length === 0) continue; // Skip dependents for now
+    const columns = lines[i].split(delimiter).map(c => c.trim());
+    if (columns.length === 0 || !columns[0]) continue; // Skip completely empty lines or no name
 
     const fullName = columns[0];
+    const employeeId = columns.length >= 2 ? columns[1] : null;
     const hiredYearStr = columns.length >= 3 ? columns[2] : null;
     const phone = columns.length >= 4 ? columns[3] : null;
 
@@ -62,74 +63,56 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
     const computedDiscount = calculateDiscount(hiredYearEC);
 
     try {
-      await prisma.patient.upsert({
-        where: { employeeId },
-        update: {
-          firstName,
-          lastName,
-          hiredYearEC: isNaN(hiredYearEC as number) ? null : hiredYearEC,
-          discountPercent: isNaN(hiredYearEC as number) ? 0 : computedDiscount,
-          relationship: "Staff",
-          contactNumber: phone || null,
-        },
-        create: {
-          firstName,
-          lastName,
-          employeeId,
-          hiredYearEC: isNaN(hiredYearEC as number) ? null : hiredYearEC,
-          discountPercent: isNaN(hiredYearEC as number) ? 0 : computedDiscount,
-          relationship: "Staff",
-          contactNumber: phone || null,
+      if (employeeId && employeeId.length > 0) {
+        // Import Staff
+        await prisma.patient.upsert({
+          where: { employeeId },
+          update: {
+            firstName,
+            lastName,
+            hiredYearEC: isNaN(hiredYearEC as number) ? null : hiredYearEC,
+            discountPercent: isNaN(hiredYearEC as number) ? 0 : computedDiscount,
+            relationship: "Staff",
+            contactNumber: phone || null,
+          },
+          create: {
+            firstName,
+            lastName,
+            employeeId,
+            hiredYearEC: isNaN(hiredYearEC as number) ? null : hiredYearEC,
+            discountPercent: isNaN(hiredYearEC as number) ? 0 : computedDiscount,
+            relationship: "Staff",
+            contactNumber: phone || null,
+            patientType: "Civilian Staff",
+          }
+        });
+      } else {
+        // Import Dependent / Generic Patient
+        let primaryPatientId = null;
+        if (phone && phone.length > 0) {
+          const staffMember = await prisma.patient.findFirst({
+            where: { contactNumber: phone, relationship: "Staff" }
+          });
+          if (staffMember) {
+            primaryPatientId = staffMember.id;
+          }
         }
-      });
-      importedCount++;
-    } catch (err) {
-      console.error("Failed to import staff row:", lines[i], err);
-      errorCount++;
-    }
-  }
 
-  // Pass 2: Import Dependents (no EmployeeID, linked by Phone)
-  for (let i = startIndex; i < lines.length; i++) {
-    const columns = lines[i].split(',').map(c => c.trim());
-    if (columns.length < 2) continue;
-    
-    const employeeId = columns[1];
-    if (employeeId && employeeId.length > 0) continue; // Skip staff
-
-    const fullName = columns[0];
-    const phone = columns.length >= 4 ? columns[3] : (columns.length >= 2 && columns[1].length > 6 ? columns[1] : null); // If col 1 was used as phone fallback
-    
-    // If no phone, we can't link them reliably via CSV, but we still import them as standalone patients
-    let primaryPatientId = null;
-    if (phone && phone.length > 0) {
-      const staffMember = await prisma.patient.findFirst({
-        where: { contactNumber: phone, relationship: "Staff" }
-      });
-      if (staffMember) {
-        primaryPatientId = staffMember.id;
+        await prisma.patient.create({
+          data: {
+            firstName,
+            lastName,
+            contactNumber: phone || null,
+            relationship: primaryPatientId ? "Civilian Family" : "Patient",
+            patientType: primaryPatientId ? "Civilian Family" : "Guest",
+            discountPercent: primaryPatientId ? 95 : 0,
+            primaryPatientId
+          }
+        });
       }
-    }
-
-    const nameParts = fullName.split(' ');
-    const firstName = nameParts[0] || "Unknown";
-    const lastName = nameParts.slice(1).join(' ') || "Unknown";
-
-    try {
-      await prisma.patient.create({
-        data: {
-          firstName,
-          lastName,
-          contactNumber: phone || null,
-          relationship: primaryPatientId ? "Civilian Family" : "Patient",
-          patientType: primaryPatientId ? "Civilian Family" : "Civilian Staff",
-          discountPercent: primaryPatientId ? 95 : 0,
-          primaryPatientId
-        }
-      });
       importedCount++;
     } catch (err) {
-      console.error("Failed to import dependent row:", lines[i], err);
+      console.error("Failed to import row:", lines[i], err);
       errorCount++;
     }
   }

@@ -24,11 +24,7 @@ export default async function NewInvoicePage() {
     );
   }
 
-  // Fetch all patients for the dropdown (in a real app this would be an async search combobox)
-  const patients = await prisma.patient.findMany({
-    select: { id: true, firstName: true, lastName: true, discountPercent: true },
-    orderBy: { firstName: "asc" }
-  });
+  const patients: any[] = [];
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">

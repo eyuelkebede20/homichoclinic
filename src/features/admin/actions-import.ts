@@ -18,8 +18,11 @@ export const importPatientsCSV = createSafeAction({
     const lines = data.csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
     if (lines.length < 2) throw new Error("CSV must contain headers and at least one row.");
 
+    // Detect if the file uses tabs (often used when saving Unicode/Amharic from Excel)
+    const delimiter = lines[0].includes('\t') ? '\t' : ',';
+
     // Parse headers
-    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const headers = lines[0].split(delimiter).map(h => h.trim().toLowerCase());
     
     // Map of phone numbers to Primary Patient IDs (so we can link dependents instantly)
     const phoneToPatientId = new Map<string, string>();
@@ -33,8 +36,7 @@ export const importPatientsCSV = createSafeAction({
 
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i];
-      // Basic split by comma (doesn't handle commas inside quotes, but good enough for simple exports)
-      const values = line.split(",").map(v => v.trim());
+      const values = line.split(delimiter).map(v => v.trim());
       
       const row: Record<string, string> = {};
       headers.forEach((h, idx) => {
@@ -51,8 +53,8 @@ export const importPatientsCSV = createSafeAction({
 
     // Function to process a single row
     async function processRow(row: Record<string, string>, isDependent: boolean) {
-      const firstName = row["firstname"] || row["first name"] || row["first_name"];
-      const lastName = row["lastname"] || row["last name"] || row["last_name"];
+      let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["name"];
+      let lastName = row["lastname"] || row["last name"] || row["last_name"];
       const phone = row["phone"] || row["contact"] || row["contactnumber"];
       const dobStr = row["dob"] || row["dateofbirth"];
       const gender = row["gender"];
@@ -60,10 +62,19 @@ export const importPatientsCSV = createSafeAction({
       const relationship = row["relationship"] || row["role"];
       const primaryPhone = row["primaryphone"] || row["familyphone"];
 
-      if (!firstName || !lastName) {
+      if (firstName && !lastName && firstName.includes(' ')) {
+        const parts = firstName.split(' ');
+        firstName = parts[0];
+        lastName = parts.slice(1).join(' ');
+      }
+
+      if (!firstName && !lastName) {
         errors.push(`Skipped row (missing name): ${JSON.stringify(row)}`);
         return;
       }
+      
+      if (!firstName) firstName = "Unknown";
+      if (!lastName) lastName = "Unknown";
 
       let dob = null;
       if (dobStr) {

@@ -6,9 +6,9 @@ After reviewing the current state of the application architecture, codebase, and
 *   **The Problem:** In `newpatient.md`, you mentioned "and one cronjob can change the data". Currently, the Staff CSV importer calculates the EC Year discount (e.g., 50% for 0-5 years, 55% for 6-9 years) *at the time of import*. If a staff member crosses their 6-year anniversary next month, their discount will remain stuck at 50% unless an Admin manually updates them.
 *   **The Fix:** We need to build a scheduled background cron job (or an API route triggered daily/monthly) that scans all `Civilian Staff` patients, calculates `(CurrentECYear - hiredYearEC)`, and updates their `discountPercent` automatically.
 
-## 2. Problematic: Patient Directory Pagination for Low-Power Machines
+## 2. Fixed: Patient Directory Pagination for Low-Power Machines
 *   **The Problem:** You previously noted the clinic runs on very old hardware (Dell Optiplex 320s). Right now, the `/patients` directory fetches and renders all patients. If you import 5,000+ staff members and their families via the CSV, rendering 10,000 rows at once in React will cause a massive lag spike and crash the browser on an Optiplex.
-*   **The Fix:** We must implement strict server-side pagination (e.g., 20 patients per page) and a dedicated search API rather than filtering the full list on the client side.
+*   **The Fix:** **(Resolved)** We have implemented strict server-side pagination (20 patients per page) on the patient directory, and replaced the in-memory static dropdowns in the scheduling and billing screens with a dedicated `/api/patients/search` API for async combobox searching.
 
 ## 3. Missing: Guest "Promo Code" Validation System
 *   **The Problem:** In `newpatient.md`, you requested that Guest Attendees use a "secure password/promocode that will be managed by the manager". Currently, the Receptionist can type *any* text into the Promo Code box and the system will save it.

@@ -32,18 +32,17 @@ export default async function VisitsQueuePage() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   
-  const [visits, patients, doctors, opdSetting] = await Promise.all([
+  const [visits, doctors, opdSetting] = await Promise.all([
     prisma.visit.findMany({
       where: { visitDate: { gte: today } },
       include: { patient: true },
       orderBy: { visitDate: "asc" }
     }),
-    canCreateVisit ? prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } }) : [],
     canCreateVisit ? prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true } }) : [],
     prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } })
   ]);
 
-  const patientList = patients.map(p => ({ id: p.id, name: `${p.firstName} ${p.lastName}` }));
+  const patientList: any[] = []; // Replaced by async search
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">

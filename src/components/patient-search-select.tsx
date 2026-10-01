@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, Loader2 } from "lucide-react";
 
 interface Patient {
   id: string;
@@ -17,13 +17,19 @@ export function PatientSearchSelect({
   selectedId, 
   onChange 
 }: { 
-  patients: Patient[];
+  patients?: Patient[];
   selectedId: string;
   onChange: (id: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [results, setResults] = useState<Patient[]>(patients || []);
+  const [loading, setLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(
+    (patients || []).find(p => p.id === selectedId) || null
+  );
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -35,15 +41,31 @@ export function PatientSearchSelect({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const selectedPatient = patients.find(p => p.id === selectedId);
+  useEffect(() => {
+    if (!search || search.length < 2) {
+      setResults(patients || []);
+      return;
+    }
+    
+    const delay = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/patients/search?q=${encodeURIComponent(search)}`);
+        const data = await res.json();
+        setResults(data.patients || []);
+      } catch (err) {
+        console.error("Failed to fetch patients", err);
+      } finally {
+        setLoading(false);
+      }
+    }, 300);
+    
+    return () => clearTimeout(delay);
+  }, [search, patients]);
+
   const displayName = selectedPatient 
     ? `${selectedPatient.firstName || selectedPatient.name || ""} ${selectedPatient.lastName || ""}`.trim()
     : "";
-
-  const filtered = patients.filter(p => {
-    const full = `${p.firstName || p.name || ""} ${p.lastName || ""} ${p.contactNumber || ""}`.toLowerCase();
-    return full.includes(search.toLowerCase());
-  });
 
   return (
     <div className="relative" ref={wrapperRef}>
@@ -56,26 +78,28 @@ export function PatientSearchSelect({
           <input
             type="text"
             className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm dark:text-slate-100"
-            placeholder={selectedId ? displayName : "Search by name or phone..."}
+            placeholder={selectedId && displayName ? displayName : "Search by name or phone..."}
             value={open ? search : (selectedId ? displayName : "")}
             onChange={(e) => {
               setSearch(e.target.value);
               setOpen(true);
-              if (selectedId) onChange(""); // clear selection if typing
+              if (selectedId) onChange(""); 
             }}
             onFocus={() => setOpen(true)}
           />
         </div>
-        <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" />
+        {loading ? <Loader2 className="w-4 h-4 text-blue-500 flex-shrink-0 ml-2 animate-spin" /> : <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0 ml-2" />}
       </div>
 
       {open && (
         <div className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-lg">
-          {filtered.length === 0 ? (
-            <div className="p-3 text-sm text-slate-500 text-center">No patients found.</div>
+          {results.length === 0 ? (
+            <div className="p-3 text-sm text-slate-500 text-center">
+              {loading ? "Searching..." : search.length < 2 ? "Type at least 2 characters..." : "No patients found."}
+            </div>
           ) : (
             <ul className="py-1">
-              {filtered.map(p => {
+              {results.map(p => {
                 const name = `${p.firstName || p.name || ""} ${p.lastName || ""}`.trim();
                 return (
                   <li 
@@ -83,6 +107,7 @@ export function PatientSearchSelect({
                     className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 flex justify-between items-center"
                     onClick={() => {
                       onChange(p.id);
+                      setSelectedPatient(p);
                       setSearch("");
                       setOpen(false);
                     }}
