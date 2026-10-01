@@ -21,7 +21,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { prisma } from "@/lib/prisma";
 import { TestUserSwitcher } from "@/components/test-user-switcher";
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   // Gracefully handle db errors during initial build or if db is unreachable
   let isLowPower = true; // Default to true for OptiPlex machines
   try {

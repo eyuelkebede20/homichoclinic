@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export function PatientEditForm({ patient }: { 
-  patient: { id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; } 
+  patient: { id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; since?: string | null; } 
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

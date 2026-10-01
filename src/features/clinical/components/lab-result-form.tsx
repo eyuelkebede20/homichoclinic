@@ -31,7 +31,7 @@ export function LabResultForm({ requestId }: { requestId: string }) {
     return (
       <button 
         onClick={() => setIsOpen(true)}
-        className="text-blue-600 hover:text-blue-900 bg-blue-50 px-3 py-1 rounded"
+        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-3 py-1 rounded text-sm font-medium transition-colors"
       >
         Enter Results
       </button>
@@ -39,11 +39,11 @@ export function LabResultForm({ requestId }: { requestId: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col items-end gap-2 text-left bg-slate-50 p-3 rounded shadow-inner border border-slate-200 min-w-[250px]">
+    <form onSubmit={handleSubmit} className="flex flex-col items-end gap-2 text-left bg-slate-50 dark:bg-slate-800/50 p-3 rounded shadow-inner border border-slate-200 dark:border-slate-700 min-w-[250px] w-full">
       <textarea
         required
         placeholder="Enter lab findings..."
-        className="w-full text-sm rounded border-slate-300 p-2"
+        className="w-full text-sm rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 p-2 focus:ring-1 focus:ring-blue-500 focus:outline-none"
         rows={2}
         value={findings}
         onChange={e => setFindings(e.target.value)}
@@ -52,7 +52,7 @@ export function LabResultForm({ requestId }: { requestId: string }) {
         <button 
           type="button" 
           onClick={() => setIsOpen(false)}
-          className="text-xs text-slate-500 hover:text-slate-700 px-2"
+          className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 px-2 transition-colors"
         >
           Cancel
         </button>
