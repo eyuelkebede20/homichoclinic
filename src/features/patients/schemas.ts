@@ -7,6 +7,11 @@ export const patientCreateSchema = z.object({
   dateOfBirth: z.string().optional(),
   gender: zSafeString().optional(),
   contactNumber: zSafeString().optional(),
+  patientType: zSafeString().optional(),
+  militaryId: zSafeString().optional(),
+  rank: zSafeString().optional(),
+  division: zSafeString().optional(),
+  promoCode: zSafeString().optional(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({
@@ -15,7 +20,7 @@ export const patientUpdateSchema = patientCreateSchema.extend({
 
 export const discountUpdateSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
-  discountPercent: z.number().int().min(0).max(99),
+  discountPercent: z.number().int().min(0).max(100),
   reason: zSafeString().optional(),
 });
 

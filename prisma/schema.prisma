@@ -102,8 +102,19 @@ model Patient {
   employeeId      String?   @unique // The staff ID number
   hiredYearEC     Int?      // Ethiopian Calendar year hired
 
+  // Role tracking
+  patientType     String    @default("Civilian Staff") // "Soldier", "Civilian Staff", "Civilian Family", "Guest"
+  
+  // Soldier specifics
+  militaryId      String?   @unique
+  rank            String?
+  division        String?
+
+  // Guest specifics
+  promoCode       String?
+
   // Core Feature: Discount
-  discountPercent Int       @default(0) // 0 to 99
+  discountPercent Int       @default(0) // 0 to 100
 
   // Family & Staff tracking
   primaryPatientId String?

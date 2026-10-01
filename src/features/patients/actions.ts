@@ -13,6 +13,11 @@ export const createPatient = createSafeAction({
   handler: async (data, ctx) => {
     const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
     
+    let discountPercent = 0;
+    if (data.patientType === "Soldier") {
+      discountPercent = 100;
+    }
+
     const newPatient = await prisma.patient.create({
       data: {
         firstName: data.firstName,
@@ -20,7 +25,12 @@ export const createPatient = createSafeAction({
         dateOfBirth: dob,
         gender: data.gender,
         contactNumber: data.contactNumber,
-        discountPercent: 0, // Defaults to 0, Manager can update later
+        patientType: data.patientType || "Civilian Staff",
+        militaryId: data.militaryId,
+        rank: data.rank,
+        division: data.division,
+        promoCode: data.promoCode,
+        discountPercent: discountPercent,
       },
     });
 
@@ -38,8 +48,14 @@ export const createPatient = createSafeAction({
 
 export const updatePatient = createSafeAction({
   schema: patientUpdateSchema,
-  requiredPermission: PERMISSIONS.PATIENT_UPDATE || PERMISSIONS.PATIENT_CREATE, // Use PATIENT_CREATE if UPDATE not explicitly split in permissions, though we'll just check PATIENT_CREATE for simplicity or PATIENT_READ. Wait, let's use PATIENT_CREATE as proxy for editing.
+  requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
+    // Only Admin can update patient data
+    const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
+    if (user?.role !== "Admin") {
+      return { error: "Access Denied: Only Admins can modify patient demographics." };
+    }
+
     const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
     
     const updatedPatient = await prisma.patient.update({

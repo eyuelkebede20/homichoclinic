@@ -89,7 +89,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
           <div className="bg-white shadow rounded-lg border border-slate-200 p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900">Patient Profile</h2>
-              {(userPermissions.includes(PERMISSIONS.PATIENT_UPDATE) || userPermissions.includes(PERMISSIONS.PATIENT_CREATE)) && (
+              {role === "Admin" && (
                 <Link href={`/patients/${patient.id}/edit`} className="text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 py-1 px-3 rounded border border-slate-300 transition-colors">
                   Edit Details
                 </Link>

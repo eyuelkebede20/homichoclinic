@@ -6,16 +6,16 @@ import { logAudit } from "@/lib/audit";
 import { revalidatePath } from "next/cache";
 
 function calculateDiscount(hiredYearEC: number | null): number {
-  if (!hiredYearEC) return 0;
-  // Basic default logic: If hired earlier than 2010 EC, give some discount.
-  // The user can configure this later or edit the person.
-  // Let's say: base discount of 10% for everyone, plus 2% per year of service (assuming current EC year is 2018).
+  if (!hiredYearEC) return 50; // Default for 0 years
+  
   const currentECYear = 2018; // Approx 2026 GC
   const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
   
-  if (yearsOfService >= 10) return 50; // Max 50% for 10+ years
-  if (yearsOfService >= 5) return 25;  // 25% for 5+ years
-  return 10; // Default 10% for staff
+  if (yearsOfService >= 20) return 100;
+  if (yearsOfService >= 15) return 75;
+  if (yearsOfService >= 10) return 65;
+  if (yearsOfService >= 6) return 55;
+  return 50; // 0-5 yrs
 }
 
 export async function importPatientsFromCSV(csvText: string, userId: string, role: string) {
@@ -121,7 +121,9 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
           firstName,
           lastName,
           contactNumber: phone || null,
-          relationship: primaryPatientId ? "Dependent" : "Patient",
+          relationship: primaryPatientId ? "Civilian Family" : "Patient",
+          patientType: primaryPatientId ? "Civilian Family" : "Civilian Staff",
+          discountPercent: primaryPatientId ? 95 : 0,
           primaryPatientId
         }
       });

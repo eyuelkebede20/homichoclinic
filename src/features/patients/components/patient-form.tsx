@@ -9,6 +9,7 @@ export function PatientForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ageMode, setAgeMode] = useState(false);
+  const [patientType, setPatientType] = useState("Soldier");
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -37,6 +38,11 @@ export function PatientForm() {
       dateOfBirth: dateOfBirth,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
+      patientType: patientType,
+      militaryId: formData.get("militaryId") as string || undefined,
+      rank: formData.get("rank") as string || undefined,
+      division: formData.get("division") as string || undefined,
+      promoCode: formData.get("promoCode") as string || undefined,
     });
 
     setLoading(false);
@@ -116,11 +122,40 @@ export function PatientForm() {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Number</label>
           <input name="contactNumber" type="tel" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Role - Work Branch</label>
-          <input disabled type="text" value="" placeholder="HR Integration Pending..." className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 px-3 py-2 text-sm text-slate-400 cursor-not-allowed" />
+        <div className="flex flex-col justify-end">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Patient Type</label>
+          <select value={patientType} onChange={(e) => setPatientType(e.target.value)} name="patientType" className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+            <option value="Soldier">Soldier</option>
+            <option value="Civilian Staff">Civilian Staff</option>
+            <option value="Civilian Family">Civilian Family</option>
+            <option value="Guest">Guest Attendee</option>
+          </select>
         </div>
       </div>
+
+      {patientType === "Soldier" && (
+        <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Military ID</label>
+            <input required name="militaryId" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Rank</label>
+            <input required name="rank" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Division</label>
+            <input required name="division" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+          </div>
+        </div>
+      )}
+
+      {patientType === "Guest" && (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Promo Code / Secure Password</label>
+          <input required name="promoCode" type="text" className="mt-1 block w-full rounded border border-yellow-300 dark:border-yellow-700 dark:bg-slate-950 px-3 py-2 text-sm" placeholder="Ask manager for valid code..." />
+        </div>
+      )}
 
       <button
         type="submit"
