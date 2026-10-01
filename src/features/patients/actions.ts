@@ -16,7 +16,20 @@ export const createPatient = createSafeAction({
     let discountPercent = 0;
     if (data.patientType === "Soldier") {
       discountPercent = 100;
+    } else if (data.patientType === "Civilian Family") {
+      discountPercent = 95;
+    } else if ((data.patientType === "Civilian Staff" || !data.patientType) && data.hiredYearEC) {
+      const d = new Date();
+      const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
+      const yearsOfService = Math.max(0, currentECYear - data.hiredYearEC);
+      if (yearsOfService >= 20) discountPercent = 100;
+      else if (yearsOfService >= 15) discountPercent = 75;
+      else if (yearsOfService >= 10) discountPercent = 65;
+      else if (yearsOfService >= 6) discountPercent = 55;
+      else discountPercent = 50;
     }
+
+    const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
 
     const newPatient = await prisma.patient.create({
       data: {
@@ -29,7 +42,7 @@ export const createPatient = createSafeAction({
         militaryId: data.militaryId,
         rank: data.rank,
         division: data.division,
-        promoCode: data.promoCode,
+        hiredYearEC: data.hiredYearEC,
         discountPercent: discountPercent,
       },
     });

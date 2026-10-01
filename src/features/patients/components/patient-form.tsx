@@ -5,7 +5,7 @@ import { createPatient } from "../actions";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-export function PatientForm() {
+export function PatientForm({ userRole = "User" }: { userRole?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ageMode, setAgeMode] = useState(false);
@@ -42,7 +42,7 @@ export function PatientForm() {
       militaryId: formData.get("militaryId") as string || undefined,
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
-      promoCode: formData.get("promoCode") as string || undefined,
+      hiredYearEC: formData.get("hiredYearEC") ? parseInt(formData.get("hiredYearEC") as string, 10) : undefined,
     });
 
     setLoading(false);
@@ -150,12 +150,15 @@ export function PatientForm() {
         </div>
       )}
 
-      {patientType === "Guest" && (
-        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 rounded-lg border border-yellow-200 dark:border-yellow-800">
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Promo Code / Secure Password</label>
-          <input required name="promoCode" type="text" className="mt-1 block w-full rounded border border-yellow-300 dark:border-yellow-700 dark:bg-slate-950 px-3 py-2 text-sm" placeholder="Ask manager for valid code..." />
+      {patientType === "Civilian Staff" && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Hired Year (EC)</label>
+          <input required name="hiredYearEC" type="number" min="1900" max="2100" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" placeholder="e.g. 2010" />
+          <p className="text-[10px] text-slate-500 mt-1">Used to automatically calculate staff discounts.</p>
         </div>
       )}
+
+
 
       <button
         type="submit"

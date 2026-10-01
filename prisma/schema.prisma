@@ -112,7 +112,6 @@ model Patient {
 
   // Guest specifics
   promoCode       String?
-
   // Core Feature: Discount
   discountPercent Int       @default(0) // 0 to 100
 

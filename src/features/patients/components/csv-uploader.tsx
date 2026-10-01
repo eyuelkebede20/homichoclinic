@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Upload, Loader2 } from "lucide-react";
 import { importPatientsFromCSV } from "../actions-import";
+import * as XLSX from "xlsx";
 
 export function CsvUploader({ userId, role }: { userId: string, role: string }) {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,11 @@ export function CsvUploader({ userId, role }: { userId: string, role: string }) 
     setLoading(true);
     
     try {
-      const text = await file.text();
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const text = XLSX.utils.sheet_to_csv(worksheet);
+
       const res = await importPatientsFromCSV(text, userId, role);
       if (res.error) {
         alert(res.error);
@@ -24,7 +29,7 @@ export function CsvUploader({ userId, role }: { userId: string, role: string }) 
         setFile(null); // reset
       }
     } catch (err) {
-      alert("Failed to read file.");
+      alert("Failed to read file. Please ensure it's a valid Excel or CSV file.");
     } finally {
       setLoading(false);
     }
@@ -32,12 +37,17 @@ export function CsvUploader({ userId, role }: { userId: string, role: string }) 
 
   return (
     <form onSubmit={handleUpload} className="space-y-4 border-t border-slate-200 dark:border-slate-800 pt-6">
-      <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 mb-4">Upload CSV File</h3>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">Upload Excel/CSV File</h3>
+        <a href="/sample-patients.csv" download className="text-xs text-blue-600 hover:underline">
+          Download Sample File
+        </a>
+      </div>
       
       <div className="flex items-center gap-4">
         <input 
           type="file" 
-          accept=".csv" 
+          accept=".csv,.xlsx,.xls" 
           onChange={(e) => setFile(e.target.files?.[0] || null)}
           className="block w-full text-sm text-slate-500
             file:mr-4 file:py-2 file:px-4

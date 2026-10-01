@@ -79,18 +79,18 @@ export async function getNotifications() {
   } 
   
   else if (role === "Admin" || role === "Manager") {
-    count = await prisma.catalogApproval.count({ where: { status: "pending" } });
-    const pending = await prisma.catalogApproval.findMany({
-      where: { status: "pending" },
+    count = await prisma.catalogChangeRequest.count({ where: { status: "PENDING" } });
+    const pending = await prisma.catalogChangeRequest.findMany({
+      where: { status: "PENDING" },
       orderBy: { createdAt: "desc" },
       take: 5
     });
     items = pending.map(p => ({
       id: p.id,
       title: "Approval Needed",
-      desc: `A new ${p.catalogType} catalog request requires approval.`,
+      desc: `A new ${p.type} catalog request requires approval.`,
       time: p.createdAt.toLocaleTimeString(),
-      link: `/catalogs/approvals` // Need to make sure this route exists or update it
+      link: `/admin`
     }));
   }
 

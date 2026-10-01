@@ -1,1 +1,3 @@
 for the opds/diagnosis rooms 1 - 4 the it must assign automatically but for it to automatically assign the reception on her/his first login must select the number of OPDS then when the reception accepts the user a popup will apear with their assigned OPDs and they will go there.
+
+#2 for specific appointments with specific doctor then the system must assign them to where the doctor/physician is, meaning if the doctor got into opd 3 instead of the previous 2 then the system must tell them to go there, but the failsafe if that doctor isn't in any opds then must be the random number... but this option must be there -

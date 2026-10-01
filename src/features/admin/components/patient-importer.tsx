@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { importPatientsCSV } from "../actions-import";
 import { Loader2, UploadCloud, AlertCircle, CheckCircle2 } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export function PatientImporter() {
   const [file, setFile] = useState<File | null>(null);
@@ -23,7 +24,11 @@ export function PatientImporter() {
     setResult(null);
 
     try {
-      const text = await file.text();
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer);
+      const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+      const text = XLSX.utils.sheet_to_csv(worksheet);
+
       const res = await importPatientsCSV({ csvText: text });
       
       if (res.error) {
@@ -32,7 +37,7 @@ export function PatientImporter() {
         setResult(res.data);
       }
     } catch (err: any) {
-      alert("Failed to read file: " + err.message);
+      alert("Failed to read file: Please ensure it's a valid Excel or CSV file.");
     } finally {
       setLoading(false);
       setFile(null);
@@ -48,16 +53,19 @@ export function PatientImporter() {
             Bulk Import Patients & Families
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Upload a CSV file containing staff members and their dependents.
+            Upload an Excel (.xlsx) or CSV file containing staff members and their dependents.
           </p>
         </div>
+        <a href="/sample.csv" download className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+          Download Sample File
+        </a>
       </div>
 
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
-        <p className="font-medium mb-1">Required Columns:</p>
+        <p className="font-medium mb-1">Standard Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs">FirstName, LastName</code>
         
-        <p className="font-medium mt-3 mb-1">Optional Columns:</p>
+        <p className="font-medium mt-3 mb-1">Additional Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
           Phone, DateOfBirth, Gender, Discount, Relationship, PrimaryPhone
         </code>
@@ -70,7 +78,7 @@ export function PatientImporter() {
       <div className="flex flex-col sm:flex-row gap-4 items-center">
         <input 
           type="file" 
-          accept=".csv"
+          accept=".csv,.xlsx,.xls"
           onChange={handleFileChange}
           className="block w-full text-sm text-slate-500 dark:text-slate-400
             file:mr-4 file:py-2 file:px-4

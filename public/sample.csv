@@ -1,0 +1,5 @@
+FirstName,LastName,Phone,DOB,Gender,Discount,Relationship,PrimaryPhone
+አበበ,በሶ,0911223344,1990-01-01,Male,0,Staff,
+Kebede,Unknown,0922334455,1985-05-05,Male,10,Staff,
+Almaz,Unknown,0933445566,,Female,0,Dependent,0911223344
+,Unknown,0944556677,,,,Guest,

@@ -61,6 +61,7 @@ export const importPatientsCSV = createSafeAction({
       const discount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
       const primaryPhone = row["primaryphone"] || row["familyphone"];
+      const promoCode = row["promocode"] || row["promo_code"];
 
       if (firstName && !lastName && firstName.includes(' ')) {
         const parts = firstName.split(' ');
@@ -68,11 +69,6 @@ export const importPatientsCSV = createSafeAction({
         lastName = parts.slice(1).join(' ');
       }
 
-      if (!firstName && !lastName) {
-        errors.push(`Skipped row (missing name): ${JSON.stringify(row)}`);
-        return;
-      }
-      
       if (!firstName) firstName = "Unknown";
       if (!lastName) lastName = "Unknown";
 
@@ -116,7 +112,8 @@ export const importPatientsCSV = createSafeAction({
             dateOfBirth: dob,
             discountPercent: isNaN(discount) ? 0 : discount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
-            primaryPatientId: primaryPatientId
+            primaryPatientId: primaryPatientId,
+            promoCode: promoCode || null
           }
         });
         createdCount++;

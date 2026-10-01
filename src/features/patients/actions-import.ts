@@ -8,7 +8,8 @@ import { revalidatePath } from "next/cache";
 function calculateDiscount(hiredYearEC: number | null): number {
   if (!hiredYearEC) return 50; // Default for 0 years
   
-  const currentECYear = 2018; // Approx 2026 GC
+  const d = new Date();
+  const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
   const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
   
   if (yearsOfService >= 20) return 100;
@@ -48,9 +49,9 @@ export async function importPatientsFromCSV(csvText: string, userId: string, rol
   // Process rows
   for (let i = startIndex; i < lines.length; i++) {
     const columns = lines[i].split(delimiter).map(c => c.trim());
-    if (columns.length === 0 || !columns[0]) continue; // Skip completely empty lines or no name
+    if (columns.length === 0 || columns.join('').trim() === '') continue; // Skip completely empty lines
 
-    const fullName = columns[0];
+    const fullName = columns[0] || "Unknown";
     const employeeId = columns.length >= 2 ? columns[1] : null;
     const hiredYearStr = columns.length >= 3 ? columns[2] : null;
     const phone = columns.length >= 4 ? columns[3] : null;

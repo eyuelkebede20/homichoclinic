@@ -11,7 +11,7 @@ export const patientCreateSchema = z.object({
   militaryId: zSafeString().optional(),
   rank: zSafeString().optional(),
   division: zSafeString().optional(),
-  promoCode: zSafeString().optional(),
+  hiredYearEC: z.number().int().min(1900).max(2100).optional().nullable(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({

@@ -31,7 +31,7 @@ export default async function NewPatientPage() {
         <h1 className="text-2xl font-bold text-slate-900">Patients</h1>
         <p className="text-slate-500">Register a new patient into the clinic system.</p>
       </div>
-      <PatientForm />
+      <PatientForm userRole={role} />
     </div>
   );
 }

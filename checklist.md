@@ -26,7 +26,6 @@ Use this checklist to verify that all recent features, workflows, and role-based
 - [ ] **Login as Receptionist.**
 - [ ] Click **+ New Patient**.
 - [ ] Change "Patient Type" to **Soldier** and verify that *Military ID*, *Rank*, and *Division* fields appear.
-- [ ] Change "Patient Type" to **Guest Attendee** and verify the *Promo Code* field appears.
 - [ ] Submit a new patient.
 - [ ] Navigate to that Patient's profile (`/patients/[id]`).
 - [ ] **Verify Lock:** As a Receptionist, ensure the "Edit Details" button is **hidden**.
