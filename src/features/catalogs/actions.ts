@@ -154,7 +154,7 @@ export const deleteDrug = createSafeAction({
 });
 
 export const processCatalogApproval = createSafeAction({
-  schema: z.object({ id: z.string(), approve: z.boolean() }),
+  schema: z.object({ id: z.string(), approve: z.boolean(), modifiedPayload: z.any().optional() }),
   requiredPermission: PERMISSIONS.CATALOG_APPROVE,
   handler: async (data, ctx) => {
     const req = await prisma.catalogChangeRequest.findUnique({ where: { id: data.id } });
@@ -170,7 +170,7 @@ export const processCatalogApproval = createSafeAction({
     }
 
     // Process approval
-    const payload = JSON.parse(req.requestedData);
+    const payload = data.modifiedPayload ? data.modifiedPayload : JSON.parse(req.requestedData);
 
     if (req.type === "DRUG") {
       if (req.action === "CREATE") {
@@ -258,5 +258,39 @@ export const toggleDrugAvailability = createSafeAction({
     revalidatePath("/pharmacy");
     revalidatePath("/catalogs");
     return { success: "Availability updated." };
+  }
+});
+
+export const bulkApproveCatalogRequests = createSafeAction({
+  schema: z.object({ ids: z.array(z.string()) }),
+  requiredPermission: PERMISSIONS.CATALOG_APPROVE,
+  handler: async (data, ctx) => {
+    for (const id of data.ids) {
+      try {
+        const req = await prisma.catalogChangeRequest.findUnique({ where: { id } });
+        if (!req || req.status !== "PENDING") continue;
+
+        const payload = JSON.parse(req.requestedData);
+
+        if (req.type === "DRUG") {
+          if (req.action === "CREATE") await prisma.drug.create({ data: payload });
+          else if (req.action === "UPDATE") await prisma.drug.update({ where: { id: req.targetId! }, data: payload });
+          else if (req.action === "DELETE") await prisma.drug.delete({ where: { id: req.targetId! } });
+        } else if (req.type === "LAB_TEST") {
+          if (req.action === "CREATE") await prisma.labTest.create({ data: payload });
+          else if (req.action === "UPDATE") await prisma.labTest.update({ where: { id: req.targetId! }, data: payload });
+          else if (req.action === "DELETE") await prisma.labTest.delete({ where: { id: req.targetId! } });
+        }
+
+        await prisma.catalogChangeRequest.update({
+          where: { id },
+          data: { status: "APPROVED", evaluatedById: ctx.userId }
+        });
+      } catch (e) {
+        console.error("Failed bulk approve for ", id, e);
+      }
+    }
+    revalidatePath("/catalogs/approvals");
+    return { success: "Bulk approved." };
   }
 });
