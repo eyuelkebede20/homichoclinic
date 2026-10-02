@@ -107,7 +107,7 @@ export const importPatientsCSV = createSafeAction({
       if (!firstName) firstName = "-";
       if (!lastName) lastName = "-";
 
-      let dob = dobStr ? dobStr.trim() : "-";
+      const dob = dobStr ? dobStr.trim() : "-";
 
       let primaryPatientId = null;
       if (isDependent && primaryPhone) {
