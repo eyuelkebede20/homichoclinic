@@ -11,6 +11,8 @@ import Link from "next/link";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { ClinicalDashboard } from "@/features/clinical/components/clinical-dashboard";
+import { MedicalRecordItem } from "@/features/patients/components/medical-record-item";
+import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -78,6 +80,17 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     ]);
   }
 
+  let doctorsList: { id: string; name: string }[] = [];
+  const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
+  
+  if (canCreateVisit) {
+    doctorsList = await prisma.user.findMany({
+      where: { role: "Doctor" },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    });
+  }
+
   const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";
 
   return (
@@ -99,7 +112,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 Patient Profile 
                 {isNanSince && <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">Missing 'Since' Date</span>}
               </h2>
-              {(role === "Admin" || (role === "Receptionist" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
+              {(role === "Admin" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link href={`/patients/${patient.id}/edit`} className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors">
                   Edit Details
                 </Link>
@@ -147,6 +160,10 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
             {(canPrescribe || canRequestLab) && (
               <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />
             )}
+
+            {canCreateVisit && (
+              <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
@@ -156,26 +173,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
               ) : (
                 patient.medicalRecords.map((record) => (
-                  <div key={record.id} className="border-l-4 border-blue-500 bg-slate-50 dark:bg-slate-800 p-4 rounded-r-md">
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        record.source === "paper_import" ? "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400" : "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
-                      }`}>
-                        {record.source === "paper_import" ? "Paper Import" : "System Entry"}
-                      </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {record.originalDate ? record.originalDate.toLocaleDateString() : record.createdAt.toLocaleDateString()}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{record.content}</p>
-                    {record.attachments && (
-                      <div className="mt-2 text-xs">
-                        <a href={record.attachments} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                          View Attachment &rarr;
-                        </a>
-                      </div>
-                    )}
-                  </div>
+                  <MedicalRecordItem key={record.id} record={record} />
                 ))
               )}
             </div>

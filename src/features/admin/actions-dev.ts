@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use server";
 
 import { auth } from "@/lib/auth";
@@ -38,7 +37,7 @@ export async function wipeAllPatients() {
     revalidatePath("/patients");
     revalidatePath("/admin");
     return { success: true };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Wipe failed:", error);
     return { error: "Database wipe failed: " + error.message };
   }

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
@@ -73,7 +72,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
   ]);
 
   // Group unbilled items by patient
-  const unbilledByPatient = new Map<string, any>();
+  const unbilledByPatient = new Map<string, { patient: import('@prisma/client').Patient, items: import('@prisma/client').Prisma.LabRequestGetPayload<{}>[] }>();
   
   const getPatientGroup = (patient: { id: string; patientType?: string | null } | null) => {
     if (!patient) return null;

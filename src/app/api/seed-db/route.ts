@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -59,7 +58,7 @@ export async function GET() {
       success: true, 
       message: `Seeded ${createdCount} new test users. You can now log in! Password is password123 for all.`,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }

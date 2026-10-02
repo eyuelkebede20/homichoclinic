@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
@@ -129,7 +128,7 @@ export async function POST(request: Request) {
     // Redirect back to billing
     return NextResponse.redirect(new URL("/billing", request.url), 303);
 
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Auto invoice generation error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

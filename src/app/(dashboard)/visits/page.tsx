@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -43,7 +42,7 @@ export default async function VisitsQueuePage() {
     prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } })
   ]);
 
-  const patientList: any[] = []; // Replaced by async search
+  const patientList: import('@prisma/client').Patient[] = []; // Replaced by async search
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">

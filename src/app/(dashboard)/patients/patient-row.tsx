@@ -1,9 +1,8 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useRouter } from "next/navigation";
 
-export function PatientRow({ patient }: { patient: any }) {
+export function PatientRow({ patient }: { patient: import('@prisma/client').Patient }) {
   const router = useRouter();
 
   const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";

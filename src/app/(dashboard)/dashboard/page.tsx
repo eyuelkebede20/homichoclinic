@@ -6,6 +6,7 @@ import { formatCurrency } from "@/features/billing/utils";
 import { getStartOfDayLocal } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
+import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -75,6 +76,19 @@ export default async function DashboardPage() {
       orderBy: { updatedAt: "desc" }
     });
 
+    const unreadLabResults = await prisma.labResult.findMany({
+      where: {
+        isReadByDoctor: false,
+        request: { requestedBy: session.user.id }
+      },
+      include: {
+        request: {
+          include: { patient: true, test: true }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+
     return (
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
@@ -83,6 +97,9 @@ export default async function DashboardPage() {
             <p className="text-slate-500 dark:text-slate-400">Welcome back, Dr. {session.user.name}</p>
           </div>
         </div>
+        
+        <DoctorLabResultsInbox results={unreadLabResults} />
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-blue-200 dark:border-blue-800">
             <h3 className="text-sm font-medium text-blue-600 dark:text-blue-400">My Appointments This Week</h3>

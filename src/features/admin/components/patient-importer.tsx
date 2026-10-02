@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -42,7 +41,7 @@ export function PatientImporter() {
       } else if (res.data) {
         setResult(res.data);
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("XLSX parsing error:", err);
       alert("Failed to read file: " + (err.message || "Unknown error"));
     } finally {

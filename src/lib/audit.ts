@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { prisma } from "./prisma";
 import type { PermissionString } from "./permissions";
 
@@ -6,8 +5,8 @@ type AuditPayload = {
   actorId: string;
   action: PermissionString | string;
   resourceId?: string;
-  oldValue?: any;
-  newValue?: any;
+  oldValue?: string | number | boolean | null | Record<string, unknown>;
+  newValue?: string | number | boolean | null | Record<string, unknown>;
   reason?: string;
 };
 

@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { z } from "zod";
 import { auth } from "./auth";
 import { headers } from "next/headers";
@@ -70,7 +69,7 @@ export function createSafeAction<TInput, TOutput>({
       });
 
       return { success: true, data: result };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Action error:", error);
       return { error: error.message || "An unexpected error occurred." };
     }

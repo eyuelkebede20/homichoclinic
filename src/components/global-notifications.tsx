@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState, useEffect } from "react";
@@ -8,7 +7,7 @@ import Link from "next/link";
 
 export function GlobalNotifications() {
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState<{ count: number; items: any[] }>({ count: 0, items: [] });
+  const [data, setData] = useState<{ count: number; items: { id?: string; link: string; title: string; desc: string; time: string }[] }>({ count: 0, items: [] });
 
   useEffect(() => {
     async function fetchNotifs() {

@@ -12,6 +12,9 @@ export const patientCreateSchema = z.object({
   rank: zSafeString().optional(),
   division: zSafeString().optional(),
   permanentSince: z.string().optional(),
+  primaryPatientId: z.string().optional(),
+  staffSearchStr: z.string().optional(),
+  relationship: z.string().optional(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({

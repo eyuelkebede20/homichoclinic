@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -31,8 +30,8 @@ export function InvoiceGeneratorForm({ patients }: {
     setItems(newItems);
   };
 
-  const handleChange = (index: number, field: string, value: any) => {
-    const newItems = [...items] as any;
+  const handleChange = (index: number, field: string, value: string | number) => {
+    const newItems = [...items] as Record<string, string | number>[];
     newItems[index][field] = value;
     setItems(newItems);
   };

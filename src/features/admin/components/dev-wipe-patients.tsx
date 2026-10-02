@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -26,7 +25,7 @@ export function DevWipePatients() {
         alert("All patients have been successfully deleted.");
         window.location.reload();
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       alert("Error: " + e.message);
     } finally {
       setLoading(false);

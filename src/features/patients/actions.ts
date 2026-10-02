@@ -12,6 +12,31 @@ export const createPatient = createSafeAction({
   schema: patientCreateSchema,
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
+    
+    // Duplicate Detection Logic
+    if (data.contactNumber || (data.firstName && data.lastName && data.dob)) {
+      const duplicateConditions = [];
+      if (data.contactNumber && data.contactNumber.trim() !== "") {
+        duplicateConditions.push({ contactNumber: data.contactNumber.trim() });
+      }
+      if (data.firstName && data.lastName && data.dob) {
+        duplicateConditions.push({
+          firstName: { equals: data.firstName.trim(), mode: "insensitive" as const },
+          lastName: { equals: data.lastName.trim(), mode: "insensitive" as const },
+          dob: data.dob
+        });
+      }
+      
+      if (duplicateConditions.length > 0) {
+        const existing = await prisma.patient.findFirst({
+          where: { OR: duplicateConditions }
+        });
+        if (existing) {
+          throw new Error(`A patient with this Phone Number or exact Name+DOB already exists (ID: ${existing.id}).`);
+        }
+      }
+    }
+
     const dob = data.dob || null;
     
     let permanentSince = data.permanentSince;
@@ -20,10 +45,35 @@ export const createPatient = createSafeAction({
     }
     
     let discountPercent = 0;
+    let resolvedPrimaryId = data.primaryPatientId || null;
+
     if (data.patientType === "Soldier") {
       discountPercent = 100;
     } else if (data.patientType === "Civilian Family") {
-      discountPercent = 95;
+      // Resolve staff by phone, militaryId, or employeeId
+      if (data.staffSearchStr && !resolvedPrimaryId) {
+        const primary = await prisma.patient.findFirst({
+          where: {
+            OR: [
+              { contactNumber: data.staffSearchStr.trim() },
+              { militaryId: data.staffSearchStr.trim() },
+              { employeeId: data.staffSearchStr.trim() }
+            ]
+          }
+        });
+        if (!primary) {
+          throw new Error("Could not find a staff member with that Phone Number or ID. Please verify.");
+        }
+        resolvedPrimaryId = primary.id;
+      }
+
+      // If they are family, we can inherit the exact discount of the primary patient
+      if (resolvedPrimaryId) {
+        const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
+        discountPercent = primary ? primary.discountPercent : 95; // fallback
+      } else {
+        discountPercent = 95;
+      }
     } else {
       const yearsOfService = getECYearsOfService(permanentSince);
 
@@ -49,6 +99,8 @@ export const createPatient = createSafeAction({
         division: data.division,
         permanentSince: permanentSince,
         discountPercent: discountPercent,
+        primaryPatientId: resolvedPrimaryId,
+        relationship: data.relationship || null,
       },
     });
 

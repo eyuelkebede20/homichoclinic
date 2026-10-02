@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -14,7 +13,7 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     
     const formData = new FormData(e.currentTarget);
     const priceDollars = parseFloat(formData.get("price") as string);
-    const data: any = {
+    const data: Record<string, string | number> = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       price: Math.round(priceDollars * 100), // Convert to minor units
@@ -29,8 +28,8 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     setLoading(false);
     if (res?.error) {
       alert(res.error);
-    } else if ((res as any)?.success) {
-      alert((res as any).success);
+    } else if ((res as {success?: string})?.success) {
+      alert((res as {success?: string}).success);
       (e.target as HTMLFormElement).reset();
     } else {
       (e.target as HTMLFormElement).reset();
