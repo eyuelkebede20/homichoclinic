@@ -35,7 +35,8 @@ export function TestUserSwitcher() {
         { email, password: "password123" },
         {
           onSuccess: () => {
-            router.push("/dashboard"); router.refresh();
+            setLoadingEmail(null);
+            window.location.href = "/dashboard";
           },
           onError: (ctx) => {
             alert("Error logging in: " + ctx.error.message);
