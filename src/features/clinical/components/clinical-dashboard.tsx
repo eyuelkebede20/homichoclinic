@@ -84,7 +84,7 @@ export function ClinicalDashboard({
               <input name="hr" type="number" placeholder="72" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-500">Temp (°C)</label>
+              <label className="block text-xs font-medium text-slate-500">Temp (C)</label>
               <input name="temp" type="number" step="0.1" placeholder="37.0" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
             <div>

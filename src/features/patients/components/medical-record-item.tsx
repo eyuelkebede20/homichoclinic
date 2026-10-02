@@ -21,7 +21,7 @@ export function MedicalRecordItem({ record }: { record: MedicalRecord }) {
         <div className="flex flex-wrap gap-3 mb-4 p-2 bg-white dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 text-xs">
           {record.bp && <div><span className="text-slate-500">BP:</span> <strong className="text-slate-700 dark:text-slate-300">{record.bp}</strong></div>}
           {record.heartRate && <div><span className="text-slate-500">HR:</span> <strong className="text-slate-700 dark:text-slate-300">{record.heartRate} bpm</strong></div>}
-          {record.temp && <div><span className="text-slate-500">Temp:</span> <strong className="text-slate-700 dark:text-slate-300">{record.temp} °C</strong></div>}
+          {record.temp && <div><span className="text-slate-500">Temp:</span> <strong className="text-slate-700 dark:text-slate-300">{record.temp} C</strong></div>}
           {record.weight && <div><span className="text-slate-500">Wt:</span> <strong className="text-slate-700 dark:text-slate-300">{record.weight} kg</strong></div>}
         </div>
       )}
