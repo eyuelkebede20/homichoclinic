@@ -23,15 +23,14 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
   const role = session.user.role || "User";
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
-  // Checking CATALOG_REQUEST or CATALOG_APPROVE
-  const canRequest = userPermissions.includes(PERMISSIONS.CATALOG_REQUEST);
-  const canApprove = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE);
+  const canApprove = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
+  const isLab = role === "Laboratory";
 
-  if (!canRequest && !canApprove && role !== "Laboratory" && role !== "Admin" && role !== "Manager") {
+  if (!canApprove && !isLab) {
     return (
       <div className="p-8 text-center text-red-600 dark:text-red-400">
         <h2 className="text-2xl font-bold">Access Denied</h2>
-        <p>You do not have permission to manage catalogs.</p>
+        <p>You do not have permission to view or manage the Lab Catalog.</p>
       </div>
     );
   }

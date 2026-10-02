@@ -44,22 +44,22 @@ export default async function DashboardLayout({
   if (userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
     navItems.push({ name: "Patients", href: "/patients", icon: Users });
   }
-  const canManageCatalogs = userPermissions.includes(PERMISSIONS.CATALOG_REQUEST) || userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
+  const isManagerOrAdmin = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
 
   if (userPermissions.includes(PERMISSIONS.LAB_READ)) {
     navItems.push({ name: "Laboratory", href: "/laboratory", icon: FlaskConical });
   }
-  if (canManageCatalogs || role === "Laboratory") {
+  if (isManagerOrAdmin || role === "Laboratory") {
     navItems.push({ name: "Lab Catalog", href: "/laboratory/catalog", icon: Tags });
   }
   
   if (userPermissions.includes(PERMISSIONS.INVENTORY_READ)) {
     navItems.push({ name: "Pharmacy", href: "/pharmacy", icon: Pill });
   }
-  if (canManageCatalogs || role === "Pharmacy") {
+  if (isManagerOrAdmin || role === "Pharmacy") {
     navItems.push({ name: "Pharmacy Catalog", href: "/pharmacy/catalog", icon: Tags });
   }
-  if (userPermissions.includes(PERMISSIONS.CATALOG_APPROVE)) {
+  if (isManagerOrAdmin) {
     navItems.push({ name: "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {

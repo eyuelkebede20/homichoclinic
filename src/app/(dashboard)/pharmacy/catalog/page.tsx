@@ -22,15 +22,14 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
   const role = session.user.role || "User";
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
-  // Checking CATALOG_REQUEST or CATALOG_APPROVE
-  const canRequest = userPermissions.includes(PERMISSIONS.CATALOG_REQUEST);
-  const canApprove = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE);
+  const canApprove = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
+  const isPharmacy = role === "Pharmacy";
 
-  if (!canRequest && !canApprove && role !== "Pharmacy" && role !== "Admin" && role !== "Manager") {
+  if (!canApprove && !isPharmacy) {
     return (
       <div className="p-8 text-center text-red-600 dark:text-red-400">
         <h2 className="text-2xl font-bold">Access Denied</h2>
-        <p>You do not have permission to manage catalogs.</p>
+        <p>You do not have permission to view or manage the Pharmacy Catalog.</p>
       </div>
     );
   }
