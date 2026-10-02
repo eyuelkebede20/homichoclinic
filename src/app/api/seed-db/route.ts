@@ -19,21 +19,21 @@ export async function GET() {
     for (const staff of staffToCreate) {
       const email = `${staff.role.toLowerCase()}@clinic.com`;
       const existingUser = await prisma.user.findFirst({ where: { email } });
-      
+
       if (!existingUser) {
         // Register the user through Better Auth (handles hashing securely)
         await auth.api.signUpEmail({
           body: {
             email: email,
             password: "password123",
-            name: staff.name
-          }
+            name: staff.name,
+          },
         });
-        
+
         // Force assign the correct role
         await prisma.user.updateMany({
           where: { email },
-          data: { role: staff.role }
+          data: { role: staff.role },
         });
         createdCount++;
       }
@@ -47,15 +47,15 @@ export async function GET() {
           firstName: "John",
           lastName: "Doe",
           gender: "male",
-          dob: "1985",
+          yob: "1985",
           contactNumber: "555-0192",
           discountPercent: 10,
-        }
+        },
       });
     }
 
-    return NextResponse.json({ 
-      success: true, 
+    return NextResponse.json({
+      success: true,
       message: `Seeded ${createdCount} new test users. You can now log in! Password is password123 for all.`,
     });
   } catch (error: unknown) {

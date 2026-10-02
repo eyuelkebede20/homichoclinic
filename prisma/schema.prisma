@@ -95,11 +95,11 @@ model Patient {
   id              String    @id @default(cuid())
   firstName       String
   lastName        String
-  dob             String?
+  yob             String?
   gender          String?
   contactNumber   String?
   
-  employeeId      String?   @unique // The staff ID number
+  employeeId      String?  
 
   // Role tracking
   patientType     String    @default("Civilian Staff") // "Soldier", "Civilian Staff", "Civilian Family", "Guest"

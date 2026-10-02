@@ -16,9 +16,9 @@ import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-a
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
-  
+
   const session = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
 
   if (!session) {
@@ -27,7 +27,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
 
   const role = session.user.role || "User";
   const userPermissions = ROLE_PERMISSIONS[role] || [];
-  
+
   if (!userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
     return (
       <div className="p-8 text-center text-red-600">
@@ -41,20 +41,20 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     where: { id: resolvedParams.id },
     include: {
       medicalRecords: {
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
       },
       visits: {
-        orderBy: { visitDate: "desc" }
+        orderBy: { visitDate: "desc" },
       },
       labRequests: {
         include: { test: true, result: true },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
       },
       prescriptions: {
         include: { items: { include: { drug: true } } },
-        orderBy: { createdAt: "desc" }
-      }
-    }
+        orderBy: { createdAt: "desc" },
+      },
+    },
   });
 
   if (!patient) {
@@ -68,26 +68,26 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
 
   let labTests: { id: string; name: string }[] = [];
   let drugs: { id: string; name: string }[] = [];
-  
+
   if (canPrescribe || canRequestLab) {
     [labTests, drugs] = await Promise.all([
       prisma.labTest.findMany({ where: { isOperational: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
-      prisma.drug.findMany({ 
+      prisma.drug.findMany({
         where: { batches: { some: { quantity: { gt: 0 } } } },
-        select: { id: true, name: true }, 
-        orderBy: { name: "asc" } 
-      })
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
     ]);
   }
 
   let doctorsList: { id: string; name: string }[] = [];
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
-  
+
   if (canCreateVisit) {
     doctorsList = await prisma.user.findMany({
       where: { role: "Doctor" },
       select: { id: true, name: true },
-      orderBy: { name: "asc" }
+      orderBy: { name: "asc" },
     });
   }
 
@@ -98,53 +98,63 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
       <PrintHeader title="Patient Medical Record" subtitle={`Record for ${patient.firstName} ${patient.lastName}`} />
 
       <div className="flex items-center justify-between mb-6 print:hidden">
-        <Link href="/patients" className="text-blue-600 hover:underline">&larr; Back to Patients</Link>
+        <Link href="/patients" className="text-blue-600 hover:underline">
+          &larr; Back to Patients
+        </Link>
         <PrintButton label="Print Medical History" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">
-        
         {/* Patient Info Card */}
         <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
-          <div className={`shadow rounded-lg border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
+          <div
+            className={`shadow rounded-lg border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}
+          >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Patient Profile 
-                {isNanSince && <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">Missing &apos;Since&apos; Date</span>}
+                Patient Profile
+                {isNanSince && (
+                  <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">
+                    Missing &apos;Since&apos; Date
+                  </span>
+                )}
               </h2>
               {(role === "Admin" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
-                <Link href={`/patients/${patient.id}/edit`} className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors">
+                <Link
+                  href={`/patients/${patient.id}/edit`}
+                  className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors"
+                >
                   Edit Details
                 </Link>
               )}
             </div>
-            
+
             <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Full name</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.firstName} {patient.lastName}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Date of Birth (DOB)</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {patient.dob || 'N/A'}
+                  {patient.firstName} {patient.lastName}
                 </dd>
               </div>
               <div>
+                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Year of Birth (YOB)</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.yob || "N/A"}</dd>
+              </div>
+              <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 capitalize">{patient.gender || 'N/A'}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 capitalize">{patient.gender || "N/A"}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Contact Number</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.contactNumber || 'N/A'}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.contactNumber || "N/A"}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">ID / Gov ID</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.employeeId || patient.militaryId || 'N/A'}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.employeeId || patient.militaryId || "N/A"}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || 'N/A'}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || "N/A"}</dd>
               </div>
             </dl>
           </div>
@@ -157,13 +167,9 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab) && (
-              <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />
-            )}
+            {(canPrescribe || canRequestLab) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />}
 
-            {canCreateVisit && (
-              <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />
-            )}
+            {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
@@ -172,9 +178,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               {patient.medicalRecords.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
               ) : (
-                patient.medicalRecords.map((record) => (
-                  <MedicalRecordItem key={record.id} record={record} />
-                ))
+                patient.medicalRecords.map((record) => <MedicalRecordItem key={record.id} record={record} />)
               )}
             </div>
           </div>
@@ -195,23 +199,17 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
-                      {patient.labRequests.map(req => (
+                      {patient.labRequests.map((req) => (
                         <tr key={req.id}>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                            {req.createdAt.toLocaleDateString()}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {req.test.name}
-                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{req.createdAt.toLocaleDateString()}</td>
+                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">{req.test.name}</td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             {req.status === "completed" ? (
                               <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-400">
                                 Completed
                               </span>
                             ) : req.status === "cancelled" ? (
-                              <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">
-                                Cancelled
-                              </span>
+                              <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">Cancelled</span>
                             ) : (
                               <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
                                 Pending
@@ -219,13 +217,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                             )}
                           </td>
                           <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap max-w-xs">
-                            {req.result ? (
-                              <div>
-                                {req.result.findings}
-                              </div>
-                            ) : (
-                              <span className="text-slate-400 italic">Awaiting lab</span>
-                            )}
+                            {req.result ? <div>{req.result.findings}</div> : <span className="text-slate-400 italic">Awaiting lab</span>}
                           </td>
                         </tr>
                       ))}
@@ -235,7 +227,6 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               )}
             </div>
           </div>
-          
         </div>
 
         {/* Sidebar / Manager Actions */}
@@ -250,7 +241,6 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
             </div>
           )}
         </div>
-        
       </div>
     </div>
   );
