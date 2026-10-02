@@ -239,3 +239,24 @@ export const deleteLabTest = createSafeAction({
     }
   }
 });
+
+export const toggleDrugAvailability = createSafeAction({
+  schema: z.object({ id: z.string(), isOperational: z.boolean() }),
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
+  handler: async (data, ctx) => {
+    const drug = await prisma.drug.update({
+      where: { id: data.id },
+      data: { isOperational: data.isOperational }
+    });
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.CATALOG_REQUEST,
+      resourceId: drug.id,
+      newValue: JSON.stringify({ isOperational: data.isOperational }),
+      reason: "Toggled drug availability",
+    });
+    revalidatePath("/pharmacy");
+    revalidatePath("/catalogs");
+    return { success: "Availability updated." };
+  }
+});

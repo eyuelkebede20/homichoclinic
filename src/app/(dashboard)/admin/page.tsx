@@ -5,6 +5,7 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { UserActionsRow } from "@/features/admin/components/user-actions";
 import { LowPowerToggle } from "@/features/admin/components/low-power-toggle";
+import { HeavyDutyToggle } from "@/features/admin/components/heavy-duty-toggle";
 
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
@@ -23,7 +24,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
   if (!session) redirect("/login");
 
   const role = session.user.role || "User";
-  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  const userPermissions = ROLE_PERMISSIONS[role as keyof typeof ROLE_PERMISSIONS] || [];
   
   if (!userPermissions.includes(PERMISSIONS.USER_MANAGE)) {
     return (
@@ -34,14 +35,16 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, clinicNameSetting, clinicLogoSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicLogoSetting] = await Promise.all([
     prisma.user.findMany({ orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
+    prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
   ]);
 
   const isLowPower = lowPowerSetting?.value !== "false";
+  const isHeavyDuty = heavyDutySetting?.value === "true";
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicLogo = clinicLogoSetting?.value || "";
 
@@ -56,13 +59,13 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
         <nav className="-mb-px flex space-x-8">
           <Link 
             href="?tab=users" 
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'users' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
+            className={"whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm }
           >
-            Users & System
+            Users & Toggles
           </Link>
           <Link 
             href="?tab=clinic" 
-            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'clinic' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
+            className={"whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm }
           >
             Clinic Profile
           </Link>
@@ -74,13 +77,14 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PatientImporter />
             <div className="flex flex-col gap-6">
+              <HeavyDutyToggle initial={isHeavyDuty} />
               <LowPowerToggle initial={isLowPower} />
               <DatabaseBackupButton />
               <DevWipePatients />
             </div>
           </div>
 
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr>
@@ -94,9 +98,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
               <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                   {user.name}
-                  {session.user.id === user.id && (
-                    <span className="ml-2 text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 px-2 py-0.5 rounded-full">You</span>
-                  )}
+                  <div className="text-xs text-slate-500 mt-1">Role: {user.role || "User"}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
                   {user.email}
