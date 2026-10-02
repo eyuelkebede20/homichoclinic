@@ -29,6 +29,7 @@ export async function GET(request: Request) {
   } : undefined;
 
   const logs = await prisma.auditLog.findMany({
+    take: 10000,
     where: whereClause,
     orderBy: { createdAt: "desc" },
   });

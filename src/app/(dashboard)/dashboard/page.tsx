@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/features/billing/utils";
+import { getStartOfDayLocal } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 
@@ -34,8 +35,7 @@ export default async function DashboardPage() {
     redirect("/patients");
   }
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getStartOfDayLocal();
 
   // 2. Doctor Dashboard
   if (role === "Doctor") {

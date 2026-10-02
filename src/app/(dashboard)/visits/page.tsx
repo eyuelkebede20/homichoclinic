@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { VisitStatusActions } from "@/features/clinical/components/visit-status-actions";
 import { OpdSetupModal } from "@/features/clinical/components/opd-setup-modal";
+import { getStartOfDayLocal } from "@/lib/date-utils";
 
 export default async function VisitsQueuePage() {
   const session = await auth.api.getSession({
@@ -30,8 +31,7 @@ export default async function VisitsQueuePage() {
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
 
   // Get today's visits
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = getStartOfDayLocal();
   
   const [visits, doctors, opdSetting] = await Promise.all([
     prisma.visit.findMany({

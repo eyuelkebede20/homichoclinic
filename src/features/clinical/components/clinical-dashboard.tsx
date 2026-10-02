@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Activity, PlusCircle, CheckCircle2 } from "lucide-react";
+import { Loader2, Activity, PlusCircle } from "lucide-react";
 import { addClinicalNote, toggleAdmissionStatus } from "../actions";
 import { useRouter } from "next/navigation";
 
@@ -13,7 +13,6 @@ export function ClinicalDashboard({
   admissionStatus: string;
 }) {
   const [loading, setLoading] = useState(false);
-  const [note, setNote] = useState("");
   const router = useRouter();
 
   async function handleStatusToggle() {
@@ -24,15 +23,29 @@ export function ClinicalDashboard({
     else router.refresh();
   }
 
-  async function handleNoteSubmit(e: React.FormEvent) {
+  async function handleNoteSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!note.trim()) return;
     setLoading(true);
-    const res = await addClinicalNote({ patientId, content: note });
+
+    const fd = new FormData(e.currentTarget);
+    const data = {
+      patientId,
+      bp: fd.get("bp") as string || undefined,
+      heartRate: fd.get("hr") ? Number(fd.get("hr")) : undefined,
+      temp: fd.get("temp") ? Number(fd.get("temp")) : undefined,
+      weight: fd.get("weight") ? Number(fd.get("weight")) : undefined,
+      subjective: fd.get("subjective") as string || undefined,
+      objective: fd.get("objective") as string || undefined,
+      assessment: fd.get("assessment") as string || undefined,
+      plan: fd.get("plan") as string || undefined,
+      content: fd.get("content") as string || "SOAP Entry"
+    };
+
+    const res = await addClinicalNote(data);
     setLoading(false);
     if (res.error) alert(res.error);
     else {
-      setNote("");
+      (e.target as HTMLFormElement).reset();
       router.refresh();
     }
   }
@@ -58,27 +71,59 @@ export function ClinicalDashboard({
         </div>
       </div>
 
-      <form onSubmit={handleNoteSubmit} className="space-y-4">
+      <form onSubmit={handleNoteSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-            Add Clinical Note / System Entry
-          </label>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            rows={4}
-            placeholder="Write diagnosis, observation, or clinical notes here..."
-            className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">Vitals</h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-500">BP (mmHg)</label>
+              <input name="bp" placeholder="120/80" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Heart Rate (bpm)</label>
+              <input name="hr" type="number" placeholder="72" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Temp (°C)</label>
+              <input name="temp" type="number" step="0.1" placeholder="37.0" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Weight (kg)</label>
+              <input name="weight" type="number" step="0.1" placeholder="70.5" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+          </div>
         </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">SOAP Notes</h3>
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Subjective (Symptoms)</label>
+              <textarea name="subjective" rows={2} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Objective (Observations)</label>
+              <textarea name="objective" rows={2} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Assessment (Diagnosis)</label>
+              <textarea name="assessment" rows={2} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-500">Plan (Treatment)</label>
+              <textarea name="plan" rows={2} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-end">
           <button
             type="submit"
-            disabled={loading || !note.trim()}
+            disabled={loading}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
-            Save Clinical Note
+            Save Clinical Record
           </button>
         </div>
       </form>

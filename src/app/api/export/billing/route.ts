@@ -19,6 +19,7 @@ export async function GET(request: Request) {
   }
 
   const invoices = await prisma.invoice.findMany({
+    take: 10000,
     include: { patient: true },
     orderBy: { createdAt: "desc" },
   });

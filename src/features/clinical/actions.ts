@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { getStartOfDayLocal } from "@/lib/date-utils";
 
 export const createVisit = createSafeAction({
   schema: visitCreateSchema,
@@ -25,8 +26,7 @@ export const createVisit = createSafeAction({
       const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
       const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
       
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = getStartOfDayLocal();
 
       // Get count of currently waiting/in-progress patients per room
       const activeVisits = await prisma.visit.groupBy({
@@ -294,13 +294,32 @@ export const toggleAdmissionStatus = createSafeAction({
 });
 
 export const addClinicalNote = createSafeAction({
-  schema: z.object({ patientId: z.string(), content: z.string() }),
+  schema: z.object({ 
+    patientId: z.string(), 
+    content: z.string(),
+    bp: z.string().optional(),
+    heartRate: z.coerce.number().optional(),
+    temp: z.coerce.number().optional(),
+    weight: z.coerce.number().optional(),
+    subjective: z.string().optional(),
+    objective: z.string().optional(),
+    assessment: z.string().optional(),
+    plan: z.string().optional(),
+  }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
   handler: async (data, ctx) => {
     const record = await prisma.medicalRecord.create({
       data: {
         patientId: data.patientId,
         content: data.content,
+        bp: data.bp,
+        heartRate: data.heartRate,
+        temp: data.temp,
+        weight: data.weight,
+        subjective: data.subjective,
+        objective: data.objective,
+        assessment: data.assessment,
+        plan: data.plan,
         source: "system",
         enteredById: ctx.userId
       }
@@ -308,5 +327,18 @@ export const addClinicalNote = createSafeAction({
     await logAudit({ actorId: ctx.userId, action: "CLINICAL_NOTE_ADD", resourceId: record.id });
     revalidatePath(`/patients/${data.patientId}`);
     return record;
+  }
+});
+
+export const dismissLabResult = createSafeAction({
+  schema: z.object({ resultId: z.string() }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const result = await prisma.labResult.update({
+      where: { id: data.resultId },
+      data: { isReadByDoctor: true }
+    });
+    revalidatePath("/dashboard");
+    return result;
   }
 });

@@ -34,9 +34,12 @@ export function GlobalNotifications() {
       >
         <Bell className="w-5 h-5" />
         {data.count > 0 && (
-          <span className="absolute top-1 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
-            {data.count > 9 ? "9+" : data.count}
-          </span>
+          <>
+            <span className="absolute top-1 right-1.5 flex h-4 w-4 rounded-full bg-red-600 opacity-75 animate-ping"></span>
+            <span className="absolute top-1 right-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-sm ring-2 ring-white dark:ring-slate-900">
+              {data.count > 9 ? "9+" : data.count}
+            </span>
+          </>
         )}
       </button>
 
