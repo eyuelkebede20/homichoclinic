@@ -8,7 +8,7 @@ import { Loader2 } from "lucide-react";
 export function PatientForm({ userRole = "User" }: { userRole?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [ageMode, setAgeMode] = useState(false);
+
   const [patientType, setPatientType] = useState("Soldier");
   const router = useRouter();
 
@@ -18,15 +18,15 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    let yob = formData.get("yob") as string;
-    
-    if (ageMode) {
-      const ageStr = formData.get("age") as string;
-      if (ageStr) {
-        const age = parseInt(ageStr, 10);
-        if (!isNaN(age)) {
-          const currentYear = new Date().getFullYear();
-          yob = `${currentYear - age}-01-01`;
+    let yobStr = formData.get("age") as string;
+    let yob = "";
+    if (yobStr) {
+      const num = parseInt(yobStr, 10);
+      if (!isNaN(num)) {
+        if (num < 200) {
+          yob = (2019 - num).toString();
+        } else {
+          yob = num.toString();
         }
       }
     }
@@ -75,35 +75,15 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <div className="flex flex-col">
-          <div className="flex justify-between items-end mb-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              {ageMode ? "Age (Years)" : "Date of Birth (yob)"}
-            </label>
-            <button 
-              type="button" 
-              onClick={() => setAgeMode(!ageMode)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
-            >
-              Use {ageMode ? "Date" : "Age"} instead
-            </button>
-          </div>
-          {ageMode ? (
-            <input 
-              name="age" 
-              type="number" 
-              min="0"
-              max="150"
-              placeholder="e.g. 45"
-              className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-            />
-          ) : (
-            <input 
-              name="yob" 
-              type="date"
-              className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
-            />
-          )}
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age (or Year of Birth)</label>
+          <input 
+            name="age" 
+            type="number" 
+            min="0"
+            placeholder="e.g. 30 (or 1989)"
+            className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+          />
         </div>
         <div className="flex flex-col justify-end">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gender</label>
