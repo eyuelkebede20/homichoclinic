@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getECYearsOfService } from "@/lib/ethiopian-calendar";
 
-export async function GET(request: Request) {
+export async function GET() {
   // Simple cron endpoint to recalculate all civilian staff discounts on Ethiopian New Year
   // In production, you would protect this with a secure token:
   // const authHeader = request.headers.get('authorization');

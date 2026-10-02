@@ -72,7 +72,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
   ]);
 
   // Group unbilled items by patient
-  const unbilledByPatient = new Map<string, any>();
+  const unbilledByPatient = new Map<string, { patient: import('@prisma/client').Patient; visits: import('@prisma/client').Visit[]; labRequests: import('@prisma/client').LabRequest[]; prescriptions: import('@prisma/client').PrescriptionItem[] }>();
   
   const getPatientGroup = (patient: { id: string; patientType?: string | null } | null) => {
     if (!patient) return null;

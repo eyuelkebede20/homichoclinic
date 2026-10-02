@@ -4,7 +4,7 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/features/billing/utils";
 
-export async function GET(request: Request) {
+export async function GET() {
   const session = await auth.api.getSession({
     headers: await headers()
   });

@@ -85,7 +85,7 @@ export default async function AuditLogPage({ searchParams }: { searchParams: Pro
         if (keys.length > 0) return `Updated fields: ${keys.join(", ")}`;
       }
       return log.reason || "Performed system action";
-    } catch (e) {
+    } catch (_) {
       return log.reason || "Performed system action";
     }
   }

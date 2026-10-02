@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect, notFound } from "next/navigation";
-import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { ROLE_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { PatientEditForm } from "@/features/patients/components/patient-edit-form";
 
@@ -17,7 +17,7 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
   }
 
   const role = session.user.role || "User";
-  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  
   
   if (role !== "Admin") {
     return (

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { ROLE_PERMISSIONS } from "@/lib/permissions";
 import { exec } from "child_process";
 import util from "util";
 import fs from "fs/promises";
@@ -10,7 +10,7 @@ import os from "os";
 
 const execAsync = util.promisify(exec);
 
-export async function GET(request: Request) {
+export async function GET() {
   const session = await auth.api.getSession({
     headers: await headers()
   });

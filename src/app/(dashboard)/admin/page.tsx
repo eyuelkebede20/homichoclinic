@@ -71,11 +71,13 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
 
       {tab === "users" && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <LowPowerToggle initial={isLowPower} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <PatientImporter />
-            <DatabaseBackupButton />
-            <DevWipePatients />
+            <div className="flex flex-col gap-6">
+              <LowPowerToggle initial={isLowPower} />
+              <DatabaseBackupButton />
+              <DevWipePatients />
+            </div>
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">

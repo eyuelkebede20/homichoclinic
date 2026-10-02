@@ -84,7 +84,7 @@ export const createPatient = createSafeAction({
       else discountPercent = 50;
     }
 
-    const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
+    
 
     const newPatient = await prisma.patient.create({
       data: {
@@ -120,7 +120,7 @@ export const updatePatient = createSafeAction({
   schema: patientUpdateSchema,
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
-    const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
+    
     const existingPatient = await prisma.patient.findUnique({ where: { id: data.patientId } });
     if (!existingPatient) throw new Error("Patient not found.");
 

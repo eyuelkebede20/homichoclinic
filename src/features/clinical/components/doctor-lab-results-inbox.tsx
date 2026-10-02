@@ -9,7 +9,7 @@ import Link from "next/link";
 export function DoctorLabResultsInbox({
   results
 }: {
-  results: any[]
+  results: { id: string; findings: string | null; request: { id: string; test: { name: string }, patient: { firstName: string; lastName: string } } }[]
 }) {
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
