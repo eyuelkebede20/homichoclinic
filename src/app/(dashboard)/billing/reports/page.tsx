@@ -7,9 +7,9 @@ import { formatCurrency } from "@/features/billing/utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import Link from "next/link";
-import { getStartOfDayLocal } from "@/lib/date-utils";
+import { getStartOfDayLocal, getEndOfDayLocal } from "@/lib/date-utils";
 
-export default async function BillingReportsPage(props: { searchParams: Promise<{ date?: string }> }) {
+export default async function BillingReportsPage(props: { searchParams: Promise<{ date?: string, sort?: string }> }) {
   const searchParams = await props.searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   
@@ -27,27 +27,29 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
     );
   }
 
-  // Determine target date
-  let targetDate = getStartOfDayLocal();
+  // Determine target date using safe local timezone utils
+  let startOfDay = getStartOfDayLocal();
+  let endOfDay = getEndOfDayLocal();
+  
   if (searchParams.date) {
-    const parsed = new Date(searchParams.date);
-    if (!isNaN(parsed.getTime())) {
-      targetDate = parsed;
+    const parts = searchParams.date.split("-");
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1];
+      const day = parts[2];
+      // Construct explicitly with clinic timezone (+03:00)
+      startOfDay = new Date("${year}--T00:00:00+03:00");
+      endOfDay = new Date("${year}--T23:59:59.999+03:00");
     }
   }
 
-  const startOfDay = new Date(targetDate);
-  startOfDay.setHours(0, 0, 0, 0);
-  const endOfDay = new Date(targetDate);
-  endOfDay.setHours(23, 59, 59, 999);
-
   // Determine current month range
-  const startOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth(), 1);
-  const endOfMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0, 23, 59, 59, 999);
+  const startOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), 1);
+  const endOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth() + 1, 0, 23, 59, 59, 999);
 
   // Determine current year range
-  const startOfYear = new Date(targetDate.getFullYear(), 0, 1);
-  const endOfYear = new Date(targetDate.getFullYear(), 11, 31, 23, 59, 59, 999);
+  const startOfYear = new Date(startOfDay.getFullYear(), 0, 1);
+  const endOfYear = new Date(startOfDay.getFullYear(), 11, 31, 23, 59, 59, 999);
 
   // Fetch daily payments
   const dailyPayments = await prisma.payment.findMany({
@@ -64,8 +66,11 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
   let dailyTotal = 0;
   const methodTotals: Record<string, number> = { cash: 0, card: 0, transfer: 0 };
   
-  // Sort payments based on patient discount as requested (highest discount first)
-  dailyPayments.sort((a, b) => b.invoice.discountPercentApplied - a.invoice.discountPercentApplied);
+  // Sort logic based on search params
+  const isSortByDiscount = searchParams.sort === "discount";
+  if (isSortByDiscount) {
+    dailyPayments.sort((a, b) => b.invoice.discountPercentApplied - a.invoice.discountPercentApplied);
+  }
 
   for (const p of dailyPayments) {
     dailyTotal += p.amount;
@@ -86,7 +91,7 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
-      <PrintHeader title="Cashier Shift Reconciliation (Z-Report)" subtitle={`Date: ${startOfDay.toLocaleDateString()}`} />
+      <PrintHeader title="Cashier Shift Reconciliation (Z-Report)" subtitle={"Date: "} />
       
       <div className="flex justify-between items-center print:hidden">
         <div>
@@ -102,14 +107,15 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
       </div>
 
       {/* Date Picker Form (Hidden in print) */}
-      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-800 print:hidden flex items-center gap-4">
+      <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-800 print:hidden flex items-center justify-between">
         <form className="flex items-end gap-4" method="GET">
+          <input type="hidden" name="sort" value={searchParams.sort || ""} />
           <div>
             <label className="block text-xs font-medium text-slate-500 mb-1">Select Date</label>
             <input 
               type="date" 
               name="date" 
-              defaultValue={targetDate.toISOString().split("T")[0]}
+              defaultValue={startOfDay.toISOString().split("T")[0]}
               className="block rounded border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1.5 text-sm" 
             />
           </div>
@@ -117,37 +123,61 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
             Load Report
           </button>
         </form>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-blue-200 dark:border-blue-800 text-center">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Today&apos;s Total (Z-Report)</h3>
-          <p className="text-4xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(dailyTotal)}</p>
-          <div className="mt-4 flex justify-between text-xs text-slate-600 dark:text-slate-400 px-4">
-            <span>Cash: {formatCurrency(methodTotals.cash)}</span>
-            <span>Card: {formatCurrency(methodTotals.card)}</span>
-            <span>Bank: {formatCurrency(methodTotals.transfer)}</span>
-          </div>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 text-center">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Month to Date</h3>
-          <p className="text-4xl font-bold text-slate-700 dark:text-slate-300">{formatCurrency(monthlyAgg._sum.amount || 0)}</p>
-          <p className="text-xs text-slate-500 mt-2">{startOfMonth.toLocaleDateString()} - {endOfMonth.toLocaleDateString()}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 text-center">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 mb-1">Year to Date</h3>
-          <p className="text-4xl font-bold text-slate-700 dark:text-slate-300">{formatCurrency(yearlyAgg._sum.amount || 0)}</p>
-          <p className="text-xs text-slate-500 mt-2">Fiscal Year {startOfYear.getFullYear()}</p>
+        
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-500">Sort by:</span>
+          <Link 
+            href={"?date=&sort=time"} 
+            className={"text-sm px-3 py-1 rounded-md "}
+          >
+            Time
+          </Link>
+          <Link 
+            href={"?date=&sort=discount"} 
+            className={"text-sm px-3 py-1 rounded-md "}
+          >
+            Discount %
+          </Link>
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Daily Patient Signatures (Reconciliation)</h2>
-          <p className="text-xs text-slate-500 mt-1">Verify physical signatures against the system collected amounts. Sorted by discount tier.</p>
+      {/* Totals Section */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Cash</h3>
+          <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(methodTotals.cash || 0)}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Card</h3>
+          <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(methodTotals.card || 0)}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Transfer</h3>
+          <p className="mt-2 text-2xl font-bold text-purple-600 dark:text-purple-400">{formatCurrency(methodTotals.transfer || 0)}</p>
+        </div>
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/10">
+          <h3 className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Total Daily Revenue</h3>
+          <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-300">{formatCurrency(dailyTotal)}</p>
+        </div>
+      </div>
+
+      <div className="flex gap-6 print:hidden">
+        <div className="text-sm text-slate-500">
+          MTD Revenue: <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(monthlyAgg._sum.amount || 0)}</span>
+        </div>
+        <div className="text-sm text-slate-500">
+          YTD Revenue: <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(yearlyAgg._sum.amount || 0)}</span>
+        </div>
+      </div>
+
+      {/* Activity Table */}
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Shift Activity Ledger</h2>
+          <span className="text-sm text-slate-500">{dailyPayments.length} transactions</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+          <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Name</th>
