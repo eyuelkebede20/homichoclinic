@@ -55,7 +55,7 @@ export function TestUserSwitcher() {
     setLoadingEmail("logout");
     try {
       await signOut();
-      router.push("/login"); router.refresh();
+      window.location.href = "/login";
     } catch (err) {
       console.error(err);
       setLoadingEmail(null);
