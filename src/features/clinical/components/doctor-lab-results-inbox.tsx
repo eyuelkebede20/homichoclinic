@@ -9,7 +9,7 @@ import Link from "next/link";
 export function DoctorLabResultsInbox({
   results
 }: {
-  results: import('@prisma/client').Prisma.LabResultGetPayload<{}>[]
+  results: any[]
 }) {
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();

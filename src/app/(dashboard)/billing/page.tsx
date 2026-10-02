@@ -72,7 +72,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
   ]);
 
   // Group unbilled items by patient
-  const unbilledByPatient = new Map<string, { patient: import('@prisma/client').Patient, items: import('@prisma/client').Prisma.LabRequestGetPayload<{}>[] }>();
+  const unbilledByPatient = new Map<string, { patient: import('@prisma/client').Patient, items: import('@prisma/client').Prisma.LabRequestGetPayload<Record<string, never>>[] }>();
   
   const getPatientGroup = (patient: { id: string; patientType?: string | null } | null) => {
     if (!patient) return null;
@@ -115,10 +115,12 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
             </button>
           </form>
 
+          <Link href="/billing/reports" className="px-4 py-2 bg-indigo-600 text-white font-medium rounded hover:bg-indigo-700 shadow-sm text-sm">
+            Z-Reports
+          </Link>
           <a href="/api/export/billing" className="px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-sm flex items-center">
             <Download className="w-4 h-4 mr-2" />
             Export CSV</a>
-          
           {userPermissions.includes(PERMISSIONS.INVOICE_CREATE) && (
             <Link href="/billing/new" className="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-sm">
               + Generate Invoice

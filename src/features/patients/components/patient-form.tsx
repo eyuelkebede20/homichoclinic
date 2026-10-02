@@ -149,6 +149,27 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         </div>
       )}
 
+      {patientType === "Civilian Family" && (
+        <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+          <div>
+            <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Staff Member Search (Phone or ID)</label>
+            <input required name="staffSearchStr" type="text" placeholder="Enter staff phone or ID" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">Look up primary staff member to inherit benefits.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Relationship to Staff</label>
+            <select required name="relationship" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm">
+              <option value="">Select...</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Child">Child</option>
+              <option value="Parent">Parent</option>
+              <option value="Sibling">Sibling</option>
+              <option value="Other">Other Dependent</option>
+            </select>
+          </div>
+        </div>
+      )}
+
       {patientType === "Civilian Staff" && (
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
           <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>

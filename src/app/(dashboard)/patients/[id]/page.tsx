@@ -110,7 +110,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
                 Patient Profile 
-                {isNanSince && <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">Missing 'Since' Date</span>}
+                {isNanSince && <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">Missing &apos;Since&apos; Date</span>}
               </h2>
               {(role === "Admin" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link href={`/patients/${patient.id}/edit`} className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors">

@@ -95,6 +95,13 @@ export const recordPayment = createSafeAction({
         data: { status: "paid" },
       });
 
+      // Auto-Discharge / Visit Closing Workflow
+      // Any visits attached to this fully paid invoice are considered completed/discharged.
+      await tx.visit.updateMany({
+        where: { invoiceId: invoice.id, status: { not: "completed" } },
+        data: { status: "completed" },
+      });
+
       return newPayment;
     });
 
