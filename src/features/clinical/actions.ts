@@ -21,15 +21,41 @@ export const createVisit = createSafeAction({
         assignedRoom = doc.currentOpdRoom;
       }
     } else {
-      // Fallback: round-robin if no doctor or no room set
+      // True Load Balancing: Assign to the active OPD room with the fewest queued patients
       const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
       const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
+      
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todaysVisitsCount = await prisma.visit.count({
-        where: { visitDate: { gte: today } }
+
+      // Get count of currently waiting/in-progress patients per room
+      const activeVisits = await prisma.visit.groupBy({
+        by: ['opdRoom'],
+        where: {
+          visitDate: { gte: today },
+          status: { in: ["scheduled", "in_progress"] },
+          opdRoom: { not: null, lte: opdRoomCount }
+        },
+        _count: { id: true }
       });
-      assignedRoom = (todaysVisitsCount % opdRoomCount) + 1;
+
+      // Initialize queue depth for all valid rooms (1 to opdRoomCount) to 0
+      const roomLoads = Array.from({ length: opdRoomCount }, (_, i) => ({ room: i + 1, count: 0 }));
+      
+      // Populate actual queue depths
+      for (const v of activeVisits) {
+        if (v.opdRoom) {
+          const idx = v.opdRoom - 1;
+          if (idx >= 0 && idx < opdRoomCount) {
+            roomLoads[idx].count = v._count.id;
+          }
+        }
+      }
+      
+      // Sort rooms by count (ascending) to find the least busy one
+      roomLoads.sort((a, b) => a.count - b.count);
+      
+      assignedRoom = roomLoads[0].room;
     }
 
     const visit = await prisma.visit.create({
