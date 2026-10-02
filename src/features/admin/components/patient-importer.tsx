@@ -41,7 +41,7 @@ export function PatientImporter() {
       } else if (res.data) {
         setResult(res.data);
       }
-    } catch (err: unknown) {
+    } catch (err: any) {
       console.error("XLSX parsing error:", err);
       alert("Failed to read file: " + (err.message || "Unknown error"));
     } finally {

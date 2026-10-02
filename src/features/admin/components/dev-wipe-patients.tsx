@@ -25,7 +25,7 @@ export function DevWipePatients() {
         alert("All patients have been successfully deleted.");
         window.location.reload();
       }
-    } catch (e: unknown) {
+    } catch (e: any) {
       alert("Error: " + e.message);
     } finally {
       setLoading(false);

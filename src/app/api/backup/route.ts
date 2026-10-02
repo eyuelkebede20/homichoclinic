@@ -55,7 +55,7 @@ export async function GET() {
       }
     });
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Backup failed:", error);
     await fs.unlink(tmpFilePath).catch(() => {});
     return new NextResponse("Database backup failed: " + error.message, { status: 500 });

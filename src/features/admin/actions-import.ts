@@ -78,7 +78,7 @@ export const importPatientsCSV = createSafeAction({
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
       const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
       const finalPhone = phone || "-";
-      const dobStr = row["dob"] || row["dateofbirth"] || row["yob"];
+      const dobStr = row["yob"] || row["dateofbirth"] || row["yob"];
       const gender = row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
@@ -107,7 +107,7 @@ export const importPatientsCSV = createSafeAction({
       if (!firstName) firstName = "-";
       if (!lastName) lastName = "-";
 
-      const dob = dobStr ? dobStr.trim() : "-";
+      const yob = dobStr ? dobStr.trim() : "-";
 
       let primaryPatientId = null;
       if (isDependent && primaryPhone) {
@@ -148,7 +148,7 @@ export const importPatientsCSV = createSafeAction({
             lastName,
             contactNumber: finalPhone,
             gender: gender,
-            dob: dob,
+            yob: yob,
             discountPercent: computedDiscount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
             primaryPatientId: primaryPatientId,

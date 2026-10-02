@@ -37,7 +37,7 @@ export function DoctorLabResultsInbox({
         {results.map(res => (
           <li key={res.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex justify-between items-center group">
             <div>
-              <Link href={`/patients/${res.request.patientId}`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+              <Link href={`/patients/${(res.request as any).patientId}`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
                 {res.request.patient.firstName} {res.request.patient.lastName}
                 <ChevronRight className="w-4 h-4 opacity-0 group-hover:opacity-100 transition-opacity" />
               </Link>

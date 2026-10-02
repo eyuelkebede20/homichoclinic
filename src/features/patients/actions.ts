@@ -14,16 +14,16 @@ export const createPatient = createSafeAction({
   handler: async (data, ctx) => {
     
     // Duplicate Detection Logic
-    if (data.contactNumber || (data.firstName && data.lastName && data.dob)) {
+    if (data.contactNumber || (data.firstName && data.lastName && data.yob)) {
       const duplicateConditions = [];
       if (data.contactNumber && data.contactNumber.trim() !== "") {
         duplicateConditions.push({ contactNumber: data.contactNumber.trim() });
       }
-      if (data.firstName && data.lastName && data.dob) {
+      if (data.firstName && data.lastName && data.yob) {
         duplicateConditions.push({
           firstName: { equals: data.firstName.trim(), mode: "insensitive" as const },
           lastName: { equals: data.lastName.trim(), mode: "insensitive" as const },
-          dob: data.dob
+          yob: data.yob
         });
       }
       
@@ -32,12 +32,12 @@ export const createPatient = createSafeAction({
           where: { OR: duplicateConditions }
         });
         if (existing) {
-          throw new Error(`A patient with this Phone Number or exact Name+DOB already exists (ID: ${existing.id}).`);
+          throw new Error(`A patient with this Phone Number or exact Name+yob already exists (ID: ${existing.id}).`);
         }
       }
     }
 
-    const dob = data.dob || null;
+    const yob = data.yob || null;
     
     let permanentSince = data.permanentSince;
     if (!permanentSince || permanentSince.trim() === "") {
@@ -90,7 +90,7 @@ export const createPatient = createSafeAction({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        dob: dob,
+        yob: yob,
         gender: data.gender,
         contactNumber: data.contactNumber,
         patientType: data.patientType || "Civilian Staff",
@@ -124,8 +124,8 @@ export const updatePatient = createSafeAction({
     const existingPatient = await prisma.patient.findUnique({ where: { id: data.patientId } });
     if (!existingPatient) throw new Error("Patient not found.");
 
-    if (user?.role !== "Admin") {
-      if (user?.role === "Receptionist") {
+    if (ctx.role !== "Admin") {
+      if (ctx.role === "Receptionist") {
         const isTimeExpired = new Date().getTime() - existingPatient.createdAt.getTime() >= 86400000;
         const isNanSince = !existingPatient.permanentSince || existingPatient.permanentSince === "NaN";
         if (isTimeExpired && !isNanSince) {
@@ -136,7 +136,7 @@ export const updatePatient = createSafeAction({
       }
     }
 
-    const dob = data.dob || null;
+    const yob = data.yob || null;
     let permanentSince = data.permanentSince;
     if (!permanentSince || permanentSince.trim() === "") {
       permanentSince = "NaN";
@@ -163,7 +163,7 @@ export const updatePatient = createSafeAction({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        dob: dob,
+        yob: yob,
         gender: data.gender,
         contactNumber: data.contactNumber,
         permanentSince: permanentSince,

@@ -58,8 +58,8 @@ export async function GET() {
       success: true,
       message: `Seeded ${createdCount} new test users. You can now log in! Password is password123 for all.`,
     });
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message || "Unknown error" }, { status: 500 });
   }
 }

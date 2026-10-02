@@ -4,7 +4,7 @@ import { useState } from "react";
 import { processCatalogApproval } from "../actions";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
-export function ApprovalsList({ requests, isPending }: { requests: import('@prisma/client').CatalogChangeRequest[], isPending: boolean }) {
+export function ApprovalsList({ requests, isPending }: { requests: any[], isPending: boolean }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   async function handleAction(id: string, approve: boolean) {

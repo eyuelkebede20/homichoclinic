@@ -69,7 +69,7 @@ export function createSafeAction<TInput, TOutput>({
       });
 
       return { success: true, data: result };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error("Action error:", error);
       return { error: error.message || "An unexpected error occurred." };
     }

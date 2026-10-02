@@ -42,7 +42,7 @@ export default async function VisitsQueuePage() {
     prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } })
   ]);
 
-  const patientList: import('@prisma/client').Patient[] = []; // Replaced by async search
+  const patientList: any[] = []; // Replaced by async search
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -54,7 +54,7 @@ export default async function VisitsQueuePage() {
       {canCreateVisit && (
         <>
           <OpdSetupModal initialValue={opdSetting?.value} />
-          <VisitForm patients={patientList} doctors={doctors} />
+          <VisitForm patients={patientList as any} doctors={doctors} />
         </>
       )}
 

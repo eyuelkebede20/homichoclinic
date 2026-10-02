@@ -74,7 +74,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
   // Group unbilled items by patient
   const unbilledByPatient = new Map<string, { patient: import('@prisma/client').Patient; visits: import('@prisma/client').Visit[]; labRequests: import('@prisma/client').LabRequest[]; prescriptions: import('@prisma/client').PrescriptionItem[] }>();
   
-  const getPatientGroup = (patient: { id: string; patientType?: string | null } | null) => {
+  const getPatientGroup = (patient: any) => {
     if (!patient) return null;
     if (!unbilledByPatient.has(patient.id)) {
       unbilledByPatient.set(patient.id, {
@@ -87,9 +87,9 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
     return unbilledByPatient.get(patient.id);
   };
 
-  unbilledVisits.forEach(v => getPatientGroup(v.patient).visits.push(v));
-  unbilledLabRequests.forEach(l => getPatientGroup(l.patient).labRequests.push(l));
-  unbilledPrescriptions.forEach(p => getPatientGroup(p.prescription.patient).prescriptions.push(p));
+  unbilledVisits.forEach(v => getPatientGroup(v.patient)?.visits.push(v));
+  unbilledLabRequests.forEach(l => getPatientGroup(l.patient)?.labRequests.push(l));
+  unbilledPrescriptions.forEach(p => getPatientGroup(p.prescription.patient)?.prescriptions.push(p));
 
   const unbilledQueue = Array.from(unbilledByPatient.values());
 

@@ -37,7 +37,7 @@ export async function wipeAllPatients() {
     revalidatePath("/patients");
     revalidatePath("/admin");
     return { success: true };
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error("Wipe failed:", error);
     return { error: "Database wipe failed: " + error.message };
   }

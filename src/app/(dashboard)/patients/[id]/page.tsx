@@ -73,7 +73,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     [labTests, drugs] = await Promise.all([
       prisma.labTest.findMany({ where: { isOperational: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.drug.findMany({
-        where: { batches: { some: { quantity: { gt: 0 } } } },
+        where: { isOperational: true, batches: { some: { quantity: { gt: 0 } } } },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),

@@ -128,7 +128,7 @@ export async function POST(request: Request) {
     // Redirect back to billing
     return NextResponse.redirect(new URL("/billing", request.url), 303);
 
-  } catch (err: unknown) {
+  } catch (err: any) {
     console.error("Auto invoice generation error:", err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

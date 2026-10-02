@@ -12,7 +12,7 @@ import { getStartOfDayLocal } from "@/lib/date-utils";
 export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     let assignedRoom = 1;
 
     // If a doctor is selected, try to get their active OPD room
@@ -84,7 +84,7 @@ export const createVisit = createSafeAction({
 export const createMedicalRecord = createSafeAction({
   schema: medicalRecordCreateSchema,
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const originalDate = data.originalDate ? new Date(data.originalDate) : null;
 
     const record = await prisma.medicalRecord.create({
@@ -113,7 +113,7 @@ export const createMedicalRecord = createSafeAction({
 export const requestLabTest = createSafeAction({
   schema: labRequestSchema,
   requiredPermission: PERMISSIONS.LAB_REQUEST,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     // createMany is not always available with SQLite, but we are on Postgres so it's fine.
     const requests = await prisma.labRequest.createManyAndReturn({
       data: data.testIds.map(testId => ({
@@ -140,7 +140,7 @@ export const requestLabTest = createSafeAction({
 export const submitLabResult = createSafeAction({
   schema: labResultSchema,
   requiredPermission: PERMISSIONS.LAB_RESULT,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const result = await prisma.$transaction(async (tx) => {
       // Create the result
       const labResult = await tx.labResult.create({
@@ -175,7 +175,7 @@ export const submitLabResult = createSafeAction({
 export const createPrescription = createSafeAction({
   schema: prescriptionCreateSchema,
   requiredPermission: PERMISSIONS.PRESCRIPTION_CREATE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const rx = await prisma.prescription.create({
       data: {
         patientId: data.patientId,
@@ -206,7 +206,7 @@ export const createPrescription = createSafeAction({
 export const updateVisitStatus = createSafeAction({
   schema: visitUpdateSchema,
   requiredPermission: PERMISSIONS.VISIT_UPDATE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const visit = await prisma.visit.update({
       where: { id: data.visitId },
       data: { status: data.status },
@@ -227,7 +227,7 @@ export const updateVisitStatus = createSafeAction({
 export const saveOpdCount = createSafeAction({
   schema: z.object({ count: z.string() }),
   requiredPermission: PERMISSIONS.VISIT_CREATE, // Receptionist needs this
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const setting = await prisma.systemSetting.upsert({
       where: { key: "activeOpdRooms" },
       update: { value: data.count },
@@ -242,7 +242,7 @@ export const saveOpdCount = createSafeAction({
 export const updateDoctorOpd = createSafeAction({
   schema: z.object({ room: z.number().nullable() }),
   requiredPermission: PERMISSIONS.VISIT_READ,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const user = await prisma.user.update({
       where: { id: ctx.userId },
       data: { currentOpdRoom: data.room },
@@ -254,7 +254,7 @@ export const updateDoctorOpd = createSafeAction({
 export const cancelLabRequest = createSafeAction({
   schema: z.object({ requestId: z.string() }),
   requiredPermission: PERMISSIONS.LAB_REQUEST,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const req = await prisma.labRequest.findUnique({ where: { id: data.requestId } });
     if (!req) throw new Error("Lab request not found");
     if (req.status === "completed") throw new Error("Cannot cancel a completed lab request");
@@ -280,7 +280,7 @@ export const cancelLabRequest = createSafeAction({
 export const toggleAdmissionStatus = createSafeAction({
   schema: z.object({ patientId: z.string(), currentStatus: z.string() }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE, // Doctors can do this
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const newStatus = data.currentStatus === "Inpatient" ? "Outpatient" : "Inpatient";
     const pat = await prisma.patient.update({
       where: { id: data.patientId },
@@ -307,7 +307,7 @@ export const addClinicalNote = createSafeAction({
     plan: z.string().optional(),
   }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const record = await prisma.medicalRecord.create({
       data: {
         patientId: data.patientId,
@@ -333,7 +333,7 @@ export const addClinicalNote = createSafeAction({
 export const dismissLabResult = createSafeAction({
   schema: z.object({ resultId: z.string() }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
-  handler: async (data) => {
+  handler: async (data, ctx) => {
     const result = await prisma.labResult.update({
       where: { id: data.resultId },
       data: { isReadByDoctor: true }

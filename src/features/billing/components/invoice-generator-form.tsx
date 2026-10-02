@@ -30,9 +30,9 @@ export function InvoiceGeneratorForm({ patients }: {
     setItems(newItems);
   };
 
-  const handleChange = (index: number, field: string, value: string | number) => {
-    const newItems = [...items] as Record<string, string | number>[];
-    newItems[index][field] = value;
+  const handleChange = (index: number, field: keyof typeof items[0], value: string | number | boolean) => {
+    const newItems = [...items];
+    (newItems[index][field] as any) = value;
     setItems(newItems);
   };
 

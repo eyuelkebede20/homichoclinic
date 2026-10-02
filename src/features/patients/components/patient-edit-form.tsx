@@ -6,14 +6,14 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 export function PatientEditForm({ patient }: { 
-  patient: { id: string; firstName: string; lastName: string; dob: string | null; gender: string | null; contactNumber: string | null; permanentSince?: string | null; } 
+  patient: { id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; permanentSince?: string | null; } 
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [ageMode, setAgeMode] = useState(false);
   const router = useRouter();
 
-  const initialDobStr = patient.dob || "";
+  const initialDobStr = patient.yob || "";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +21,7 @@ export function PatientEditForm({ patient }: {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    let dob = formData.get("dob") as string;
+    let yob = formData.get("yob") as string;
     
     if (ageMode) {
       const ageStr = formData.get("age") as string;
@@ -29,7 +29,7 @@ export function PatientEditForm({ patient }: {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          dob = `${currentYear - age}-01-01`;
+          yob = `${currentYear - age}-01-01`;
         }
       }
     }
@@ -38,7 +38,7 @@ export function PatientEditForm({ patient }: {
       patientId: patient.id,
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      dob: dob || undefined,
+      yob: yob || undefined,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
       permanentSince: formData.get("permanentSince") as string || undefined,
@@ -78,7 +78,7 @@ export function PatientEditForm({ patient }: {
         <div className="flex flex-col">
           <div className="flex justify-between items-end mb-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              {ageMode ? "Age (Years)" : "Date of Birth (DOB)"}
+              {ageMode ? "Age (Years)" : "Date of Birth (yob)"}
             </label>
             <button 
               type="button" 
@@ -99,7 +99,7 @@ export function PatientEditForm({ patient }: {
             />
           ) : (
             <input 
-              name="dob" 
+              name="yob" 
               type="date" 
               defaultValue={initialDobStr}
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
