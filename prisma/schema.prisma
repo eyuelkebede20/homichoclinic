@@ -249,6 +249,7 @@ model Drug {
   description   String?
   category      String?
   price         Int       // Minor units
+  isOperational Boolean   @default(true)
 
   batches       StockBatch[]
   prescriptions PrescriptionItem[]

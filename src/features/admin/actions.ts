@@ -156,3 +156,28 @@ export const saveClinicProfile = createSafeAction({
     return { success: true };
   }
 });
+
+const setHeavyDutySchema = z.object({
+  enabled: z.boolean(),
+});
+
+export const setHeavyDutyMode = createSafeAction({
+  schema: setHeavyDutySchema,
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    await prisma.systemSetting.upsert({
+      where: { key: "heavyDutyMode" },
+      update: { value: data.enabled ? "true" : "false" },
+      create: { key: "heavyDutyMode", value: data.enabled ? "true" : "false" },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      reason: "Toggled Heavy Duty (OCR) mode to ",
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  }
+});
