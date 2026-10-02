@@ -71,13 +71,13 @@ export function PatientImporter() {
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
         <p className="font-medium mb-1">Supported Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
-          gov_id, fullName, gender, yob, since, c_m, Salutation, Department, primaryMobile, emergencyContact, emergencyMobile
+          gov_id, fullName, gender, dob, permanentSince, c_m, Salutation, Department, primaryMobile, emergencyContact, emergencyMobile
         </code>
         
         <p className="mt-3 text-xs opacity-90">
           <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">primaryMobile</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">primaryMobile</code>.
           <br /><br />
-          If you provide a <code className="px-1">since</code> year, the system will automatically compute the staff discount!
+          If you provide a <code className="px-1">permanentSince</code> exact date, the system will automatically compute the staff discount!
         </p>
       </div>
 

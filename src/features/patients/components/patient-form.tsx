@@ -18,7 +18,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    let yob = formData.get("yob") as string;
+    let dob = formData.get("dob") as string;
     
     if (ageMode) {
       const ageStr = formData.get("age") as string;
@@ -26,7 +26,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          yob = `${currentYear - age}`;
+          dob = `${currentYear - age}-01-01`;
         }
       }
     }
@@ -34,14 +34,14 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
     const result = await createPatient({
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      yob: yob,
+      dob: dob,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
       patientType: patientType,
       militaryId: formData.get("militaryId") as string || undefined,
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
-      since: formData.get("since") as string || undefined,
+      permanentSince: formData.get("permanentSince") as string || undefined,
     });
 
     setLoading(false);
@@ -78,7 +78,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="flex flex-col">
           <div className="flex justify-between items-end mb-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              {ageMode ? "Age (Years)" : "Year of Birth (YOB)"}
+              {ageMode ? "Age (Years)" : "Date of Birth (DOB)"}
             </label>
             <button 
               type="button" 
@@ -99,9 +99,8 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
             />
           ) : (
             <input 
-              name="yob" 
-              type="text"
-              placeholder="e.g. 1990"
+              name="dob" 
+              type="date"
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />
           )}
@@ -152,9 +151,9 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
 
       {patientType === "Civilian Staff" && (
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Since (Year)</label>
-          <input name="since" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" placeholder="e.g. 2019" />
-          <p className="text-[10px] text-slate-500 mt-1">Leave empty to default to 2019. Used to calculate staff discounts.</p>
+          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
+          <input name="permanentSince" type="date" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+          <p className="text-[10px] text-slate-500 mt-1">Leave empty to default to 2019-01-01. Used to calculate staff discounts exactly.</p>
         </div>
       )}
 

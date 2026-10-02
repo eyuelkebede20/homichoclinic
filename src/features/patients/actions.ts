@@ -11,12 +11,14 @@ export const createPatient = createSafeAction({
   schema: patientCreateSchema,
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
-    const dob = data.yob || null;
+    const dob = data.dob || null;
     
-    // Default Since to 2019 if empty
-    let since = data.since || "2019";
-    let hiredYearEC = parseInt(since, 10);
-    if (isNaN(hiredYearEC)) hiredYearEC = 2019;
+    let permanentSince = data.permanentSince || "2019-01-01";
+    let pDate = new Date(permanentSince);
+    if (isNaN(pDate.getTime())) {
+      pDate = new Date("2019-01-01");
+      permanentSince = "2019-01-01";
+    }
     
     let discountPercent = 0;
     if (data.patientType === "Soldier") {
@@ -24,9 +26,14 @@ export const createPatient = createSafeAction({
     } else if (data.patientType === "Civilian Family") {
       discountPercent = 95;
     } else {
-      const d = new Date();
-      const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
-      const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
+      const now = new Date();
+      let yearsOfService = now.getFullYear() - pDate.getFullYear();
+      const m = now.getMonth() - pDate.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
+        yearsOfService--;
+      }
+      yearsOfService = Math.max(0, yearsOfService);
+
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
       else if (yearsOfService >= 10) discountPercent = 65;
@@ -40,15 +47,14 @@ export const createPatient = createSafeAction({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        yob: dob,
+        dob: dob,
         gender: data.gender,
         contactNumber: data.contactNumber,
         patientType: data.patientType || "Civilian Staff",
         militaryId: data.militaryId,
         rank: data.rank,
         division: data.division,
-        hiredYearEC: hiredYearEC,
-        since: since,
+        permanentSince: permanentSince,
         discountPercent: discountPercent,
       },
     });
@@ -83,21 +89,29 @@ export const updatePatient = createSafeAction({
       }
     }
 
-    const dob = data.yob || null;
-    let since = data.since || "2019";
-    let hiredYearEC = parseInt(since, 10);
-    if (isNaN(hiredYearEC)) hiredYearEC = 2019;
+    const dob = data.dob || null;
+    let permanentSince = data.permanentSince || "2019-01-01";
+    let pDate = new Date(permanentSince);
+    if (isNaN(pDate.getTime())) {
+      pDate = new Date("2019-01-01");
+      permanentSince = "2019-01-01";
+    }
     
-    // Recalculate discount based on patient type and new hire year
+    // Recalculate discount based on patient type and new hire date
     let discountPercent = existingPatient.discountPercent;
     if (existingPatient.patientType === "Soldier") {
       discountPercent = 100;
     } else if (existingPatient.patientType === "Civilian Family") {
       discountPercent = 95;
     } else {
-      const d = new Date();
-      const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
-      const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
+      const now = new Date();
+      let yearsOfService = now.getFullYear() - pDate.getFullYear();
+      const m = now.getMonth() - pDate.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
+        yearsOfService--;
+      }
+      yearsOfService = Math.max(0, yearsOfService);
+
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
       else if (yearsOfService >= 10) discountPercent = 65;
@@ -110,11 +124,10 @@ export const updatePatient = createSafeAction({
       data: {
         firstName: data.firstName,
         lastName: data.lastName,
-        yob: dob,
+        dob: dob,
         gender: data.gender,
         contactNumber: data.contactNumber,
-        since: since,
-        hiredYearEC: hiredYearEC,
+        permanentSince: permanentSince,
         discountPercent: discountPercent,
       },
     });

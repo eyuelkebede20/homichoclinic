@@ -95,12 +95,11 @@ model Patient {
   id              String    @id @default(cuid())
   firstName       String
   lastName        String
-  yob             String?
+  dob             String?
   gender          String?
   contactNumber   String?
   
   employeeId      String?   @unique // The staff ID number
-  hiredYearEC     Int?      // Ethiopian Calendar year hired
 
   // Role tracking
   patientType     String    @default("Civilian Staff") // "Soldier", "Civilian Staff", "Civilian Family", "Guest"
@@ -112,7 +111,7 @@ model Patient {
 
   salutation        String?
   department        String?
-  since             String?
+  permanentSince    String?
   c_m               String?
   emergencyContact  String?
   emergencyMobile   String?

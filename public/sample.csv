@@ -1,5 +1,5 @@
-gov_id,fullName,gender,yob,since,c_m,Salutation,Department,primaryMobile,emergencyContact,emergencyMobile
-GOV-1001,Abebe Kebede,M,1990,2015,Civilian,Mr,Engineering,0911223344,0911223355,0911223366
+gov_id,fullName,gender,dob,permanentSince,c_m,salutation,department,primaryMobile,emergencyContact,emergencyMobile
+GOV-1001,Abebe Kebede,M,1990-05-20,2015-09-11,Civilian,Mr,Engineering,0911223344,0911223355,0911223366
 GOV-1002,Kebede Abebe,M,,,Military,Dr,Medical,0988776655,,-
 
 

@@ -11,20 +11,26 @@ export async function GET(request: Request) {
   try {
     const patients = await prisma.patient.findMany({
       where: {
-        hiredYearEC: { not: null },
-        relationship: "Staff" // Only recalculate for staff (families/soldiers are static 95/100)
+        permanentSince: { not: null },
+        relationship: "Staff" // Only recalculate for staff
       }
     });
 
     let updatedCount = 0;
 
     for (const patient of patients) {
-      if (!patient.hiredYearEC) continue;
+      if (!patient.permanentSince) continue;
+      
+      const pDate = new Date(patient.permanentSince);
+      if (isNaN(pDate.getTime())) continue;
 
-      const d = new Date();
-      // Calculate current Ethiopian Year (roughly)
-      const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
-      const yearsOfService = Math.max(0, currentECYear - patient.hiredYearEC);
+      const now = new Date();
+      let yearsOfService = now.getFullYear() - pDate.getFullYear();
+      const m = now.getMonth() - pDate.getMonth();
+      if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
+        yearsOfService--;
+      }
+      yearsOfService = Math.max(0, yearsOfService);
 
       let newDiscount = 50;
       if (yearsOfService >= 20) newDiscount = 100;

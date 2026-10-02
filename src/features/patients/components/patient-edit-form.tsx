@@ -13,7 +13,7 @@ export function PatientEditForm({ patient }: {
   const [ageMode, setAgeMode] = useState(false);
   const router = useRouter();
 
-  const initialYobStr = patient.yob || "";
+  const initialDobStr = patient.dob || "";
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -21,7 +21,7 @@ export function PatientEditForm({ patient }: {
     setError(null);
 
     const formData = new FormData(e.currentTarget);
-    let yob = formData.get("yob") as string;
+    let dob = formData.get("dob") as string;
     
     if (ageMode) {
       const ageStr = formData.get("age") as string;
@@ -29,7 +29,7 @@ export function PatientEditForm({ patient }: {
         const age = parseInt(ageStr, 10);
         if (!isNaN(age)) {
           const currentYear = new Date().getFullYear();
-          yob = `${currentYear - age}`;
+          dob = `${currentYear - age}-01-01`;
         }
       }
     }
@@ -38,10 +38,10 @@ export function PatientEditForm({ patient }: {
       patientId: patient.id,
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
-      yob: yob || undefined,
+      dob: dob || undefined,
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
-      since: formData.get("since") as string || undefined,
+      permanentSince: formData.get("permanentSince") as string || undefined,
     });
 
     setLoading(false);
@@ -78,7 +78,7 @@ export function PatientEditForm({ patient }: {
         <div className="flex flex-col">
           <div className="flex justify-between items-end mb-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              {ageMode ? "Age (Years)" : "Year of Birth (YOB)"}
+              {ageMode ? "Age (Years)" : "Date of Birth (DOB)"}
             </label>
             <button 
               type="button" 
@@ -99,10 +99,9 @@ export function PatientEditForm({ patient }: {
             />
           ) : (
             <input 
-              name="yob" 
-              type="text" 
-              placeholder="e.g. 1990"
-              defaultValue={initialYobStr}
+              name="dob" 
+              type="date" 
+              defaultValue={initialDobStr}
               className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
             />
           )}
@@ -124,8 +123,8 @@ export function PatientEditForm({ patient }: {
           <input defaultValue={patient.contactNumber || ""} name="contactNumber" type="tel" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Since (Year)</label>
-          <input defaultValue={patient.since || ""} name="since" type="text" placeholder="e.g. 2019" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
+          <input defaultValue={patient.permanentSince || ""} name="permanentSince" type="date" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
       </div>
 

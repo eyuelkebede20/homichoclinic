@@ -106,9 +106,9 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.firstName} {patient.lastName}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Year of Birth (YOB)</dt>
+                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Date of Birth (DOB)</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {patient.yob || 'N/A'}
+                  {patient.dob || 'N/A'}
                 </dd>
               </div>
               <div>
@@ -124,8 +124,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.employeeId || patient.militaryId || 'N/A'}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Since</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.since || 'N/A'}</dd>
+                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || 'N/A'}</dd>
               </div>
             </dl>
           </div>

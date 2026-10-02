@@ -6,11 +6,18 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
-function calculateDiscount(hiredYearEC: number | null): number {
-  if (!hiredYearEC) return 50;
-  const d = new Date();
-  const currentECYear = (d.getMonth() + 1 < 9 || (d.getMonth() + 1 === 9 && d.getDate() < 11)) ? d.getFullYear() - 8 : d.getFullYear() - 7;
-  const yearsOfService = Math.max(0, currentECYear - hiredYearEC);
+function calculateDiscount(permanentSinceStr: string | null): number {
+  if (!permanentSinceStr) return 50;
+  const pDate = new Date(permanentSinceStr);
+  if (isNaN(pDate.getTime())) return 50;
+
+  const now = new Date();
+  let yearsOfService = now.getFullYear() - pDate.getFullYear();
+  const m = now.getMonth() - pDate.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
+    yearsOfService--;
+  }
+  yearsOfService = Math.max(0, yearsOfService);
   
   if (yearsOfService >= 20) return 100;
   if (yearsOfService >= 15) return 75;
@@ -80,22 +87,18 @@ export const importPatientsCSV = createSafeAction({
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
       const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
       const finalPhone = phone || "-";
-      const yobStr = row["yob"] || row["dob"] || row["dateofbirth"];
+      const dobStr = row["dob"] || row["dateofbirth"] || row["yob"];
       const gender = row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
       const relationship = row["relationship"] || row["role"];
       const primaryPhone = row["primaryphone"] || row["familyphone"] || row["primarymobile"];
       const promoCode = row["promocode"] || row["promo_code"];
       const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"] || row["gov_id"] || row["govid"];
-      const hiredYearECStr = row["hiredyearec"] || row["hired year"] || row["hired_year"];
-      const hiredYearEC = hiredYearECStr ? parseInt(hiredYearECStr, 10) : null;
       
       const salutation = row["salutation"] || row["title"] || "-";
       const department = row["department"] || row["dept"] || "-";
       
-      let since = row["since"] || row["permanent"] || "";
-      const yearMatch = since.match(/\b\d{4}\b/);
-      since = yearMatch ? yearMatch[0] : "2019";
+      let permanentSince = row["permanentsince"] || row["since"] || row["permanent"] || "2019-01-01";
       
       const c_m = row["c_m"] || row["c/m"] || row["cm"] || "-";
       const emergencyContact = row["emergencycontact"] || row["emergency contact"] || "-";
@@ -110,15 +113,7 @@ export const importPatientsCSV = createSafeAction({
       if (!firstName) firstName = "-";
       if (!lastName) lastName = "-";
 
-      let yob = "-";
-      if (yobStr) {
-        const parsedYearMatch = yobStr.match(/\b(19|20)\d{2}\b/);
-        if (parsedYearMatch) {
-          yob = parsedYearMatch[0];
-        } else {
-          yob = yobStr.trim(); 
-        }
-      }
+      let dob = dobStr ? dobStr.trim() : "-";
 
       let primaryPatientId = null;
       if (isDependent && primaryPhone) {
@@ -145,7 +140,7 @@ export const importPatientsCSV = createSafeAction({
       } else if (isDependent) {
         computedDiscount = 95; 
       } else {
-        computedDiscount = calculateDiscount(parseInt(since, 10)); 
+        computedDiscount = calculateDiscount(permanentSince); 
       }
 
       const existing = await prisma.patient.findFirst({
@@ -159,16 +154,15 @@ export const importPatientsCSV = createSafeAction({
             lastName,
             contactNumber: finalPhone,
             gender: gender,
-            yob: yob,
+            dob: dob,
             discountPercent: computedDiscount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
             primaryPatientId: primaryPatientId,
             promoCode: promoCode || "-",
             employeeId: employeeId || null,
-            hiredYearEC: parseInt(since, 10),
             salutation: salutation,
             department: department,
-            since: since,
+            permanentSince: permanentSince,
             c_m: c_m,
             emergencyContact: emergencyContact,
             emergencyMobile: emergencyMobile

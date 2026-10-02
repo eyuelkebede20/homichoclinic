@@ -95,8 +95,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Salutation</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Full Name</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Gender</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">YOB</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Since</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">DOB</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Permanent Since</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">C/M</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Department</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>

@@ -16,8 +16,8 @@ export function PatientRow({ patient }: { patient: any }) {
         {patient.firstName} {patient.lastName}
       </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
-      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.yob || "-"}</td>
-      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.since || "-"}</td>
+      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.dob || "-"}</td>
+      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.permanentSince || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.department || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.contactNumber || "-"}</td>
