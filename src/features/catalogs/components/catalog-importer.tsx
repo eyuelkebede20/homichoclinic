@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -41,8 +40,8 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
       } else {
         setSuccess("Imported successfully.");
       }
-    } catch (err: any) {
-      setError(err.message || "Failed to import");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to import");
     } finally {
       setLoading(false);
       // Reset input

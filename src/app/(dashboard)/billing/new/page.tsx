@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -25,7 +24,10 @@ export default async function NewInvoicePage() {
     );
   }
 
-  const patients: any[] = [];
+  const patients = await prisma.patient.findMany({
+    take: 50,
+    orderBy: { createdAt: "desc" }
+  });
 
   return (
     <div className="p-8 max-w-4xl mx-auto space-y-6">

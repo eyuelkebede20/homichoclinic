@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
+import { ClinicalDashboard } from "@/features/clinical/components/clinical-dashboard";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -137,7 +138,10 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
 
           <div className="print:hidden space-y-6">
             {canWriteHistory && (
-              <PaperImportForm patientId={patient.id} />
+              <>
+                <ClinicalDashboard patientId={patient.id} admissionStatus={patient.admissionStatus} />
+                <PaperImportForm patientId={patient.id} />
+              </>
             )}
 
             {(canPrescribe || canRequestLab) && (

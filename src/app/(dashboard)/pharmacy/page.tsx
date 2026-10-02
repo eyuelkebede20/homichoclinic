@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -52,7 +51,7 @@ export default async function PharmacyDashboardPage({ searchParams }: { searchPa
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  const whereClause: any = {
+  const whereClause: import("@prisma/client").Prisma.PrescriptionWhereInput = {
     OR: [
       { status: "dispensed" },
       { status: "pending", createdAt: { gte: oneWeekAgo } }

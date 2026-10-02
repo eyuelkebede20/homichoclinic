@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
@@ -35,7 +34,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-  const whereClause: any = {
+  const whereClause: import("@prisma/client").Prisma.LabRequestWhereInput = {
     OR: [{ status: "completed" }, { status: "requested", createdAt: { gte: oneWeekAgo } }],
   };
 

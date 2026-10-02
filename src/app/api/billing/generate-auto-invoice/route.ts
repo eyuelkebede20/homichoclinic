@@ -43,7 +43,7 @@ export async function POST(request: Request) {
     }
 
     // 2. Map them to Invoice Items
-    const invoiceItems: any[] = [];
+    const invoiceItems: import("@prisma/client").Prisma.InvoiceItemCreateWithoutInvoiceInput[] = [];
     
     // Configurable flat visit fee (e.g., 100 ETB)
     const VISIT_FEE = 10000; // Minor units

@@ -75,7 +75,8 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
   // Group unbilled items by patient
   const unbilledByPatient = new Map<string, any>();
   
-  const getPatientGroup = (patient: any) => {
+  const getPatientGroup = (patient: { id: string; patientType?: string | null } | null) => {
+    if (!patient) return null;
     if (!unbilledByPatient.has(patient.id)) {
       unbilledByPatient.set(patient.id, {
         patient,

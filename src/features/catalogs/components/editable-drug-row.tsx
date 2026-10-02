@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useState } from "react";
@@ -79,7 +78,7 @@ export function EditableDrugRow({ drug }: {
         </div>
         <div className="flex items-center gap-3">
           <span className="text-sm font-mono text-slate-500">{(drug.price / 100).toFixed(2)} ETB</span>
-          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2 print:hidden">
+          <div className="flex items-center gap-2 print:hidden">
             <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-blue-600" title="Edit">
               <Edit2 className="w-4 h-4" />
             </button>

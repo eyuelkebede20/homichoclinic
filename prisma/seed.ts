@@ -99,7 +99,7 @@ async function main() {
         firstName: 'John',
         lastName: 'Doe',
         gender: 'male',
-        yob: "1985",
+        dob: "1985",
         contactNumber: '555-0192',
         discountPercent: 10,
       }

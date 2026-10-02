@@ -127,6 +127,8 @@ model Patient {
   dependents       Patient[] @relation("FamilyMembers")
   relationship     String?   // e.g., "Staff", "Spouse", "Child"
 
+  admissionStatus  String    @default("Outpatient") // "Outpatient" or "Inpatient"
+
   visits          Visit[]
   medicalRecords  MedicalRecord[]
   labRequests     LabRequest[]

@@ -275,3 +275,38 @@ export const cancelLabRequest = createSafeAction({
     return updated;
   }
 });
+
+
+export const toggleAdmissionStatus = createSafeAction({
+  schema: z.object({ patientId: z.string(), currentStatus: z.string() }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE, // Doctors can do this
+  handler: async (data, ctx) => {
+    const newStatus = data.currentStatus === "Inpatient" ? "Outpatient" : "Inpatient";
+    const pat = await prisma.patient.update({
+      where: { id: data.patientId },
+      data: { admissionStatus: newStatus }
+    });
+    
+    await logAudit({ actorId: ctx.userId, action: "PATIENT_ADMISSION_TOGGLE", resourceId: pat.id, newValue: newStatus });
+    revalidatePath(`/patients/${pat.id}`);
+    return { status: pat.admissionStatus };
+  }
+});
+
+export const addClinicalNote = createSafeAction({
+  schema: z.object({ patientId: z.string(), content: z.string() }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const record = await prisma.medicalRecord.create({
+      data: {
+        patientId: data.patientId,
+        content: data.content,
+        source: "system",
+        enteredById: ctx.userId
+      }
+    });
+    await logAudit({ actorId: ctx.userId, action: "CLINICAL_NOTE_ADD", resourceId: record.id });
+    revalidatePath(`/patients/${data.patientId}`);
+    return record;
+  }
+});
