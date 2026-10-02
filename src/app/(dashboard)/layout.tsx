@@ -26,7 +26,13 @@ export default async function DashboardLayout({
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
   // Fetch full user for custom fields like currentOpdRoom
-  const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+  const [fullUser, clinicNameSetting, clinicLogoSetting] = await Promise.all([
+    prisma.user.findUnique({ where: { id: session.user.id } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
+  ]);
+  const clinicName = clinicNameSetting?.value || "Clinic System";
+  const clinicLogo = clinicLogoSetting?.value || "";
 
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -74,11 +80,16 @@ export default async function DashboardLayout({
       {/* Sidebar */}
       <div className="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 border-r border-slate-800 print:hidden">
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center font-bold text-white shadow">
-              +
-            </div>
-            <span className="font-bold text-lg tracking-wide">Clinic System</span>
+          <div className="flex items-center gap-2 overflow-hidden">
+            {clinicLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinicLogo} alt="Logo" className="h-8 w-8 object-contain rounded bg-white p-0.5 shrink-0" />
+            ) : (
+              <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center font-bold text-white shadow shrink-0">
+                +
+              </div>
+            )}
+            <span className="font-bold text-lg tracking-wide truncate" title={clinicName}>{clinicName}</span>
           </div>
         </div>
         

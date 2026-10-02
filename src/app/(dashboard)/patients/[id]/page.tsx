@@ -77,6 +77,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     ]);
   }
 
+  const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none">
       <PrintHeader title="Patient Medical Record" subtitle={`Record for ${patient.firstName} ${patient.lastName}`} />
@@ -90,10 +92,13 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         
         {/* Patient Info Card */}
         <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
+          <div className={`shadow rounded-lg border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Patient Profile</h2>
-              {(role === "Admin" || (role === "Receptionist" && (new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
+                Patient Profile 
+                {isNanSince && <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">Missing 'Since' Date</span>}
+              </h2>
+              {(role === "Admin" || (role === "Receptionist" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link href={`/patients/${patient.id}/edit`} className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors">
                   Edit Details
                 </Link>

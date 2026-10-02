@@ -77,7 +77,7 @@ export function PatientImporter() {
         <p className="mt-3 text-xs opacity-90">
           <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">primaryMobile</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">primaryMobile</code>.
           <br /><br />
-          If you provide a <code className="px-1">permanentSince</code> exact date, the system will automatically compute the staff discount!
+          If you provide a <code className="px-1">permanentSince</code> exact date, the system will automatically compute the staff discount! If missing, it is flagged as NaN for Receptionists to fix.
         </p>
       </div>
 

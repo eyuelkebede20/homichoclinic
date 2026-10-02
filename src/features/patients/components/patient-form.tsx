@@ -153,7 +153,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
           <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
           <input name="permanentSince" type="date" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-          <p className="text-[10px] text-slate-500 mt-1">Leave empty to default to 2019-01-01. Used to calculate staff discounts exactly.</p>
+          <p className="text-[10px] text-slate-500 mt-1">Leave empty to flag as missing (NaN) for Receptionists to fix.</p>
         </div>
       )}
 

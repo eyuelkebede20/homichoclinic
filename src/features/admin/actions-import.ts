@@ -5,19 +5,10 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { getECYearsOfService } from "@/lib/ethiopian-calendar";
 
 function calculateDiscount(permanentSinceStr: string | null): number {
-  if (!permanentSinceStr) return 50;
-  const pDate = new Date(permanentSinceStr);
-  if (isNaN(pDate.getTime())) return 50;
-
-  const now = new Date();
-  let yearsOfService = now.getFullYear() - pDate.getFullYear();
-  const m = now.getMonth() - pDate.getMonth();
-  if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
-    yearsOfService--;
-  }
-  yearsOfService = Math.max(0, yearsOfService);
+  const yearsOfService = getECYearsOfService(permanentSinceStr);
   
   if (yearsOfService >= 20) return 100;
   if (yearsOfService >= 15) return 75;
@@ -98,7 +89,10 @@ export const importPatientsCSV = createSafeAction({
       const salutation = row["salutation"] || row["title"] || "-";
       const department = row["department"] || row["dept"] || "-";
       
-      let permanentSince = row["permanentsince"] || row["since"] || row["permanent"] || "2019-01-01";
+      let permanentSince = row["permanentsince"] || row["since"] || row["permanent"];
+      if (!permanentSince || permanentSince.trim() === "") {
+        permanentSince = "NaN";
+      }
       
       const c_m = row["c_m"] || row["c/m"] || row["cm"] || "-";
       const emergencyContact = row["emergencycontact"] || row["emergency contact"] || "-";

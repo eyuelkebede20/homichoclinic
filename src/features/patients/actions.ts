@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { patientCreateSchema, patientUpdateSchema, discountUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { getECYearsOfService } from "@/lib/ethiopian-calendar";
 
 export const createPatient = createSafeAction({
   schema: patientCreateSchema,
@@ -13,11 +14,9 @@ export const createPatient = createSafeAction({
   handler: async (data, ctx) => {
     const dob = data.dob || null;
     
-    let permanentSince = data.permanentSince || "2019-01-01";
-    let pDate = new Date(permanentSince);
-    if (isNaN(pDate.getTime())) {
-      pDate = new Date("2019-01-01");
-      permanentSince = "2019-01-01";
+    let permanentSince = data.permanentSince;
+    if (!permanentSince || permanentSince.trim() === "") {
+      permanentSince = "NaN";
     }
     
     let discountPercent = 0;
@@ -26,13 +25,7 @@ export const createPatient = createSafeAction({
     } else if (data.patientType === "Civilian Family") {
       discountPercent = 95;
     } else {
-      const now = new Date();
-      let yearsOfService = now.getFullYear() - pDate.getFullYear();
-      const m = now.getMonth() - pDate.getMonth();
-      if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
-        yearsOfService--;
-      }
-      yearsOfService = Math.max(0, yearsOfService);
+      const yearsOfService = getECYearsOfService(permanentSince);
 
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
@@ -81,8 +74,10 @@ export const updatePatient = createSafeAction({
 
     if (user?.role !== "Admin") {
       if (user?.role === "Receptionist") {
-        if (new Date().getTime() - existingPatient.createdAt.getTime() >= 86400000) {
-          throw new Error("Access Denied: Receptionists can only modify patient data within 24 hours of creation.");
+        const isTimeExpired = new Date().getTime() - existingPatient.createdAt.getTime() >= 86400000;
+        const isNanSince = !existingPatient.permanentSince || existingPatient.permanentSince === "NaN";
+        if (isTimeExpired && !isNanSince) {
+          throw new Error("Access Denied: Receptionists can only modify patient data within 24 hours of creation unless 'Since' is invalid.");
         }
       } else {
         throw new Error("Access Denied: You do not have permission to modify patient demographics.");
@@ -90,11 +85,9 @@ export const updatePatient = createSafeAction({
     }
 
     const dob = data.dob || null;
-    let permanentSince = data.permanentSince || "2019-01-01";
-    let pDate = new Date(permanentSince);
-    if (isNaN(pDate.getTime())) {
-      pDate = new Date("2019-01-01");
-      permanentSince = "2019-01-01";
+    let permanentSince = data.permanentSince;
+    if (!permanentSince || permanentSince.trim() === "") {
+      permanentSince = "NaN";
     }
     
     // Recalculate discount based on patient type and new hire date
@@ -104,13 +97,7 @@ export const updatePatient = createSafeAction({
     } else if (existingPatient.patientType === "Civilian Family") {
       discountPercent = 95;
     } else {
-      const now = new Date();
-      let yearsOfService = now.getFullYear() - pDate.getFullYear();
-      const m = now.getMonth() - pDate.getMonth();
-      if (m < 0 || (m === 0 && now.getDate() < pDate.getDate())) {
-        yearsOfService--;
-      }
-      yearsOfService = Math.max(0, yearsOfService);
+      const yearsOfService = getECYearsOfService(permanentSince);
 
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
