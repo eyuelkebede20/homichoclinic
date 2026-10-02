@@ -156,7 +156,7 @@ export default async function DashboardPage() {
 
     const expiringBatches = await prisma.drugBatch.count({
       where: {
-        expiryDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        expiryDate: { lte: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000) },
         quantity: { gt: 0 }
       }
     });

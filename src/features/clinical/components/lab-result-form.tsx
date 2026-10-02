@@ -48,6 +48,18 @@ export function LabResultForm({ requestId }: { requestId: string }) {
         value={findings}
         onChange={e => setFindings(e.target.value)}
       />
+      <div className="flex flex-wrap gap-1 w-full mt-1">
+        {["Positive", "Negative", "Normal", "Abnormal", "Clear"].map(chip => (
+          <button
+            key={chip}
+            type="button"
+            onClick={() => setFindings(findings ? `${findings} ${chip}` : chip)}
+            className="text-[10px] font-medium px-2 py-0.5 rounded-full border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-800/40 transition-colors"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
       <div className="flex gap-2">
         <button 
           type="button" 

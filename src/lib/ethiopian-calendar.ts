@@ -42,3 +42,19 @@ export function getECYearsOfService(permanentSince: string | null | undefined): 
 
   return Math.max(0, years);
 }
+
+export function calculateECAge(yob: string | null | undefined): string {
+  if (!yob || yob === "NaN" || yob.trim() === "") return "N/A";
+  const parsedYob = parseInt(yob, 10);
+  if (isNaN(parsedYob)) return yob; // fallback if it's some text
+
+  const now = new Date();
+  let ecYear = now.getFullYear() - 8;
+  if (now.getMonth() + 1 > 9 || (now.getMonth() + 1 === 9 && now.getDate() >= 11)) {
+    ecYear = now.getFullYear() - 7;
+  }
+
+  const age = ecYear - parsedYob;
+  if (age < 0) return "0";
+  return age.toString();
+}

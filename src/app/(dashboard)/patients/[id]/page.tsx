@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { calculateECAge } from "@/lib/ethiopian-calendar";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
 import { PaperImportForm } from "@/features/clinical/components/paper-import-form";
 import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
@@ -137,8 +138,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 </dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Year of Birth (YOB)</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.yob || "N/A"}</dd>
+                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Age</dt>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateECAge(patient.yob)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</dt>

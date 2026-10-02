@@ -13,7 +13,7 @@ type QueueVisit = {
   patient: {
     firstName: string;
     lastName: string;
-    labRequests: any[];
+    labRequests: unknown[];
   };
 };
 
@@ -75,7 +75,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
               )}
               
               <div className="border-l border-slate-200 dark:border-slate-700 pl-3 h-6 flex items-center">
-                <VisitStatusActions visitId={visit.id} currentStatus={visit.status as any} />
+                <VisitStatusActions visitId={visit.id} currentStatus={visit.status} />
               </div>
             </div>
           </li>
