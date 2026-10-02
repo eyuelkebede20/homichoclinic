@@ -59,13 +59,13 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
         <nav className="-mb-px flex space-x-8">
           <Link 
             href="?tab=users" 
-            className={"whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm }
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'users' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
           >
             Users & Toggles
           </Link>
           <Link 
             href="?tab=clinic" 
-            className={"whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm }
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'clinic' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
           >
             Clinic Profile
           </Link>
