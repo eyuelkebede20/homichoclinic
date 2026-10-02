@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
 import { ReceptionDashboard } from "@/features/clinical/components/reception-dashboard";
+import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -111,8 +112,15 @@ export default async function DashboardPage() {
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Doctor Overview</h1>
-            <p className="text-slate-500 dark:text-slate-400">Welcome back, Dr. {session.user.name}</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
+              Doctor Overview 
+              {currentOpdRoom && (
+                <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
+                  Operating in OPD {currentOpdRoom}
+                </span>
+              )}
+            </h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, Dr. {session.user.name}</p>
           </div>
         </div>
         
@@ -129,39 +137,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Active Patient Queue</h2>
-          </div>
-          <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-96 overflow-y-auto">
-            {pendingVisits.map(visit => (
-              <li key={visit.id} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex justify-between items-center">
-                <div>
-                  <a href={`/patients/${visit.patientId}`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-                    {visit.patient.firstName} {visit.patient.lastName}
-                  </a>
-                  <p className="text-xs text-slate-500 mt-1">Waiting since: {visit.updatedAt.toLocaleTimeString()}</p>
-                </div>
-                {visit.patient.labRequests.length > 0 ? (
-                  <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-400">
-                    {visit.patient.labRequests.length} Lab Result(s) Ready
-                  </span>
-                ) : visit.status === "scheduled" ? (
-                  <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/30 px-2.5 py-0.5 text-xs font-medium text-blue-800 dark:text-blue-400">
-                    New Patient
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
-                    In Progress
-                  </span>
-                )}
-              </li>
-            ))}
-            {pendingVisits.length === 0 && (
-              <li className="p-8 text-center text-slate-500">No active patients in your queue.</li>
-            )}
-          </ul>
-        </div>
+        <DoctorPatientQueue visits={pendingVisits} />
       </div>
     );
   }
@@ -174,150 +150,68 @@ export default async function DashboardPage() {
       }
     });
 
-    const inventory = allDrugs.map(drug => {
-      const totalStock = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
-      return { ...drug, totalStock };
+    const lowStockCount = allDrugs.filter(d => 
+      d.batches.reduce((sum, b) => sum + b.quantity, 0) < d.minimumStock
+    ).length;
+
+    const expiringBatches = await prisma.drugBatch.count({
+      where: {
+        expiryDate: { lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+        quantity: { gt: 0 }
+      }
     });
 
-    // Filter drugs with < 500 stock, sort by lowest
-    const lowStockMeds = inventory
-      .filter(d => d.totalStock < 500)
-      .sort((a, b) => a.totalStock - b.totalStock)
-      .slice(0, 20);
-
     return (
       <div className="p-8 max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pharmacy Inventory Dashboard</h1>
-            <p className="text-slate-500 dark:text-slate-400">Track critical stock levels</p>
-          </div>
-        </div>
-        
-        {lowStockMeds.length > 0 ? (
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-            <div className="p-4 bg-orange-50 dark:bg-orange-900/20 border-b border-orange-200 dark:border-orange-800">
-              <h2 className="text-lg font-bold text-orange-800 dark:text-orange-300">Low Stock Warnings (Below 500)</h2>
-            </div>
-            <ul className="divide-y divide-slate-200 dark:divide-slate-800">
-              {lowStockMeds.map(med => {
-                let statusColor = "text-green-600";
-                if (med.totalStock < 100) statusColor = "text-red-600 font-bold";
-                else if (med.totalStock < 300) statusColor = "text-orange-600 font-bold";
-                else if (med.totalStock < 500) statusColor = "text-yellow-600";
-
-                return (
-                  <li key={med.id} className="p-4 flex justify-between items-center">
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{med.name}</p>
-                      <p className="text-xs text-slate-500">{med.category || "Uncategorized"}</p>
-                    </div>
-                    <div className={`${statusColor}`}>
-                      {med.totalStock} units remaining
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        ) : (
-          <div className="bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 p-6 rounded-lg border border-green-200 dark:border-green-800 text-center font-medium">
-            All medications are sufficiently stocked (500+ units).
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // 4. Laboratory Dashboard
-  if (role === "Laboratory") {
-    const allTests = await prisma.labTest.findMany();
-    const totalMachines = allTests.length;
-    const offlineMachines = allTests.filter(t => !t.isOperational).length;
-    const onlineMachines = totalMachines - offlineMachines;
-
-    return (
-      <div className="p-8 max-w-7xl mx-auto space-y-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Laboratory Equipment Dashboard</h1>
-            <p className="text-slate-500 dark:text-slate-400">Machine availability overview</p>
-          </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pharmacy Dashboard</h1>
+          <p className="text-slate-500 dark:text-slate-400">Inventory and dispensing overview.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 text-center">
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Registered Equipment</h3>
-            <p className="mt-2 text-4xl font-bold text-slate-900 dark:text-slate-100">{totalMachines}</p>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Drug Types</h3>
+            <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{allDrugs.length}</p>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-green-200 dark:border-green-800 text-center">
-            <h3 className="text-sm font-medium text-green-600 dark:text-green-400">Active / Operational</h3>
-            <p className="mt-2 text-4xl font-bold text-green-600 dark:text-green-400">{onlineMachines}</p>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10">
+            <h3 className="text-sm font-medium text-red-600 dark:text-red-400">Low Stock Alerts</h3>
+            <p className="mt-2 text-3xl font-bold text-red-700 dark:text-red-500">{lowStockCount}</p>
           </div>
-          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-red-200 dark:border-red-800 text-center">
-            <h3 className="text-sm font-medium text-red-600 dark:text-red-400">Offline / Maintenance</h3>
-            <p className="mt-2 text-4xl font-bold text-red-600 dark:text-red-400">{offlineMachines}</p>
+          <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-orange-200 dark:border-orange-900/50 bg-orange-50/50 dark:bg-orange-900/10">
+            <h3 className="text-sm font-medium text-orange-600 dark:text-orange-400">Expiring Soon (30d)</h3>
+            <p className="mt-2 text-3xl font-bold text-orange-700 dark:text-orange-500">{expiringBatches}</p>
           </div>
+        </div>
+
+        <div className="mt-8">
+          <a href="/pharmacy" className="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+            Open Pharmacy Inventory &rarr;
+          </a>
         </div>
       </div>
     );
   }
 
-  // 5. Default General Management Dashboard (Admin / Manager)
-  const [
-    todayVisits,
-    pendingLabs,
-    pendingPrescriptions,
-    todayRevenue
-  ] = await Promise.all([
-    prisma.visit.count({ where: { visitDate: { gte: today } } }),
-    prisma.labRequest.count({ where: { status: "requested" } }),
-    prisma.prescription.count({ where: { status: "pending" } }),
-    prisma.payment.aggregate({
-      where: { createdAt: { gte: today } },
-      _sum: { amount: true }
-    })
-  ]);
-
-  const totalRevenue = todayRevenue._sum.amount || 0;
-
+  // 4. Default / Fallback Dashboard (Admins, Cashiers, Lab)
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
-      <PrintHeader title="General Management Overview" subtitle="Daily executive summary report" />
-      
-      <div className="flex justify-between items-center print:hidden">
+    <div className="p-8 max-w-7xl mx-auto space-y-8">
+      <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Overview</h1>
-          <p className="text-slate-500 dark:text-slate-400">Welcome back, {session.user.name}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to Clinic ERP</h1>
+          <p className="text-slate-500 dark:text-slate-400">Hello, {session.user.name}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <a href="/api/backup" download className="text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white px-4 py-2 rounded-md shadow-sm transition-colors flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
-            Database Backup
-          </a>
-          <PrintButton label="Print Overview" />
-        </div>
+        <PrintButton />
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Placeholder cards */}
         <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today&apos;s Visits</h3>
-          <p className="mt-2 text-3xl font-bold text-slate-900 dark:text-slate-100">{todayVisits}</p>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">System Status</h3>
+          <p className="mt-2 text-xl font-bold text-green-600 dark:text-green-500">Online</p>
         </div>
-        
         <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Lab Tests</h3>
-          <p className="mt-2 text-3xl font-bold text-blue-600 dark:text-blue-400">{pendingLabs}</p>
-        </div>
-        
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Pending Prescriptions</h3>
-          <p className="mt-2 text-3xl font-bold text-orange-600 dark:text-orange-400">{pendingPrescriptions}</p>
-        </div>
-        
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Today&apos;s Revenue</h3>
-          <p className="mt-2 text-3xl font-bold text-green-600 dark:text-green-400">{formatCurrency(totalRevenue)}</p>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Your Role</h3>
+          <p className="mt-2 text-xl font-bold text-blue-600 dark:text-blue-500">{role}</p>
         </div>
       </div>
     </div>
