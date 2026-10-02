@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { CatalogForm } from "@/features/catalogs/components/catalog-form";
 import { LabTestToggle } from "@/features/catalogs/components/lab-test-toggle";
 import { RemoveLabTestButton } from "@/features/catalogs/components/remove-labtest-button";
+import { CatalogImporter } from "@/features/catalogs/components/catalog-importer";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 
@@ -54,7 +55,8 @@ export default async function LaboratoryCatalogPage() {
       </div>
 
       <div className="max-w-3xl space-y-4 print:w-full print:break-inside-avoid">
-        <div className="print:hidden">
+        <div className="print:hidden space-y-4">
+          <CatalogImporter type="LAB_TEST" />
           <CatalogForm type="labTest" />
         </div>
         

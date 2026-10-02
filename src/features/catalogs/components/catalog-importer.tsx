@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { importCatalogCSV } from "../actions-import";
 import { Upload, Loader2, Download } from "lucide-react";
+import * as XLSX from "xlsx";
 
 export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
   const [loading, setLoading] = useState(false);
@@ -20,11 +21,21 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
     setSuccess(null);
 
     try {
-      const text = await file.text();
+      let text = "";
+      if (file.name.endsWith(".xlsx") || file.name.endsWith(".xls")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const workbook = XLSX.read(arrayBuffer, { type: "array" });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        text = XLSX.utils.sheet_to_csv(worksheet);
+      } else {
+        text = await file.text();
+      }
+
       const res = await importCatalogCSV({ csvText: text, type });
-      if (res.error) {
+      if (res?.error) {
         setError(res.error);
-      } else if (res.data?.success) {
+      } else if (res?.data?.success) {
         setSuccess(res.data.success);
       } else {
         setSuccess("Imported successfully.");
@@ -51,7 +62,7 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
       <div className="relative">
         <input
           type="file"
-          accept=".csv"
+          accept=".csv, .xlsx, .xls"
           onChange={handleFileChange}
           disabled={loading}
           className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -66,7 +77,7 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
           ) : (
             <Upload className="w-4 h-4 mr-2" />
           )}
-          {loading ? "Importing..." : "Import CSV"}
+          {loading ? "Importing..." : "Import CSV / Excel"}
         </button>
       </div>
 

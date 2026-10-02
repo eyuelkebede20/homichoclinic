@@ -1,7 +1,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
-import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, ROLE_PERMISSIONS, PermissionString } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -48,7 +48,7 @@ export const importCatalogCSV = createSafeAction({
   handler: async (data, ctx) => {
     const user = await prisma.user.findUnique({ where: { id: ctx.userId } });
     const perms = ROLE_PERMISSIONS[user?.role || "User"] || [];
-    const canApprove = perms.includes(PERMISSIONS.CATALOG_APPROVE);
+    const canApprove = perms.includes(PERMISSIONS.CATALOG_APPROVE as PermissionString);
 
     const rows = parseCSV(data.csvText);
     if (rows.length === 0) {

@@ -4,7 +4,7 @@ import { createSafeAction } from "@/lib/safe-action";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { deleteUserSchema, resetPasswordSchema, updateUserRoleSchema } from "./schemas";
+import { deleteUserSchema, resetPasswordSchema, updateUserRoleSchema, clinicProfileSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs"; // Used to hash the manual reset password
 
@@ -121,6 +121,35 @@ export const setLowPowerMode = createSafeAction({
       actorId: ctx.userId,
       action: PERMISSIONS.USER_MANAGE,
       reason: `Toggled low power mode to ${data.enabled}`,
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  }
+});
+
+export const saveClinicProfile = createSafeAction({
+  schema: clinicProfileSchema,
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    await prisma.$transaction([
+      prisma.systemSetting.upsert({
+        where: { key: "clinicName" },
+        update: { value: data.clinicName },
+        create: { key: "clinicName", value: data.clinicName }
+      }),
+      prisma.systemSetting.upsert({
+        where: { key: "clinicLogo" },
+        update: { value: data.clinicLogo },
+        create: { key: "clinicLogo", value: data.clinicLogo }
+      })
+    ]);
+    
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      resourceId: "system",
+      newValue: { clinicName: data.clinicName, clinicLogo: data.clinicLogo }
     });
 
     revalidatePath("/", "layout");

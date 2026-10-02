@@ -1,7 +1,6 @@
-import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { ROLE_PERMISSIONS, PERMISSIONS, PermissionString } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
@@ -14,7 +13,7 @@ export async function GET(request: Request) {
   const role = session.user.role || "User";
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
-  if (!userPermissions.includes(PERMISSIONS.CATALOG_REQUEST) && !userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) && role !== "Admin" && role !== "Manager") {
+  if (!userPermissions.includes(PERMISSIONS.CATALOG_REQUEST as PermissionString) && !userPermissions.includes(PERMISSIONS.CATALOG_APPROVE as PermissionString) && role !== "Admin" && role !== "Manager") {
     return new Response("Forbidden", { status: 403 });
   }
 
