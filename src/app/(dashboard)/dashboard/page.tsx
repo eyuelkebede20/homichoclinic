@@ -7,6 +7,7 @@ import { getStartOfDayLocal } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
+import { ReceptionDashboard } from "@/features/clinical/components/reception-dashboard";
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -33,7 +34,24 @@ export default async function DashboardPage() {
 
   // 1. Reception Default
   if (role === "Reception") {
-    redirect("/patients");
+    const sysSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
+    const opdRooms = sysSetting && !isNaN(parseInt(sysSetting.value, 10)) ? parseInt(sysSetting.value, 10) : 3;
+
+    const activeVisits = await prisma.visit.findMany({
+      where: {
+        status: { in: ["scheduled", "in_progress"] },
+        deletedAt: null
+      },
+      include: {
+        patient: { select: { id: true, firstName: true, lastName: true, contactNumber: true } }
+      }
+    });
+
+    return (
+      <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+        <ReceptionDashboard opdRooms={opdRooms} activeVisits={activeVisits} />
+      </div>
+    );
   }
 
   const today = getStartOfDayLocal();
