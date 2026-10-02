@@ -255,7 +255,13 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Overview</h1>
           <p className="text-slate-500 dark:text-slate-400">Welcome back, {session.user.name}</p>
         </div>
-        <PrintButton label="Print Overview" />
+        <div className="flex items-center gap-3">
+          <a href="/api/backup" download className="text-sm font-medium bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-800 text-white px-4 py-2 rounded-md shadow-sm transition-colors flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+            Database Backup
+          </a>
+          <PrintButton label="Print Overview" />
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">

@@ -8,6 +8,7 @@ import { LowPowerToggle } from "@/features/admin/components/low-power-toggle";
 
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
+import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
 import Link from "next/link";
 
@@ -70,9 +71,10 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
 
       {tab === "users" && (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <LowPowerToggle initial={isLowPower} />
             <PatientImporter />
+            <DatabaseBackupButton />
             <DevWipePatients />
           </div>
 
