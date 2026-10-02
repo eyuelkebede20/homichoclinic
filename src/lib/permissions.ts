@@ -55,6 +55,7 @@ export type PermissionString = typeof PERMISSIONS[keyof typeof PERMISSIONS];
 export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
   Admin: Object.values(PERMISSIONS),
   Manager: [
+    PERMISSIONS.USER_MANAGE,
     PERMISSIONS.DISCOUNT_UPDATE,
     PERMISSIONS.DISCOUNT_READ,
     PERMISSIONS.PATIENT_READ,

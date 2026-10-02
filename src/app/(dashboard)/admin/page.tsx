@@ -13,9 +13,10 @@ import { DatabaseBackupButton } from "@/features/admin/components/database-backu
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
 import Link from "next/link";
 
-export default async function AdminDashboardPage(props: { searchParams: Promise<{ tab?: string }> }) {
+export default async function AdminDashboardPage(props: { searchParams: Promise<{ tab?: string; q?: string }> }) {
   const searchParams = await props.searchParams;
   const tab = searchParams.tab || "users";
+  const query = searchParams.q || "";
 
   const session = await auth.api.getSession({
     headers: await headers()
@@ -36,7 +37,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
   }
 
   const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicLogoSetting] = await Promise.all([
-    prisma.user.findMany({ orderBy: { createdAt: "desc" } }),
+    prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
