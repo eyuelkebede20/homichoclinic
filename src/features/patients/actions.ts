@@ -232,7 +232,7 @@ export const searchPatientsFast = createSafeAction({
         OR: [
           { firstName: { contains: term, mode: "insensitive" } },
           { lastName: { contains: term, mode: "insensitive" } },
-          { contactNumber: { contains: term } }
+          { contactNumber: { startsWith: term } }
         ]
       },
       take: 8,

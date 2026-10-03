@@ -35,9 +35,9 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   const whereClause = query ? {
     OR: [
-      { firstName: { contains: query, mode: "insensitive" } as const },
-      { lastName: { contains: query, mode: "insensitive" } as const },
-      { contactNumber: { contains: query, mode: "insensitive" } as const }
+      { firstName: { startsWith: query, mode: "insensitive" } as const },
+      { lastName: { startsWith: query, mode: "insensitive" } as const },
+      { contactNumber: { startsWith: query } as const }
     ]
   } : undefined;
 
