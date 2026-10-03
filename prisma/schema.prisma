@@ -146,6 +146,7 @@ model Visit {
   patient       Patient   @relation(fields: [patientId], references: [id])
   doctorId      String?
   notes         String?
+    vitals        Json?     // e.g., { weight, bp, temp }
   opdRoom       Int?      // Auto-assigned OPD Room (e.g., 1, 2, 3)
   visitDate     DateTime  @default(now())
   status        String    @default("scheduled") // scheduled, in_progress, completed

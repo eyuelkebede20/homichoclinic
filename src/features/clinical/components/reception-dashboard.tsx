@@ -1,6 +1,8 @@
+import { CancelVisitButton } from "./cancel-visit-button";
 import Link from "next/link";
 import { Users, Clock, Activity, ArrowRight } from "lucide-react";
 import { ReceptionPatientSearch } from "./reception-patient-search";
+import { CancelVisitButton } from "./cancel-visit-button";
 
 type VisitWithPatient = {
   id: string;
@@ -89,19 +91,22 @@ export function ReceptionDashboard({
                   {queued.length > 0 ? (
                     <div className="space-y-2">
                       {queued.map((q, idx) => (
-                        <Link href={`/patients/${q.patient.id}`} key={q.id} className="block group">
-                          <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between hover:border-blue-300 hover:shadow-sm transition-all">
-                            <div className="flex items-center gap-3">
-                              <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
-                              <div>
-                                <p className="font-medium text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-                                  {q.patient.firstName} {q.patient.lastName}
-                                </p>
-                              </div>
+                        <div key={q.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between group hover:border-blue-300 hover:shadow-sm transition-all">
+                          <Link href={`/patients/${q.patient.id}`} className="flex-1 flex items-center gap-3">
+                            <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
+                            <div>
+                              <p className="font-medium text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
+                                {q.patient.firstName} {q.patient.lastName}
+                              </p>
                             </div>
-                            <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                          </Link>
+                          <div className="flex items-center gap-2">
+                            <CancelVisitButton visitId={q.id} />
+                            <Link href={`/patients/${q.patient.id}`}>
+                              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
+                            </Link>
                           </div>
-                        </Link>
+                        </div>
                       ))}
                     </div>
                   ) : (

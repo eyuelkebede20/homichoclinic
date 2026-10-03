@@ -7,10 +7,12 @@ import { useRouter } from "next/navigation";
 
 export function ClinicalDashboard({ 
   patientId, 
-  admissionStatus 
+  admissionStatus,
+  activeVisit
 }: { 
   patientId: string;
   admissionStatus: string;
+  activeVisit?: any;
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -50,6 +52,8 @@ export function ClinicalDashboard({
     }
   }
 
+  const vitals = activeVisit?.vitals || {};
+
   return (
     <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 mb-6">
       <div className="flex items-center justify-between mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
@@ -58,7 +62,7 @@ export function ClinicalDashboard({
           Clinical Dashboard
         </h2>
         <div className="flex items-center gap-3">
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${admissionStatus === "Inpatient" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200"}`}>
+          <span className={"px-3 py-1 rounded-full text-xs font-semibold " + (admissionStatus === "Inpatient" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200")}>
             {admissionStatus}
           </span>
           <button
@@ -73,23 +77,26 @@ export function ClinicalDashboard({
 
       <form onSubmit={handleNoteSubmit} className="space-y-6">
         <div>
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">Vitals</h3>
+          <div className="flex items-center gap-2 mb-3 border-b border-slate-100 dark:border-slate-800 pb-1">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Vitals</h3>
+            {activeVisit?.vitals && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-bold">Pre-filled by Nurse</span>}
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-medium text-slate-500">BP (mmHg)</label>
-              <input name="bp" placeholder="120/80" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+              <input name="bp" defaultValue={vitals.bloodPressure || ""} placeholder="120/80" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500">Heart Rate (bpm)</label>
-              <input name="hr" type="number" placeholder="72" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+              <input name="hr" type="number" defaultValue={vitals.heartRate || ""} placeholder="72" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500">Temp (C)</label>
-              <input name="temp" type="number" step="0.1" placeholder="37.0" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+              <input name="temp" type="number" step="0.1" defaultValue={vitals.temperature || ""} placeholder="37.0" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500">Weight (kg)</label>
-              <input name="weight" type="number" step="0.1" placeholder="70.5" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+              <input name="weight" type="number" step="0.1" defaultValue={vitals.weight || ""} placeholder="70.5" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
             </div>
           </div>
         </div>
@@ -107,7 +114,7 @@ export function ClinicalDashboard({
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500">Assessment (Diagnosis)</label>
-              <textarea name="assessment" rows={2} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
+              <textarea name="assessment" rows={2} required className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm border-blue-200 focus:border-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-500">Plan (Treatment)</label>

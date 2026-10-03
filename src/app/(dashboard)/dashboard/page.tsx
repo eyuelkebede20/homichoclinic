@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
 import { ReceptionDashboard } from "@/features/clinical/components/reception-dashboard";
+import { VisitForm } from "@/features/clinical/components/visit-form";
 import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
 
 function startOfWeek(date: Date) {
@@ -38,9 +39,11 @@ export default async function DashboardPage() {
     const sysSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
     const opdRooms = sysSetting && !isNaN(parseInt(sysSetting.value, 10)) ? parseInt(sysSetting.value, 10) : 3;
 
+    const today = getStartOfDayLocal();
     const activeVisits = await prisma.visit.findMany({
       where: {
         status: { in: ["scheduled", "in_progress"] },
+        visitDate: { gte: today },
         deletedAt: null
       },
       include: {
@@ -48,8 +51,18 @@ export default async function DashboardPage() {
       }
     });
 
+    const patientsRaw = await prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } });
+    const patients = patientsRaw.map(p => ({ id: p.id, name: p.firstName + " " + p.lastName }));
+    
+    const doctors = await prisma.user.findMany({
+      where: { role: "Doctor" },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    });
+
     return (
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
+        <VisitForm patients={patients} doctors={doctors} />
         <ReceptionDashboard opdRooms={opdRooms} activeVisits={activeVisits} />
       </div>
     );
@@ -79,6 +92,7 @@ export default async function DashboardPage() {
           ...(currentOpdRoom ? [{ opdRoom: currentOpdRoom }] : [])
         ],
         status: { in: ["scheduled", "in_progress"] },
+        visitDate: { gte: today },
       },
       include: {
         patient: {
@@ -142,7 +156,17 @@ export default async function DashboardPage() {
     );
   }
 
-  // 3. Pharmacy Dashboard
+  // 3. Nurse Dashboard
+  if (role === "Nurse") {
+    const pendingVisits = await prisma.visit.findMany({
+      where: { status: { in: ["scheduled", "in_progress"] } },
+      include: { patient: { select: { firstName: true, lastName: true } } },
+      orderBy: { updatedAt: "desc" }
+    });
+    return <div className="p-8 max-w-7xl mx-auto"><NurseDashboard visits={pendingVisits} /></div>;
+  }
+
+  // 4. Pharmacy Dashboard
   if (role === "Pharmacy") {
     const allDrugs = await prisma.drug.findMany({
       include: {

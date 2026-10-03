@@ -342,3 +342,15 @@ export const dismissLabResult = createSafeAction({
     return result;
   }
 });
+export const updateVisitVitals = createSafeAction({
+  schema: vitalsUpdateSchema,
+  requiredPermission: PERMISSIONS.VISIT_UPDATE,
+  handler: async (data, ctx) => {
+    const visit = await prisma.visit.update({
+      where: { id: data.visitId },
+      data: { vitals: data.vitals as any },
+    });
+    revalidatePath("/dashboard");
+    return visit;
+  }
+});

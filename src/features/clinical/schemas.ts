@@ -40,3 +40,12 @@ export const prescriptionCreateSchema = z.object({
     instructions: zSafeString().pipe(z.string().min(1, "Instructions are required")),
   })).min(1, "At least one item is required"),
 });
+export const vitalsUpdateSchema = z.object({
+  visitId: z.string().min(1),
+  vitals: z.object({
+    weight: z.string().optional(),
+    bloodPressure: z.string().optional(),
+    temperature: z.string().optional(),
+    heartRate: z.string().optional()
+  })
+});

@@ -163,7 +163,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
           <div className="print:hidden space-y-6">
             {canWriteHistory && (
               <>
-                <ClinicalDashboard patientId={patient.id} admissionStatus={patient.admissionStatus} />
+                <ClinicalDashboard patientId={patient.id} admissionStatus={patient.admissionStatus} activeVisit={patient.visits.find(v => v.status === "scheduled" || v.status === "in_progress")} />
                 <PaperImportForm patientId={patient.id} />
               </>
             )}
