@@ -262,6 +262,3 @@ export const searchPatientsFast = createSafeAction({
     });
   }
 });
-    return patients;
-  }
-});
