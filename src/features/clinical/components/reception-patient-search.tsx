@@ -19,6 +19,7 @@ export function ReceptionPatientSearch() {
     // We only skip fetching if length is exactly 1 (to avoid 1-char searches). 
     // If length is 0, we fetch recommendations.
     if (query.length === 1) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults([]);
       return;
     }

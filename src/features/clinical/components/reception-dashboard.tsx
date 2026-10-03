@@ -1,8 +1,11 @@
-import { CancelVisitButton } from "./cancel-visit-button";
+"use client";
 import Link from "next/link";
-import { Users, Clock, Activity, ArrowRight } from "lucide-react";
+import { Users, Clock, Activity, ArrowRight, Power } from "lucide-react";
 import { ReceptionPatientSearch } from "./reception-patient-search";
 import { CancelVisitButton } from "./cancel-visit-button";
+import { toggleOpdRoom } from "../actions";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 type VisitWithPatient = {
   id: string;
@@ -13,13 +16,23 @@ type VisitWithPatient = {
 };
 
 export function ReceptionDashboard({ 
-  opdRooms, 
+  activeOpds, 
   activeVisits 
 }: { 
-  opdRooms: number; 
+  activeOpds: number[]; 
   activeVisits: VisitWithPatient[]; 
 }) {
-  const rooms = Array.from({ length: opdRooms }, (_, i) => i + 1);
+  const router = useRouter();
+  const [loadingRoom, setLoadingRoom] = useState<number | null>(null);
+  const totalRooms = [1, 2, 3, 4, 5]; // Assume 5 rooms in the clinic
+
+  async function handleToggleRoom(room: number) {
+    setLoadingRoom(room);
+    const newRooms = activeOpds.includes(room) ? activeOpds.filter(r => r !== room) : [...activeOpds, room];
+    await toggleOpdRoom({ rooms: newRooms });
+    setLoadingRoom(null);
+    router.refresh();
+  }
 
   return (
     <div className="space-y-6">
@@ -42,101 +55,73 @@ export function ReceptionDashboard({
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {rooms.map((roomNum) => {
-          const roomVisits = activeVisits.filter(v => v.opdRoom === roomNum);
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+        {totalRooms.map(room => {
+          const isActive = activeOpds.includes(room);
+          const roomVisits = activeVisits.filter(v => v.opdRoom === room);
           const inProgress = roomVisits.find(v => v.status === "in_progress");
-          const queued = roomVisits.filter(v => v.status === "scheduled").sort((a, b) => new Date(a.visitDate).getTime() - new Date(b.visitDate).getTime());
-
+          const waiting = roomVisits.filter(v => v.status === "scheduled");
+          
           return (
-            <div key={roomNum} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden flex flex-col">
-              <div className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-200 dark:border-slate-800 px-5 py-3 flex justify-between items-center">
-                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                  OPD Room {roomNum}
-                </h3>
-                <span className="text-xs font-medium bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full">
-                  {roomVisits.length} total
-                </span>
+            <div key={room} className={g-white dark:bg-slate-900 rounded-lg shadow border overflow-hidden flex flex-col }>
+              <div className={px-4 py-3 border-b flex justify-between items-center }>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold text-slate-800 dark:text-slate-200">OPD {room}</h3>
+                  <span className={inline-flex items-center px-2 py-0.5 rounded text-xs font-medium }>
+                    {isActive ? "Online" : "Offline"}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => handleToggleRoom(room)}
+                  disabled={loadingRoom === room}
+                  className={p-1.5 rounded-full transition-colors }
+                  title={isActive ? "Take Offline" : "Bring Online"}
+                >
+                  <Power className={w-3 h-3 } />
+                </button>
               </div>
 
-              <div className="p-5 flex-1 flex flex-col gap-6">
-                {/* Active Patient */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Activity className="w-3.5 h-3.5" />
-                    Currently Inside
+              <div className="flex-1 p-4 flex flex-col">
+                <div className="mb-4">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <Activity className="w-3 h-3" /> Inside Now
                   </h4>
                   {inProgress ? (
-                    <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg">
-                      <p className="font-bold text-blue-900 dark:text-blue-100 text-base">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded p-2 flex justify-between items-center">
+                      <Link href={"/patients/\"} className="font-medium text-sm text-blue-700 dark:text-blue-400 hover:underline truncate">
                         {inProgress.patient.firstName} {inProgress.patient.lastName}
-                      </p>
-                      <p className="text-sm text-blue-600 dark:text-blue-300 mt-1">
-                        {inProgress.patient.contactNumber || "No Phone"}
-                      </p>
+                      </Link>
+                      <CancelVisitButton visitId={inProgress.id} />
                     </div>
                   ) : (
-                    <div className="p-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-center text-slate-400 text-sm">
-                      Room is currently empty
-                    </div>
+                    <p className="text-sm text-slate-400 italic">Empty</p>
                   )}
                 </div>
 
-                {/* Queue */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                    <Clock className="w-3.5 h-3.5" />
-                    Waiting Queue ({queued.length})
+                <div className="flex-1">
+                  <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <Clock className="w-3 h-3" /> Waiting Queue ({waiting.length})
                   </h4>
-                  {queued.length > 0 ? (
-                    <div className="space-y-2">
-                      {queued.map((q, idx) => (
-                        <div key={q.id} className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between group hover:border-blue-300 hover:shadow-sm transition-all">
-                          <Link href={`/patients/${q.patient.id}`} className="flex-1 flex items-center gap-3">
-                            <span className="text-xs font-bold text-slate-400 w-4">{idx + 1}.</span>
-                            <div>
-                              <p className="font-medium text-sm text-slate-800 dark:text-slate-200 group-hover:text-blue-600">
-                                {q.patient.firstName} {q.patient.lastName}
-                              </p>
-                            </div>
+                  <div className="space-y-2">
+                    {waiting.length === 0 ? (
+                      <p className="text-sm text-slate-400 italic">No one waiting</p>
+                    ) : (
+                      waiting.map(v => (
+                        <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
+                          <Link href={"/patients/\"} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 truncate mr-2">
+                            {v.patient.firstName} {v.patient.lastName}
                           </Link>
-                          <div className="flex items-center gap-2">
-                            <CancelVisitButton visitId={q.id} />
-                            <Link href={`/patients/${q.patient.id}`}>
-                              <ArrowRight className="w-4 h-4 text-slate-300 group-hover:text-blue-500 transition-colors" />
-                            </Link>
-                          </div>
+                          <CancelVisitButton visitId={v.id} />
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-slate-400 italic">No patients waiting in queue.</p>
-                  )}
+                      ))
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
           );
         })}
       </div>
-      
-      {/* Unassigned / Pending Triage */}
-      {activeVisits.filter(v => v.opdRoom === null).length > 0 && (
-        <div className="mt-8 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-900/50 rounded-xl p-6">
-          <h3 className="font-bold text-amber-800 dark:text-amber-500 mb-4 flex items-center gap-2">
-            Pending OPD Assignment (Auto-Routing Failed or Unassigned)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {activeVisits.filter(v => v.opdRoom === null).map(v => (
-              <div key={v.id} className="bg-white dark:bg-slate-950 p-4 border border-amber-200 dark:border-amber-800/50 rounded-lg shadow-sm">
-                <p className="font-bold text-slate-800 dark:text-slate-200">{v.patient.firstName} {v.patient.lastName}</p>
-                <Link href={`/visits`} className="text-xs text-amber-600 hover:underline mt-2 inline-block font-medium">
-                  Assign manually &rarr;
-                </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

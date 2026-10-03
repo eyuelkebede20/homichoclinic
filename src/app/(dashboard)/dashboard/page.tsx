@@ -8,6 +8,10 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
 import { ReceptionDashboard } from "@/features/clinical/components/reception-dashboard";
+import { NurseDashboard } from "@/features/clinical/components/nurse-dashboard";
+import { LabDashboard } from "@/features/clinical/components/lab-dashboard";
+import { PharmacyDashboard } from "@/features/clinical/components/pharmacy-dashboard";
+import { CashierDashboard } from "@/features/clinical/components/cashier-dashboard";
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
 
@@ -63,7 +67,7 @@ export default async function DashboardPage() {
     return (
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <VisitForm patients={patients} doctors={doctors} />
-        <ReceptionDashboard opdRooms={opdRooms} activeVisits={activeVisits} />
+        <ReceptionDashboard activeOpds={activeOpds} activeVisits={activeVisits} />
       </div>
     );
   }
@@ -166,7 +170,35 @@ export default async function DashboardPage() {
     return <div className="p-8 max-w-7xl mx-auto"><NurseDashboard visits={pendingVisits} /></div>;
   }
 
-  // 4. Pharmacy Dashboard
+  // 4. Lab Dashboard
+  if (role === "Lab Technician") {
+    const requests = await prisma.labRequest.findMany({
+      where: { status: { in: ["requested", "in_progress"] } },
+      include: { patient: { select: { firstName: true, lastName: true } }, test: { select: { name: true } } },
+      orderBy: { createdAt: "asc" }
+    });
+    return <div className="p-8 max-w-7xl mx-auto"><LabDashboard requests={requests} /></div>;
+  }
+
+  // 6. Cashier Dashboard
+  if (role === "Cashier") {
+    const completedVisits = await prisma.visit.findMany({
+      where: { status: "completed", invoiceId: null },
+      include: { patient: true },
+      orderBy: { updatedAt: "desc" }
+    });
+    return <div className="p-8 max-w-7xl mx-auto"><CashierDashboard visits={completedVisits} /></div>;
+  }
+
+  // 5. Pharmacy Dashboard
+  if (role === "Pharmacist") {
+    const prescriptions = await prisma.prescription.findMany({
+      where: { status: "pending" },
+      include: { patient: { select: { firstName: true, lastName: true } }, items: { include: { drug: { select: { name: true } } } } },
+      orderBy: { createdAt: "asc" }
+    });
+    return <div className="p-8 max-w-7xl mx-auto"><PharmacyDashboard prescriptions={prescriptions} /></div>;
+  }
   if (role === "Pharmacy") {
     const allDrugs = await prisma.drug.findMany({
       include: {

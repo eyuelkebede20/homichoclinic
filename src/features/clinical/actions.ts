@@ -23,9 +23,13 @@ export const createVisit = createSafeAction({
       }
     } else {
       // True Load Balancing: Assign to the active OPD room with the fewest queued patients
-      const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
-      const opdRoomCount = parseInt(opdSetting?.value || "1", 10) || 1;
-      
+      const opdSettingList = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } });
+      let activeOpds = [1, 2, 3];
+      if (opdSettingList && opdSettingList.value) {
+        try { activeOpds = JSON.parse(opdSettingList.value); } catch(e) {}
+      }
+      if (activeOpds.length === 0) activeOpds = [1];
+
       const today = getStartOfDayLocal();
 
       // Get count of currently waiting/in-progress patients per room
@@ -34,21 +38,19 @@ export const createVisit = createSafeAction({
         where: {
           visitDate: { gte: today },
           status: { in: ["scheduled", "in_progress"] },
-          opdRoom: { not: null, lte: opdRoomCount }
+          opdRoom: { in: activeOpds }
         },
         _count: { id: true }
       });
 
-      // Initialize queue depth for all valid rooms (1 to opdRoomCount) to 0
-      const roomLoads = Array.from({ length: opdRoomCount }, (_, i) => ({ room: i + 1, count: 0 }));
+      // Initialize queue depth for all valid rooms
+      const roomLoads = activeOpds.map(room => ({ room, count: 0 }));
       
       // Populate actual queue depths
       for (const v of activeVisits) {
         if (v.opdRoom) {
-          const idx = v.opdRoom - 1;
-          if (idx >= 0 && idx < opdRoomCount) {
-            roomLoads[idx].count = v._count.id;
-          }
+          const idx = roomLoads.findIndex(r => r.room === v.opdRoom);
+          if (idx >= 0) roomLoads[idx].count = v._count.id;
         }
       }
       
@@ -352,5 +354,204 @@ export const updateVisitVitals = createSafeAction({
     });
     revalidatePath("/dashboard");
     return visit;
+  }
+});
+export const toggleOpdRoom = createSafeAction({
+  schema: z.object({ rooms: z.array(z.number()) }),
+  requiredPermission: PERMISSIONS.VISIT_CREATE, // Receptionist needs this
+  handler: async (data, ctx) => {
+    const setting = await prisma.systemSetting.upsert({
+      where: { key: "activeOpdRoomsList" },
+      update: { value: JSON.stringify(data.rooms) },
+      create: { key: "activeOpdRoomsList", value: JSON.stringify(data.rooms) }
+    });
+    revalidatePath("/dashboard");
+    return setting;
+  }
+});
+export const enterLabResult = createSafeAction({
+  schema: labResultSchema,
+  requiredPermission: PERMISSIONS.LAB_RESULT_ENTER,
+  handler: async (data, ctx) => {
+    // 1. Create the result
+    const result = await prisma.labResult.create({
+      data: {
+        requestId: data.requestId,
+        findings: data.findings,
+        enteredBy: ctx.user.id
+      }
+    });
+
+    // 2. Mark request as completed
+    await prisma.labRequest.update({
+      where: { id: data.requestId },
+      data: { status: "completed" }
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/patients");
+    return result;
+  }
+});
+export const dispensePrescription = createSafeAction({
+  schema: z.object({ prescriptionId: z.string().min(1) }),
+  requiredPermission: PERMISSIONS.PRESCRIPTION_READ, // Or DISPENSE if exists
+  handler: async (data, ctx) => {
+    // We should use a transaction to deduct stock (FEFO)
+    const prescription = await prisma.prescription.findUnique({
+      where: { id: data.prescriptionId },
+      include: { items: true }
+    });
+
+    if (!prescription || prescription.status === "dispensed") {
+      throw new Error("Prescription not found or already dispensed");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      for (const item of prescription.items) {
+        let remainingToDeduct = item.quantity;
+        
+        // Find batches ordered by expiryDate ascending (FEFO)
+        const batches = await tx.stockBatch.findMany({
+          where: { drugId: item.drugId, quantity: { gt: 0 } },
+          orderBy: { expiryDate: "asc" }
+        });
+
+        for (const batch of batches) {
+          if (remainingToDeduct <= 0) break;
+
+          const toDeduct = Math.min(batch.quantity, remainingToDeduct);
+          
+          await tx.stockBatch.update({
+            where: { id: batch.id },
+            data: { quantity: batch.quantity - toDeduct }
+          });
+
+          await tx.stockMovement.create({
+            data: {
+              batchId: batch.id,
+              type: "dispense",
+              quantity: -toDeduct,
+              reason: "Prescription \\\",
+              actorId: ctx.user.id
+            }
+          });
+
+          remainingToDeduct -= toDeduct;
+        }
+
+        if (remainingToDeduct > 0) {
+          throw new Error("Insufficient stock for drug ID \\\");
+        }
+      }
+
+      await tx.prescription.update({
+        where: { id: prescription.id },
+        data: { status: "dispensed" }
+      });
+    });
+
+    revalidatePath("/dashboard");
+    return { success: true };
+  }
+});
+export const generateCreditCharge = createSafeAction({
+  schema: z.object({ visitId: z.string().min(1) }),
+  requiredPermission: PERMISSIONS.VISIT_READ, // Or INVOICE_CREATE
+  handler: async (data, ctx) => {
+    // 1. Get Visit with related items to bill
+    const visit = await prisma.visit.findUnique({
+      where: { id: data.visitId },
+      include: {
+        patient: true,
+        requests: { include: { test: true } },
+      }
+    });
+    
+    if (!visit || visit.invoiceId) {
+      throw new Error("Visit not found or already billed");
+    }
+
+    // Also get prescriptions made today for this patient (since prescriptions don't link strictly to visit directly)
+    const today = getStartOfDayLocal();
+    const prescriptions = await prisma.prescription.findMany({
+      where: { patientId: visit.patientId, createdAt: { gte: today }, status: "dispensed" },
+      include: { items: { include: { drug: true } } }
+    });
+
+    const items: { description: string, quantity: number, unitPrice: number, isDiscountable: boolean }[] = [];
+
+    // Consultation Fee
+    items.push({ description: "Consultation Fee", quantity: 1, unitPrice: visit.price || 15000, isDiscountable: true });
+
+    // Lab Tests
+    for (const req of visit.requests) {
+      if (req.test) {
+        items.push({ description: "Lab: " + req.test.name, quantity: 1, unitPrice: req.test.price, isDiscountable: true });
+      }
+    }
+
+    // Drugs
+    for (const p of prescriptions) {
+      for (const item of p.items) {
+        if (item.drug) {
+          // Check if it already has an invoiceId? Usually one per day
+          items.push({ description: "Drug: " + item.drug.name, quantity: item.quantity, unitPrice: item.drug.price, isDiscountable: true });
+        }
+      }
+    }
+
+    const discountPercent = visit.patient.discountPercent || 0;
+    
+    let subtotal = 0;
+    let total = 0;
+
+    for (const item of items) {
+      const lineTotal = item.quantity * item.unitPrice;
+      subtotal += lineTotal;
+      if (item.isDiscountable && discountPercent > 0) {
+        total += Math.round(lineTotal * (1 - discountPercent / 100));
+      } else {
+        total += lineTotal;
+      }
+    }
+
+    await prisma.$transaction(async (tx) => {
+      const invoice = await tx.invoice.create({
+        data: {
+          patientId: visit.patientId,
+          discountPercentApplied: discountPercent,
+          subtotal,
+          total,
+          status: "sent_to_finance", // Sent directly to finance
+          items: {
+            create: items
+          }
+        }
+      });
+
+      await tx.visit.update({
+        where: { id: visit.id },
+        data: { invoiceId: invoice.id }
+      });
+      
+      // Update requests
+      await tx.labRequest.updateMany({
+        where: { id: { in: visit.requests.map(r => r.id) } },
+        data: { invoiceId: invoice.id }
+      });
+
+      // Update prescription items
+      const pItemIds = prescriptions.flatMap(p => p.items.map(i => i.id));
+      if (pItemIds.length > 0) {
+        await tx.prescriptionItem.updateMany({
+          where: { id: { in: pItemIds } },
+          data: { invoiceId: invoice.id }
+        });
+      }
+    });
+
+    revalidatePath("/dashboard");
+    return { success: true };
   }
 });
