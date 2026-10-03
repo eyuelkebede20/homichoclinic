@@ -5,6 +5,7 @@ import { createVisit } from "@/features/clinical/actions";
 import { Loader2, DoorOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PatientSearchSelect } from "@/components/patient-search-select";
+import { toast } from "sonner";
 
 export function VisitForm({ patients, doctors }: { patients: {id: string, name: string}[], doctors: {id: string, name: string}[] }) {
   const [loading, setLoading] = useState(false);
@@ -27,7 +28,7 @@ export function VisitForm({ patients, doctors }: { patients: {id: string, name: 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (!patientId) {
-      alert("Please select a patient.");
+      toast.success("Please select a patient.");
       return;
     }
     
@@ -44,7 +45,7 @@ export function VisitForm({ patients, doctors }: { patients: {id: string, name: 
     const res = await createVisit(data);
     
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
       if (res.data?.opdRoom) {
         setAssignedRoom(res.data.opdRoom);

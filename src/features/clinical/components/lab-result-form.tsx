@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { submitLabResult } from "../actions";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function LabResultForm({ requestId }: { requestId: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -23,7 +24,7 @@ export function LabResultForm({ requestId }: { requestId: string }) {
     if (result.success) {
       setIsOpen(false);
     } else {
-      alert(result.error);
+      toast.error(result.error);
     }
   }
 

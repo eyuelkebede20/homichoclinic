@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { setLowPowerMode } from "../actions";
+import { toast } from "sonner";
 
 export function LowPowerToggle({ initial }: { initial: boolean }) {
   const [isPending, startTransition] = useTransition();
@@ -9,7 +10,7 @@ export function LowPowerToggle({ initial }: { initial: boolean }) {
   const handleToggle = () => {
     startTransition(async () => {
       const res = await setLowPowerMode({ enabled: !initial });
-      if (res.error) alert(res.error);
+      if (res.error) toast.error(res.error);
     });
   };
 

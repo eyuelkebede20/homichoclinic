@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { updateDrug, toggleDrugAvailability } from "../actions";
 import { Loader2, Edit2, Check, X } from "lucide-react";
+import { toast } from "sonner";
 
 export function EditableDrugRow({ drug }: { 
   drug: { id: string; name: string; description: string | null; category: string | null; price: number; isOperational?: boolean } 
@@ -25,10 +26,10 @@ export function EditableDrugRow({ drug }: {
     });
     setLoading(false);
     if (res?.error) {
-      alert(res.error);
+      toast.error(res.error);
     } else {
       if (res?.data && typeof res.data === "object" && "success" in res.data) {
-        alert(res.data.success as string);
+        toast.success(res.data.success as string);
       }
       setIsEditing(false);
     }
@@ -78,7 +79,7 @@ export function EditableDrugRow({ drug }: {
               setLoading(true);
               const res = await toggleDrugAvailability({ id: drug.id, isOperational: !drug.isOperational });
               setLoading(false);
-              if (res?.error) alert(res.error);
+              if (res?.error) toast.error(res.error);
             }}
             disabled={loading}
             className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 ${drug.isOperational !== false ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-700"}`}
@@ -102,8 +103,8 @@ export function EditableDrugRow({ drug }: {
                 if(confirm("Are you sure you want to remove this drug?")) {
                   const { deleteDrug } = await import("../actions");
                   const res = await deleteDrug({ id: drug.id });
-                  if (res?.error) alert(res.error);
-                  else if (res?.data && typeof res.data === "object" && "success" in res.data) alert(res.data.success as string);
+                  if (res?.error) toast.error(res.error);
+                  else if (res?.data && typeof res.data === "object" && "success" in res.data) toast.success(res.data.success as string);
                 }
               }} 
               className="text-slate-400 hover:text-red-600" title="Remove"

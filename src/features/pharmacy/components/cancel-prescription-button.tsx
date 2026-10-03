@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cancelPrescription } from "../actions";
 import { XCircle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function CancelPrescriptionButton({ prescriptionId }: { prescriptionId: string }) {
   const [loading, setLoading] = useState(false);
@@ -12,7 +13,7 @@ export function CancelPrescriptionButton({ prescriptionId }: { prescriptionId: s
     setLoading(true);
     const res = await cancelPrescription({ prescriptionId });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
   }
 
   return (

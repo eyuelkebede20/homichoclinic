@@ -4,6 +4,7 @@ import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { Loader2, Eye, EyeOff, User } from "lucide-react";
+import { toast } from "sonner";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -37,7 +38,7 @@ export default function LoginPage() {
 
   const handleForgotPassword = (e: React.MouseEvent) => {
     e.preventDefault();
-    alert("Please contact the system administrator to reset your password.");
+    toast.success("Please contact the system administrator to reset your password.");
   };
 
   return (

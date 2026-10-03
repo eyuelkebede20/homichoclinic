@@ -1,6 +1,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
+import { z } from "zod";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
@@ -238,7 +239,7 @@ export const searchPatientsFast = createSafeAction({
           firstName: true,
           lastName: true,
           contactNumber: true,
-          dateOfBirth: true
+          yob: true
         }
       });
     }
@@ -257,7 +258,7 @@ export const searchPatientsFast = createSafeAction({
         firstName: true,
         lastName: true,
         contactNumber: true,
-        dateOfBirth: true
+        yob: true
       }
     });
   }

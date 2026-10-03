@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { processCatalogApproval, bulkApproveCatalogRequests } from "../actions";
 import { CheckCircle, XCircle, Loader2, Edit, CheckSquare } from "lucide-react";
+import { toast } from "sonner";
 
 export function ApprovalsList({ requests, isPending }: { requests: any[], isPending: boolean }) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -16,8 +17,8 @@ export function ApprovalsList({ requests, isPending }: { requests: any[], isPend
     setLoadingId(id);
     const res = await processCatalogApproval({ id, approve, modifiedPayload: customPayload });
     setLoadingId(null);
-    if (res?.error) alert(res.error);
-    if (res?.fieldErrors) alert("Validation error.");
+    if (res?.error) toast.error(res.error);
+    if (res?.fieldErrors) toast.error("Validation error.");
     setEditingId(null);
   }
 
@@ -29,7 +30,7 @@ export function ApprovalsList({ requests, isPending }: { requests: any[], isPend
     setBulkLoading(true);
     const res = await bulkApproveCatalogRequests({ ids: pendingIds });
     setBulkLoading(false);
-    if (res?.error) alert(res.error);
+    if (res?.error) toast.error(res.error);
   }
 
   if (requests.length === 0) {

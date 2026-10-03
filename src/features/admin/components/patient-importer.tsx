@@ -4,6 +4,7 @@ import { useState } from "react";
 import { importPatientsCSV } from "../actions-import";
 import { Loader2, UploadCloud, AlertCircle, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 export function PatientImporter() {
   const [file, setFile] = useState<File | null>(null);
@@ -37,13 +38,13 @@ export function PatientImporter() {
       const res = await importPatientsCSV({ csvText: text });
       
       if (res.error) {
-        alert(res.error);
+        toast.error(res.error);
       } else if (res.data) {
         setResult(res.data);
       }
     } catch (err: any) {
       console.error("XLSX parsing error:", err);
-      alert("Failed to read file: " + (err.message || "Unknown error"));
+      toast.error("Failed to read file: " + (err.message || "Unknown error"));
     } finally {
       setLoading(false);
       setFile(null);

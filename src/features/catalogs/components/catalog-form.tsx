@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createDrug, createLabTest } from "../actions";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
   const [loading, setLoading] = useState(false);
@@ -27,9 +28,9 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     
     setLoading(false);
     if (res?.error) {
-      alert(res.error);
+      toast.error(res.error);
     } else if ((res as {success?: string})?.success) {
-      alert((res as {success?: string}).success);
+      toast.success((res as {success?: string}).success);
       (e.target as HTMLFormElement).reset();
     } else {
       (e.target as HTMLFormElement).reset();

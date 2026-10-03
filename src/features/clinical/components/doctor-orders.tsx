@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { requestLabTest, createPrescription } from "../actions";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function DoctorOrders({ 
   patientId, 
@@ -20,7 +21,7 @@ export function DoctorOrders({
   async function handleLabSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (selectedTests.size === 0) {
-      alert("Select at least one test.");
+      toast.success("Select at least one test.");
       return;
     }
     
@@ -28,9 +29,9 @@ export function DoctorOrders({
     
     const res = await requestLabTest({ patientId, testIds: Array.from(selectedTests) });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
-      alert("Lab tests requested.");
+      toast.success("Lab tests requested.");
       setSelectedTests(new Set());
     }
   }
@@ -50,16 +51,16 @@ export function DoctorOrders({
     const validItems = rxItems.filter(i => i.drugId && i.quantity > 0 && i.instructions);
     
     if (validItems.length === 0) {
-      alert("Please complete at least one prescription item.");
+      toast.success("Please complete at least one prescription item.");
       setLoading(false);
       return;
     }
 
     const res = await createPrescription({ patientId, items: validItems });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
-      alert("Prescription sent to pharmacy.");
+      toast.success("Prescription sent to pharmacy.");
       setRxItems([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
     }
   }

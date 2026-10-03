@@ -63,14 +63,14 @@ export default async function DashboardPage() {
     
     const doctors = await prisma.user.findMany({
       where: { role: "Doctor" },
-      select: { id: true, name: true },
+      select: { id: true, name: true, currentOpdRoom: true },
       orderBy: { name: "asc" }
     });
 
     return (
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <VisitForm patients={patients} doctors={doctors} />
-        <ReceptionDashboard activeOpds={activeOpds} activeVisits={activeVisits} />
+        <ReceptionDashboard activeOpds={activeOpds} activeVisits={activeVisits} activeDoctors={doctors.filter(d => d.currentOpdRoom != null).map(d => ({ name: d.name, currentOpdRoom: d.currentOpdRoom }))} />
       </div>
     );
   }

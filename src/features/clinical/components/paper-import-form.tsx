@@ -5,6 +5,7 @@ import { createMedicalRecord } from "../actions";
 import { Loader2, ScanText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Tesseract from "tesseract.js";
+import { toast } from "sonner";
 
 interface PaperImportFormProps {
   patientId: string;
@@ -33,7 +34,7 @@ export function PaperImportForm({ patientId }: PaperImportFormProps) {
       setContent((prev) => (prev ? prev + "\n" + result.data.text : result.data.text));
     } catch (err) {
       console.error(err);
-      alert("Failed to run OCR on image.");
+      toast.error("Failed to run OCR on image.");
     } finally {
       setOcrLoading(false);
     }

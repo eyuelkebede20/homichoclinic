@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Loader2, Activity } from "lucide-react";
 import { updateVisitVitals } from "../actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function NurseDashboard({ visits }: { visits: any[] }) {
   return (
@@ -48,7 +49,7 @@ function NurseVitalsRow({ visit }: { visit: any }) {
       vitals: { weight, bloodPressure: bp, temperature: temp, heartRate: hr }
     });
     setSaving(false);
-    if (res?.error) alert(res.error);
+    if (res?.error) toast.error(res.error);
     else {
       setSaved(true);
       router.refresh();

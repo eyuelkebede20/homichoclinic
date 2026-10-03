@@ -5,6 +5,7 @@ import { useState } from "react";
 import { signIn, useSession, signOut } from "@/lib/auth-client";
 import { Users, LogOut, ChevronDown, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const TEST_ACCOUNTS = [
   { role: "Admin", email: "admin@clinic.com", color: "bg-red-600" },
@@ -40,14 +41,14 @@ export function TestUserSwitcher() {
             window.location.href = "/dashboard";
           },
           onError: (ctx) => {
-            alert("Error logging in: " + ctx.error.message);
+            toast.error("Error logging in: " + ctx.error.message);
             setLoadingEmail(null);
           }
         }
       );
     } catch (err) {
       console.error("Login failed", err);
-      alert("Login failed completely.");
+      toast.error("Login failed completely.");
       setLoadingEmail(null);
     }
   };

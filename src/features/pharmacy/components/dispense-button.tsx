@@ -4,6 +4,7 @@ import { useState } from "react";
 import { dispensePrescription } from "../actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function DispenseButton({ prescriptionId }: { prescriptionId: string }) {
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export function DispenseButton({ prescriptionId }: { prescriptionId: string }) {
     setLoading(false);
 
     if (result.error) {
-      alert(`Error: ${result.error}`);
+      toast.error(`Error: ${result.error}`);
     } else {
       router.refresh();
     }

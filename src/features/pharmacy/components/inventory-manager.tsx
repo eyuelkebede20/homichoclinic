@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { receiveStock } from "../actions";
 import { Loader2, Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 
 export function InventoryManager({ drugs }: { 
   drugs: { 
@@ -39,7 +40,7 @@ export function InventoryManager({ drugs }: {
     setLoading(false);
     
     if (res.error) {
-      alert(res.error);
+      toast.error(res.error);
     } else {
       setSelectedDrug(null);
     }

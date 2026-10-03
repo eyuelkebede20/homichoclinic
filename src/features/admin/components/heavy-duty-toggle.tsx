@@ -2,6 +2,7 @@
 
 import { useOptimistic, useTransition } from "react";
 import { setHeavyDutyMode } from "../actions";
+import { toast } from "sonner";
 
 export function HeavyDutyToggle({ initial }: { initial: boolean }) {
   const [isPending, startTransition] = useTransition();
@@ -14,7 +15,7 @@ export function HeavyDutyToggle({ initial }: { initial: boolean }) {
     startTransition(async () => {
       addOptimisticState(!optimisticState);
       const res = await setHeavyDutyMode({ enabled: !optimisticState });
-      if (res.error) alert(res.error);
+      if (res.error) toast.error(res.error);
     });
   };
 

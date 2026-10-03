@@ -94,6 +94,14 @@ export default async function DashboardLayout({
         </div>
         
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
+          {role === "Doctor" && (
+            <div className="mb-6 px-3">
+              <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">My Station</p>
+                <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
+              </div>
+            </div>
+          )}
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -130,11 +138,7 @@ export default async function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground print:overflow-visible print:block">
         
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-8 shadow-sm print:hidden gap-4">
-          {role === "Doctor" && (
-            <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
-          )}
-          <GlobalNotifications />
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-8 shadow-sm print:hidden gap-4">`n          <GlobalNotifications />
           <ThemeToggle />
         </header>
 

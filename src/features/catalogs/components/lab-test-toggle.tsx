@@ -2,6 +2,7 @@
 
 import { useOptimistic, useTransition } from "react";
 import { toggleLabTestOperational } from "../actions-toggle";
+import { toast } from "sonner";
 
 export function LabTestToggle({ id, initialStatus }: { id: string, initialStatus: boolean }) {
   const [isPending, startTransition] = useTransition();
@@ -14,7 +15,7 @@ export function LabTestToggle({ id, initialStatus }: { id: string, initialStatus
     startTransition(async () => {
       addOptimisticStatus(!optimisticStatus);
       const res = await toggleLabTestOperational({ id, isOperational: !optimisticStatus });
-      if (res.error) alert(res.error);
+      if (res.error) toast.error(res.error);
     });
   }
 

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Loader2 } from "lucide-react";
 import { updateVisitStatus } from "../actions";
+import { toast } from "sonner";
 
 export function CancelVisitButton({ visitId }: { visitId: string }) {
   const [loading, setLoading] = useState(false);
@@ -12,11 +13,11 @@ export function CancelVisitButton({ visitId }: { visitId: string }) {
     if (!confirm("Are you sure you want to remove this patient from the queue?")) return;
     
     setLoading(true);
-    const res = await updateVisitStatus({ id: visitId, status: "cancelled" });
+    const res = await updateVisitStatus({ visitId: visitId, status: "cancelled" });
     setLoading(false);
     
     if (res?.error) {
-      alert(res.error);
+      toast.error(res.error);
     }
   }
 

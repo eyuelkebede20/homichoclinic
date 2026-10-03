@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { wipeAllPatients } from "../actions-dev";
 import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function DevWipePatients() {
   const [loading, setLoading] = useState(false);
@@ -20,13 +21,13 @@ export function DevWipePatients() {
     try {
       const res = await wipeAllPatients();
       if (res?.error) {
-        alert(res.error);
+        toast.error(res.error);
       } else {
-        alert("All patients have been successfully deleted.");
+        toast.success("All patients have been successfully deleted.");
         window.location.reload();
       }
     } catch (e: any) {
-      alert("Error: " + e.message);
+      toast.error("Error: " + e.message);
     } finally {
       setLoading(false);
     }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Calendar } from "lucide-react";
 import { createVisit } from "@/features/clinical/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function ScheduleAppointmentForm({ 
   patientId,
@@ -39,9 +40,9 @@ export function ScheduleAppointmentForm({
     });
 
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
-      alert("Appointment Scheduled!");
+      toast.success("Appointment Scheduled!");
       (e.target as HTMLFormElement).reset();
       router.refresh();
     }

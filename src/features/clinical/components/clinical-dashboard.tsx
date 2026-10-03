@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Activity, PlusCircle } from "lucide-react";
 import { addClinicalNote, toggleAdmissionStatus } from "../actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function ClinicalDashboard({ 
   patientId, 
@@ -21,7 +22,7 @@ export function ClinicalDashboard({
     setLoading(true);
     const res = await toggleAdmissionStatus({ patientId, currentStatus: admissionStatus });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else router.refresh();
   }
 
@@ -45,7 +46,7 @@ export function ClinicalDashboard({
 
     const res = await addClinicalNote(data);
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
       (e.target as HTMLFormElement).reset();
       router.refresh();

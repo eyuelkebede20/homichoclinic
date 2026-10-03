@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createUser } from "../actions";
 import { Loader2, Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export function CreateUserModal() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,7 +21,7 @@ export function CreateUserModal() {
     });
     setLoading(false);
     if (res?.error) {
-      alert(res.error);
+      toast.error(res.error);
     } else {
       setIsOpen(false);
     }

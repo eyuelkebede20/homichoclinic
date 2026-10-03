@@ -4,6 +4,7 @@ import { useState } from "react";
 import { recordPayment } from "../actions";
 
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amountStr: string }) {
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amo
     setLoading(false);
 
     if (result.error) {
-      alert(`Error: ${result.error}`);
+      toast.error(`Error: ${result.error}`);
     } else {
       router.push(`/billing/${invoiceId}?print=true`);
     }

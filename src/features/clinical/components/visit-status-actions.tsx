@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateVisitStatus } from "../actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function VisitStatusActions({ visitId, currentStatus }: { visitId: string, currentStatus: string }) {
   const [loading, setLoading] = useState(false);
@@ -13,7 +14,7 @@ export function VisitStatusActions({ visitId, currentStatus }: { visitId: string
     setLoading(true);
     const res = await updateVisitStatus({ visitId, status });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else router.refresh();
   }
 

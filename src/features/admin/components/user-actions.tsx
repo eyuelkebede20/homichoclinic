@@ -4,6 +4,7 @@ import { useState } from "react";
 import { deleteUser, resetUserPassword, updateUserRole } from "../actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function UserActionsRow({ user }: { user: { id: string; email: string; role: string | null } }) {
   const [loading, setLoading] = useState(false);
@@ -15,13 +16,13 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
     setLoading(true);
     const res = await deleteUser({ userId: user.id });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else router.refresh();
   }
 
   async function handleResetPassword() {
     if (!newPassword || newPassword.length < 6) {
-      alert("Please enter a valid password (min 6 characters) in the adjacent input box.");
+      toast.success("Please enter a valid password (min 6 characters) in the adjacent input box.");
       return;
     }
     if (!confirm(`Reset password for ${user.email}? This will immediately log them out.`)) return;
@@ -29,9 +30,9 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
     setLoading(true);
     const res = await resetUserPassword({ userId: user.id, newPassword });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
-      alert("Password reset successfully.");
+      toast.success("Password reset successfully.");
       setNewPassword("");
       router.refresh();
     }
@@ -46,7 +47,7 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
     setLoading(true);
     const res = await updateUserRole({ userId: user.id, role });
     setLoading(false);
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else router.refresh();
   }
 

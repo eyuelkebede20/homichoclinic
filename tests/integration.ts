@@ -10,7 +10,7 @@ async function run() {
     
     let doctor = await prisma.user.findFirst({ where: { role: "Doctor" } });
     if (!doctor) {
-      doctor = await prisma.user.create({ data: { name: "Test Doc", email: "doc\@test.com", role: "Doctor" } });
+      doctor = await prisma.user.create({ data: { id: "doc123", name: "Test Doc", email: "doc@test.com", emailVerified: true, role: "Doctor", createdAt: new Date(), updatedAt: new Date() } });
     }
 
     let drug = await prisma.drug.findFirst();

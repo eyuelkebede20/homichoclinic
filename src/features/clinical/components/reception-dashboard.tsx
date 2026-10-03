@@ -18,10 +18,12 @@ type VisitWithPatient = {
 
 export function ReceptionDashboard({ 
   activeOpds, 
-  activeVisits 
+  activeVisits,
+  activeDoctors
 }: { 
   activeOpds: number[]; 
-  activeVisits: VisitWithPatient[]; 
+  activeVisits: VisitWithPatient[];
+  activeDoctors?: { name: string, currentOpdRoom: number | null }[];
 }) {
   const router = useRouter();
   const [loadingRoom, setLoadingRoom] = useState<number | null>(null);
@@ -66,11 +68,19 @@ export function ReceptionDashboard({
           return (
             <div key={room} className={`bg-white dark:bg-slate-900 rounded-lg shadow border overflow-hidden flex flex-col ${isActive ? "border-slate-200 dark:border-slate-800" : "border-slate-200 dark:border-slate-800 opacity-70"}`}>
               <div className={`px-4 py-3 border-b flex justify-between items-center ${isActive ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800" : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold text-slate-800 dark:text-slate-200">OPD {room}</h3>
-                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>
-                    {isActive ? "Online" : "Offline"}
-                  </span>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">OPD {room}</h3>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>
+                      {isActive ? "Online" : "Offline"}
+                    </span>
+                  </div>
+                  {activeDoctors && activeDoctors.some(d => d.currentOpdRoom === room) && (
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5 flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      Dr. {activeDoctors.filter(d => d.currentOpdRoom === room).map(d => d.name).join(", ")}
+                    </span>
+                  )}
                 </div>
                 <button 
                   onClick={() => handleToggleRoom(room)}

@@ -5,6 +5,7 @@ import { createInvoice } from "../actions";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PatientSearchSelect } from "@/components/patient-search-select";
+import { toast } from "sonner";
 
 export function InvoiceGeneratorForm({ patients }: { 
   patients: { id: string; firstName: string; lastName: string; discountPercent: number }[] 
@@ -53,7 +54,7 @@ export function InvoiceGeneratorForm({ patients }: {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!patientId) {
-      alert("Please select a patient.");
+      toast.success("Please select a patient.");
       return;
     }
     
@@ -73,7 +74,7 @@ export function InvoiceGeneratorForm({ patients }: {
     const res = await createInvoice({ patientId, items: parsedItems });
     setLoading(false);
     
-    if (res.error) alert(res.error);
+    if (res.error) toast.error(res.error);
     else {
       router.push("/billing");
     }
