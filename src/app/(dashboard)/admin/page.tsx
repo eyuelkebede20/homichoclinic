@@ -11,6 +11,7 @@ import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
+import { CreateUserModal } from "@/features/admin/components/create-user-modal";
 import Link from "next/link";
 
 export default async function AdminDashboardPage(props: { searchParams: Promise<{ tab?: string; q?: string }> }) {
@@ -86,7 +87,18 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">
-            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center gap-4 bg-slate-50 dark:bg-slate-800/20">
+  <form className="relative max-w-sm w-full">
+    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+      <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+      </svg>
+    </div>
+    <input name="q" defaultValue={query} type="text" placeholder="Search users by name or email..." className="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" />
+  </form>
+  <CreateUserModal />
+</div>
+<table className="min-w-full divide-y divide-slate-200 dark:divide-slate-700">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Name</th>

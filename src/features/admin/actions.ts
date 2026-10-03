@@ -1,6 +1,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
+import { z } from "zod";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
@@ -101,7 +102,6 @@ export const updateUserRole = createSafeAction({
   },
 });
 
-import { z } from "zod";
 
 const setLowPowerSchema = z.object({
   enabled: z.boolean(),
@@ -179,5 +179,54 @@ export const setHeavyDutyMode = createSafeAction({
 
     revalidatePath("/", "layout");
     return { success: true };
+  }
+});
+export const createUser = createSafeAction({
+  schema: z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    password: z.string().min(6),
+    role: z.string().min(1)
+  }),
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    const existingUser = await prisma.user.findFirst({ where: { email: data.email } });
+    if (existingUser) throw new Error("A user with this email already exists.");
+
+    const hashedPassword = await bcrypt.hash(data.password, 10);
+    const userId = crypto.randomUUID();
+
+    const user = await prisma.user.create({
+      data: {
+        id: userId,
+        name: data.name,
+        email: data.email,
+        emailVerified: true,
+        role: data.role,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        accounts: {
+          create: {
+            id: crypto.randomUUID(),
+            accountId: data.email,
+            providerId: "credential",
+            password: hashedPassword,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          }
+        }
+      }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      resourceId: user.id,
+      newValue: JSON.stringify({ email: user.email, role: user.role }),
+      reason: "Created new user manually",
+    });
+
+    revalidatePath("/admin");
+    return { success: "User created successfully." };
   }
 });
