@@ -5,7 +5,7 @@ import { createSafeAction } from "@/lib/safe-action";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema } from "./schemas";
+import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema, vitalsUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal } from "@/lib/date-utils";
 
@@ -13,6 +13,18 @@ export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
+    // 1. Prevent multiple active visits for the same patient
+    const existingActiveVisit = await prisma.visit.findFirst({
+      where: {
+        patientId: data.patientId,
+        status: { in: ["scheduled", "in_progress"] }
+      }
+    });
+
+    if (existingActiveVisit) {
+      throw new Error("This patient is already currently admitted in the queue. Complete or cancel their active visit first.");
+    }
+
     let assignedRoom = 1;
 
     // If a doctor is selected, try to get their active OPD room
@@ -371,14 +383,14 @@ export const toggleOpdRoom = createSafeAction({
 });
 export const enterLabResult = createSafeAction({
   schema: labResultSchema,
-  requiredPermission: PERMISSIONS.LAB_RESULT_ENTER,
+  requiredPermission: PERMISSIONS.LAB_RESULT,
   handler: async (data, ctx) => {
     // 1. Create the result
     const result = await prisma.labResult.create({
       data: {
         requestId: data.requestId,
         findings: data.findings,
-        enteredBy: ctx.user.id
+        enteredBy: ctx.userId
       }
     });
 
@@ -395,7 +407,7 @@ export const enterLabResult = createSafeAction({
 });
 export const dispensePrescription = createSafeAction({
   schema: z.object({ prescriptionId: z.string().min(1) }),
-  requiredPermission: PERMISSIONS.PRESCRIPTION_READ, // Or DISPENSE if exists
+  requiredPermission: PERMISSIONS.PRESCRIPTION_DISPENSE, // Or DISPENSE if exists
   handler: async (data, ctx) => {
     // We should use a transaction to deduct stock (FEFO)
     const prescription = await prisma.prescription.findUnique({
@@ -433,7 +445,7 @@ export const dispensePrescription = createSafeAction({
               type: "dispense",
               quantity: -toDeduct,
               reason: "Prescription " + prescription.id,
-              actorId: ctx.user.id
+              actorId: ctx.userId
             }
           });
 
@@ -464,7 +476,7 @@ export const generateCreditCharge = createSafeAction({
       where: { id: data.visitId },
       include: {
         patient: true,
-        requests: { include: { test: true } },
+        
       }
     });
     
@@ -482,10 +494,14 @@ export const generateCreditCharge = createSafeAction({
     const items: { description: string, quantity: number, unitPrice: number, isDiscountable: boolean }[] = [];
 
     // Consultation Fee
-    items.push({ description: "Consultation Fee", quantity: 1, unitPrice: visit.price || 15000, isDiscountable: true });
+    items.push({ description: "Consultation Fee", quantity: 1, unitPrice: 15000, isDiscountable: true });
 
     // Lab Tests
-    for (const req of visit.requests) {
+    const labRequests = await prisma.labRequest.findMany({
+        where: { patientId: visit.patientId, createdAt: { gte: today }, invoiceId: null },
+        include: { test: true }
+      });
+      for (const req of labRequests) {
       if (req.test) {
         items.push({ description: "Lab: " + req.test.name, quantity: 1, unitPrice: req.test.price, isDiscountable: true });
       }
@@ -537,7 +553,7 @@ export const generateCreditCharge = createSafeAction({
       
       // Update requests
       await tx.labRequest.updateMany({
-        where: { id: { in: visit.requests.map(r => r.id) } },
+        where: { id: { in: labRequests.map(r => r.id) } },
         data: { invoiceId: invoice.id }
       });
 
