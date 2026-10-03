@@ -39,7 +39,7 @@ export default async function DashboardLayout({
   ];
 
   if (userPermissions.includes(PERMISSIONS.VISIT_READ)) {
-    navItems.push({ name: "Visits", href: "/visits", icon: Calendar });
+    navItems.push({ name: "Appointments", href: "/visits", icon: Calendar });
   }
   if (userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
     navItems.push({ name: "Patients", href: "/patients", icon: Users });
