@@ -151,10 +151,10 @@ export default async function DashboardPage() {
     });
 
     const lowStockCount = allDrugs.filter(d => 
-      d.batches.reduce((sum, b) => sum + b.quantity, 0) < d.minimumStock
+      d.batches.reduce((sum, b) => sum + b.quantity, 0) < 10 // Hardcoded threshold for now
     ).length;
 
-    const expiringBatches = await prisma.drugBatch.count({
+    const expiringBatches = await prisma.stockBatch.count({
       where: {
         expiryDate: { lte: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000) },
         quantity: { gt: 0 }
