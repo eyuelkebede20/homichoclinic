@@ -6,12 +6,12 @@ export const visitCreateSchema = z.object({
   doctorId: z.string().optional(),
   notes: zSafeString().optional(),
   visitDate: z.string().optional(), // Date string
-  status: z.enum(["scheduled", "in_progress", "completed"]).default("scheduled"),
+  status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled"),
 });
 
 export const visitUpdateSchema = z.object({
   visitId: z.string().min(1, "Visit ID is required"),
-  status: z.enum(["scheduled", "in_progress", "completed"]),
+  status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]),
 });
 
 export const medicalRecordCreateSchema = z.object({
@@ -49,3 +49,4 @@ export const vitalsUpdateSchema = z.object({
     heartRate: z.string().optional()
   })
 });
+
