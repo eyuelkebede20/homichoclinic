@@ -6,6 +6,7 @@ import { Search, Loader2, UserPlus } from "lucide-react";
 import { searchPatientsFast } from "@/features/patients/actions";
 import { createVisit } from "@/features/clinical/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function ReceptionPatientSearch() {
   const [query, setQuery] = useState("");
@@ -40,7 +41,7 @@ export function ReceptionPatientSearch() {
     const res = await createVisit({ patientId, status: "scheduled", notes: "" });
     setAdmittingId(null);
     if (res?.error) {
-      alert("Error admitting patient: " + res.error);
+      toast.error("Error admitting patient", { description: res.error });
     } else {
       setQuery("");
       // Optionally blur the input here

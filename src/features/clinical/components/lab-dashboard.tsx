@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, TestTube, CheckCircle2 } from "lucide-react";
 import { enterLabResult } from "../actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function LabDashboard({ requests }: { requests: any[] }) {
   return (
@@ -39,12 +40,12 @@ function LabRequestRow({ request }: { request: any }) {
   const router = useRouter();
 
   async function handleSave() {
-    if (!findings.trim()) return alert("Please enter findings.");
+    if (!findings.trim()) return toast.error("Please enter findings.");
     setSaving(true);
     const res = await enterLabResult({ requestId: request.id, findings });
     setSaving(false);
-    if (res.error) alert(res.error);
-    else router.refresh();
+    if (res.error) toast.error(res.error);
+    else { toast.success("Findings saved"); router.refresh(); }
   }
 
   return (

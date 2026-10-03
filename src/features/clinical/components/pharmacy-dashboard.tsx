@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Pill, CheckCircle2 } from "lucide-react";
 import { dispensePrescription } from "../actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function PharmacyDashboard({ prescriptions }: { prescriptions: any[] }) {
   return (
@@ -44,8 +45,8 @@ function PrescriptionRow({ prescription }: { prescription: any }) {
     const res = await dispensePrescription({ prescriptionId: prescription.id });
     setSaving(false);
     
-    if (res?.error) alert(res.error);
-    else router.refresh();
+    if (res?.error) toast.error(res.error);
+    else { toast.success("Stock deducted & dispensed"); router.refresh(); }
   }
 
   return (

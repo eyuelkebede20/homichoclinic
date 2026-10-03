@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Receipt, FileText } from "lucide-react";
 import { generateCreditCharge } from "../actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function CashierDashboard({ visits }: { visits: any[] }) {
   return (
@@ -44,8 +45,8 @@ function UnbilledVisitRow({ visit }: { visit: any }) {
     const res = await generateCreditCharge({ visitId: visit.id });
     setSaving(false);
     
-    if (res?.error) alert(res.error);
-    else router.refresh();
+    if (res?.error) toast.error(res.error);
+    else { toast.success("Invoice generated"); router.refresh(); }
   }
 
   return (
