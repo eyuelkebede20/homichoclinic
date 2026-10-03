@@ -432,7 +432,7 @@ export const dispensePrescription = createSafeAction({
               batchId: batch.id,
               type: "dispense",
               quantity: -toDeduct,
-              reason: "Prescription \\\",
+              reason: "Prescription " + prescription.id,
               actorId: ctx.user.id
             }
           });
@@ -441,7 +441,7 @@ export const dispensePrescription = createSafeAction({
         }
 
         if (remainingToDeduct > 0) {
-          throw new Error("Insufficient stock for drug ID \\\");
+          throw new Error("Insufficient stock for drug ID " + item.drugId);
         }
       }
 
