@@ -223,15 +223,31 @@ export const updateDiscount = createSafeAction({
 });
 
 export const searchPatientsFast = createSafeAction({
-  schema: z.object({ query: z.string().min(2) }),
+  schema: z.object({ query: z.string().optional() }),
   requiredPermission: PERMISSIONS.PATIENT_READ,
   handler: async (data, ctx) => {
-    const term = data.query.trim();
-    const patients = await prisma.patient.findMany({
+    const term = (data.query || "").trim();
+    
+    if (!term) {
+      // Return 8 most recent patients as recommendations
+      return await prisma.patient.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          contactNumber: true,
+          dateOfBirth: true
+        }
+      });
+    }
+
+    return await prisma.patient.findMany({
       where: {
         OR: [
-          { firstName: { contains: term, mode: "insensitive" } },
-          { lastName: { contains: term, mode: "insensitive" } },
+          { firstName: { startsWith: term, mode: "insensitive" } },
+          { lastName: { startsWith: term, mode: "insensitive" } },
           { contactNumber: { startsWith: term } }
         ]
       },
@@ -244,6 +260,8 @@ export const searchPatientsFast = createSafeAction({
         dateOfBirth: true
       }
     });
+  }
+});
     return patients;
   }
 });
