@@ -40,8 +40,11 @@ export default async function DashboardPage() {
 
   // 1. Reception Default
   if (role === "Reception") {
-    const sysSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRooms" } });
-    const opdRooms = sysSetting && !isNaN(parseInt(sysSetting.value, 10)) ? parseInt(sysSetting.value, 10) : 3;
+    const sysSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } });
+    let activeOpds = [1, 2, 3];
+    if (sysSetting && sysSetting.value) {
+      try { activeOpds = JSON.parse(sysSetting.value); } catch(e) {}
+    }
 
     const today = getStartOfDayLocal();
     const activeVisits = await prisma.visit.findMany({
