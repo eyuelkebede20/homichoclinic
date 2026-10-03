@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { updateDoctorOpd } from "@/features/clinical/actions";
-import { DoorOpen, Loader2 } from "lucide-react";
+import { Loader2, Stethoscope } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 export function DoctorOpdSelector({ 
@@ -18,8 +18,8 @@ export function DoctorOpdSelector({
   if (role !== "Doctor") return null;
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value; const room = val === "off" ? null : parseInt(val);
-    if (room === undefined || isNaN(room as number)) return;
+    const val = e.target.value; 
+    const room = val === "off" ? null : parseInt(val);
     
     setLoading(true);
     await updateDoctorOpd({ room });
@@ -29,25 +29,30 @@ export function DoctorOpdSelector({
 
   return (
     <div className="flex flex-col gap-2 w-full">
-      <div className="relative">
+      <div className="relative group">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Stethoscope className="h-4 w-4 text-blue-400" />
+        </div>
         <select 
-          value={initialRoom || ""}
+          value={initialRoom === null ? "off" : initialRoom.toString()}
           onChange={handleChange}
           disabled={loading}
-          className="w-full text-sm font-medium bg-slate-900 text-white border border-slate-700 rounded-md py-2 pl-3 pr-8 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer disabled:opacity-50 transition-colors"
+          className="w-full text-sm font-semibold bg-slate-950/50 hover:bg-slate-900 text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-2.5 pl-9 pr-8 outline-none transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-inner focus:ring-2 focus:ring-blue-500/30 appearance-none"
         >
-          <option className="bg-slate-800 text-slate-100" value="" disabled>Select OPD Station</option>
-          <option className="bg-slate-800 text-slate-100" value="off">Off Duty / Roaming</option>
-          <option className="bg-slate-800 text-slate-100" value="1">OPD 1</option>
-          <option className="bg-slate-800 text-slate-100" value="2">OPD 2</option>
-          <option className="bg-slate-800 text-slate-100" value="3">OPD 3</option>
-          <option className="bg-slate-800 text-slate-100" value="4">OPD 4</option>
+          <option className="bg-slate-900 text-slate-100 font-medium py-2" value="off">☕ Off Duty / Roaming</option>
+          <option className="bg-slate-900 text-blue-100 font-medium py-2" value="1">🏥 OPD Room 1</option>
+          <option className="bg-slate-900 text-blue-100 font-medium py-2" value="2">🏥 OPD Room 2</option>
+          <option className="bg-slate-900 text-blue-100 font-medium py-2" value="3">🏥 OPD Room 3</option>
+          <option className="bg-slate-900 text-blue-100 font-medium py-2" value="4">🏥 OPD Room 4</option>
+          <option className="bg-slate-900 text-blue-100 font-medium py-2" value="5">🏥 OPD Room 5</option>
         </select>
-        {loading && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-          </div>
-        )}
+        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          {loading ? (
+            <Loader2 className="h-4 w-4 text-blue-400 animate-spin" />
+          ) : (
+            <svg className="h-4 w-4 text-slate-400 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
+          )}
+        </div>
       </div>
     </div>
   );
