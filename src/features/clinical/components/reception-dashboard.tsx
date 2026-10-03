@@ -1,6 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import Link from "next/link";
-import { Users, Clock, Activity, ArrowRight, Power } from "lucide-react";
+import { Users, Clock, Activity, Power } from "lucide-react";
 import { ReceptionPatientSearch } from "./reception-patient-search";
 import { CancelVisitButton } from "./cancel-visit-button";
 import { toggleOpdRoom } from "../actions";
@@ -63,21 +64,21 @@ export function ReceptionDashboard({
           const waiting = roomVisits.filter(v => v.status === "scheduled");
           
           return (
-            <div key={room} className={g-white dark:bg-slate-900 rounded-lg shadow border overflow-hidden flex flex-col }>
-              <div className={px-4 py-3 border-b flex justify-between items-center }>
+            <div key={room} className={`bg-white dark:bg-slate-900 rounded-lg shadow border overflow-hidden flex flex-col ${isActive ? "border-slate-200 dark:border-slate-800" : "border-slate-200 dark:border-slate-800 opacity-70"}`}>
+              <div className={`px-4 py-3 border-b flex justify-between items-center ${isActive ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800" : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
                 <div className="flex items-center gap-2">
                   <h3 className="font-bold text-slate-800 dark:text-slate-200">OPD {room}</h3>
-                  <span className={inline-flex items-center px-2 py-0.5 rounded text-xs font-medium }>
+                  <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>
                     {isActive ? "Online" : "Offline"}
                   </span>
                 </div>
                 <button 
                   onClick={() => handleToggleRoom(room)}
                   disabled={loadingRoom === room}
-                  className={p-1.5 rounded-full transition-colors }
+                  className={`p-1.5 rounded-full transition-colors ${isActive ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
                   title={isActive ? "Take Offline" : "Bring Online"}
                 >
-                  <Power className={w-3 h-3 } />
+                  <Power className={`w-3 h-3 ${loadingRoom === room ? "animate-pulse" : ""}`} />
                 </button>
               </div>
 
@@ -88,7 +89,7 @@ export function ReceptionDashboard({
                   </h4>
                   {inProgress ? (
                     <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded p-2 flex justify-between items-center">
-                      <Link href={"/patients/\"} className="font-medium text-sm text-blue-700 dark:text-blue-400 hover:underline truncate">
+                      <Link href={`/patients/${inProgress.patient.id}`} className="font-medium text-sm text-blue-700 dark:text-blue-400 hover:underline truncate">
                         {inProgress.patient.firstName} {inProgress.patient.lastName}
                       </Link>
                       <CancelVisitButton visitId={inProgress.id} />
@@ -108,7 +109,7 @@ export function ReceptionDashboard({
                     ) : (
                       waiting.map(v => (
                         <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                          <Link href={"/patients/\"} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 truncate mr-2">
+                          <Link href={`/patients/${v.patient.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 truncate mr-2">
                             {v.patient.firstName} {v.patient.lastName}
                           </Link>
                           <CancelVisitButton visitId={v.id} />
