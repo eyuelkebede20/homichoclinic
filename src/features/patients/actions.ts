@@ -221,3 +221,29 @@ export const updateDiscount = createSafeAction({
     return updatedPatient;
   },
 });
+
+export const searchPatientsFast = createSafeAction({
+  schema: z.object({ query: z.string().min(2) }),
+  requiredPermission: PERMISSIONS.PATIENT_READ,
+  handler: async (data, ctx) => {
+    const term = data.query.trim();
+    const patients = await prisma.patient.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: term, mode: "insensitive" } },
+          { lastName: { contains: term, mode: "insensitive" } },
+          { contactNumber: { contains: term } }
+        ]
+      },
+      take: 8,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        contactNumber: true,
+        dateOfBirth: true
+      }
+    });
+    return patients;
+  }
+});

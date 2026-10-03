@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Users, Clock, Activity, ArrowRight } from "lucide-react";
+import { ReceptionPatientSearch } from "./reception-patient-search";
 
 type VisitWithPatient = {
   id: string;
@@ -25,12 +26,17 @@ export function ReceptionDashboard({
           <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Reception Desk Overview</h2>
           <p className="text-slate-500 dark:text-slate-400">Live view of OPD queues and active patients.</p>
         </div>
+        
+        <div className="flex-1 max-w-xl mx-4">
+          <ReceptionPatientSearch />
+        </div>
+
         <Link 
           href="/patients/new" 
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2 whitespace-nowrap"
         >
           <Users className="w-4 h-4" />
-          Register New Patient
+          Register New
         </Link>
       </div>
 
