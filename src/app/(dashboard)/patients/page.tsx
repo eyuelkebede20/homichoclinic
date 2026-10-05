@@ -86,10 +86,10 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 flex flex-col">
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800/60 flex flex-col">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-            <thead className="bg-slate-50 dark:bg-slate-950">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/50">
+            <thead className="bg-slate-50/50 dark:bg-slate-900/30">
               <tr>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Salutation</th>
@@ -104,7 +104,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+            <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
               {patients.map(patient => (
                 <PatientRow key={patient.id} patient={patient} />
               ))}

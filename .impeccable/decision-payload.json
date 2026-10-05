@@ -1,0 +1,148 @@
+{
+  "title": "Choose the visual world for the Clinic System",
+  "question": "The roll assigned Modern Logistics. Keep it, take an alternate, or re-roll.",
+  "options": [
+    {
+      "id": "assigned",
+      "label": "Modern Logistics Tracking",
+      "kicker": "THE ROLL",
+      "lineage": "modern parcel tracking systems",
+      "thesis": "The clinic workflow tracks a patient exactly like a parcel moving through operational stages.",
+      "palette": [
+        "#FFD700",
+        "#2C3E50",
+        "#ECF0F1",
+        "#FFFFFF"
+      ],
+      "materials": [
+        "clean grid",
+        "industrial sans-serif"
+      ],
+      "viewport": "Horizontal tracking timeline at the top, distinct work area for the current stage.",
+      "risk": "Might feel too industrial for a medical setting.",
+      "raised": [
+        {
+          "from": "challenger-encyclopedia",
+          "raise": "Patient history adopts structured, book-like typography."
+        },
+        {
+          "from": "challenger-font",
+          "raise": "Strict grid density and real-time readouts for lab results."
+        }
+      ],
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "Tracking Timeline", "x": 0, "y": 0, "w": 12, "h": 2, "accent": true},
+          {"label": "Patient Details", "x": 0, "y": 2, "w": 4, "h": 8},
+          {"label": "Current Stage Actions", "x": 4, "y": 2, "w": 8, "h": 8}
+        ]
+      }
+    },
+    {
+      "id": "challenger-transit",
+      "label": "Mass Transit Map",
+      "verdict": "competitive",
+      "lineage": "subway / mass transit maps",
+      "thesis": "Patients navigate through predefined colored 'lines' representing OPDs and services.",
+      "palette": [
+        "#E74C3C",
+        "#3498DB",
+        "#2ECC71",
+        "#F39C12"
+      ],
+      "materials": [
+        "colored lines",
+        "station nodes"
+      ],
+      "viewport": "A map-like overview of the clinic showing patient volume at each station.",
+      "case": "Excellent for routing multiple patients, but less focused on the individual's linear journey.",
+      "risk": "Can become visually overwhelming when many patients are present.",
+      "hero": "https://impeccable.style/worlds/cards/transit-map.webp",
+      "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "Lines Overview", "x": 0, "y": 0, "w": 12, "h": 4, "accent": true},
+          {"label": "Station Detail", "x": 0, "y": 4, "w": 12, "h": 6}
+        ]
+      }
+    },
+    {
+      "id": "challenger-encyclopedia",
+      "label": "Encyclopedia of Life",
+      "verdict": "declined",
+      "lineage": "taxonomic reference books",
+      "thesis": "Every patient is a detailed, cross-referenced entry in a vast medical catalog.",
+      "palette": [
+        "#FAF9F6",
+        "#2E2C29",
+        "#8B0000"
+      ],
+      "materials": [
+        "serif typography",
+        "fine ruling"
+      ],
+      "case": "Loses on product clarity: this is an operational workflow app, not just a reference library.",
+      "kept": "Structured, book-like typography for history records.",
+      "hero": "https://impeccable.style/worlds/cards/encyclopedia.webp"
+    },
+    {
+      "id": "challenger-font",
+      "label": "Variable Font Specimen",
+      "verdict": "declined",
+      "lineage": "digital font specimens",
+      "thesis": "High-density data readouts with real-time continuous sliders.",
+      "palette": [
+        "#000000",
+        "#FFFFFF",
+        "#00FF00"
+      ],
+      "materials": [
+        "monospaced data",
+        "sliders"
+      ],
+      "case": "Too abstract and not aligned with medical workflow constraints.",
+      "kept": "Strict grid density and real-time readouts.",
+      "hero": "https://impeccable.style/worlds/cards/variable-font-specimen.webp"
+    }
+  ],
+  "reroll": {
+    "registers": [
+      "safer",
+      "bolder"
+    ]
+  },
+  "buildPath": {
+    "value": "code",
+    "toggle": true
+  },
+  "canon": true,
+  "canonCard": {
+    "label": "The category standard",
+    "thesis": "What this category ships, executed impeccably.",
+    "palette": [
+      "#FFFFFF",
+      "#111827",
+      "#2563EB"
+    ],
+    "materials": [
+      "clean grid",
+      "standard UI components"
+    ],
+    "viewport": "Side rail nav, table of patients, and a detail pane.",
+    "risk": "Indistinguishable from other generic dashboards.",
+    "wireframe": {
+        "cols": 12,
+        "rows": 10,
+        "regions": [
+          {"label": "Side Nav", "x": 0, "y": 0, "w": 2, "h": 10},
+          {"label": "Header", "x": 2, "y": 0, "w": 10, "h": 1, "accent": true},
+          {"label": "Patient List", "x": 2, "y": 1, "w": 4, "h": 9},
+          {"label": "Detail Pane", "x": 6, "y": 1, "w": 6, "h": 9}
+        ]
+      }
+  },
+  "steer": true
+}
