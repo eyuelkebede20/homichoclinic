@@ -1,11 +1,17 @@
 @echo off
 title Bure Clinic - Startup
 
-REM  Relaunch inside a window that stays open (cmd /k). If anything
-REM  crashes, the error stays on screen instead of vanishing.
-if /i "%~1"=="child" goto :main
-cmd /k ""%~f0" child"
-exit /b
+REM  Self-update and relaunch block. Wrapped in ( ) so CMD reads it all at once
+REM  before git pull can change the file on disk.
+(
+    if /i not "%~1"=="child" (
+        echo   [..] Checking for system updates from GitHub...
+        git pull origin main 2>nul
+        echo.
+        cmd /k ""%~f0" child"
+        exit /b
+    )
+)
 
 :main
 
