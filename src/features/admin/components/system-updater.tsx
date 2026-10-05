@@ -73,7 +73,7 @@ export function SystemUpdater() {
     try {
       const res = await triggerSystemUpdate({});
       if (!res?.data?.success) {
-        appendLog("✗ " + (res?.serverError ?? res?.error ?? "Could not trigger update"));
+        appendLog("✗ " + (res?.error ?? "Could not trigger update"));
         setPhase("failed");
         return;
       }

@@ -134,7 +134,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Full name</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {patient.firstName} {patient.lastName}
+                  {patient.salutation ? `${patient.salutation}. ` : ""}{patient.firstName} {patient.lastName}
                 </dd>
               </div>
               <div>
@@ -157,6 +157,18 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || "N/A"}</dd>
               </div>
+              {patient.department && (
+                <div>
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Department / Division</dt>
+                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.department}</dd>
+                </div>
+              )}
+              {patient.c_m && (
+                <div>
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">C/M</dt>
+                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 uppercase">{patient.c_m}</dd>
+                </div>
+              )}
             </dl>
           </div>
 

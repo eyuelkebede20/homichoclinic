@@ -54,18 +54,16 @@ export const createPatient = createSafeAction({
       c_m = "M";
 
       // Parse permanentSince from militaryId if possible
-      if (data.militaryId && data.militaryId.includes('/')) {
-        const parts = data.militaryId.split('/');
-        const lastPart = parts[parts.length - 1];
-        if (lastPart && lastPart.length === 2) {
-          const yearVal = parseInt(lastPart, 10);
-          if (!isNaN(yearVal)) {
-            // If the date is <50 then 20**, if it is >50 then 19**
-            if (yearVal < 50) {
-              permanentSince = `20${lastPart}`;
-            } else {
-              permanentSince = `19${lastPart}`;
-            }
+      if (data.militaryId && data.militaryId.length >= 2) {
+        // Strip the last 2 digits
+        const lastPart = data.militaryId.slice(-2);
+        const yearVal = parseInt(lastPart, 10);
+        if (!isNaN(yearVal)) {
+          // If the date is <50 then 20**, if it is >50 then 19**
+          if (yearVal < 50) {
+            permanentSince = `20${lastPart}`;
+          } else {
+            permanentSince = `19${lastPart}`;
           }
         }
       }
