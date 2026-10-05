@@ -375,12 +375,12 @@ set /a F=(F+1)%%20
 set "POS=%F%"
 if %POS% gtr 10 set /a POS=20 - POS
 call set "BAR=%%PAT:~%POS%,12%%"
-<nul set /p "=   %C%*%Z% %~1  [%BAR%] %EM%:%ES%    %CR%"
+<nul set /p "=%ESC%[1G   %C%*%Z% %~1  [%BAR%] %EM%:%ES%    "
 goto :eof
 
 REM  :clearline   erases the animated line
 :clearline
-<nul set /p "=%BLANK%%CR%"
+<nul set /p "=%ESC%[1G%BLANK%%ESC%[1G"
 goto :eof
 
 REM  :sleep   waits about a quarter of a second
