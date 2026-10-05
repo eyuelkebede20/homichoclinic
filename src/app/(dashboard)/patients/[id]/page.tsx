@@ -109,7 +109,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         {/* Patient Info Card */}
         <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
           <div
-            className={`shadow rounded-lg border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800" : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}
+            className={`shadow-sm rounded-xl border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800/60" : "bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800/60"}`}
           >
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
@@ -173,7 +173,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
 
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
+          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
             <div className="space-y-4">
               {patient.medicalRecords.length === 0 ? (
@@ -183,15 +183,15 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               )}
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
+          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Laboratory Results</h2>
             <div className="space-y-4">
               {patient.labRequests.length === 0 ? (
                 <p className="text-sm text-slate-500 dark:text-slate-400">No lab requests found.</p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-                    <thead className="bg-slate-50 dark:bg-slate-800">
+                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/50">
+                    <thead className="bg-slate-50/50 dark:bg-slate-900/30">
                       <tr>
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Date</th>
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Test</th>
@@ -199,7 +199,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                         <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Result / Notes</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+                    <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
                       {patient.labRequests.map((req) => (
                         <tr key={req.id}>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{req.createdAt.toLocaleDateString()}</td>

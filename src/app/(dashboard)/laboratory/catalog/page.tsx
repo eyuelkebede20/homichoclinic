@@ -82,7 +82,7 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
           <CatalogForm type="labTest" />
         </div>
         
-        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-none">
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden print:shadow-none print:border-none">
           <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-screen overflow-y-auto print:max-h-none print:overflow-visible">
             {labTests.map(t => (
               <li key={t.id} className={`p-4 hover:bg-slate-50 dark:hover:bg-slate-800/50 print:p-2 group ${!t.isOperational ? "opacity-70 bg-slate-50 dark:bg-slate-800/20" : ""}`}>

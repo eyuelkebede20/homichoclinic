@@ -4,6 +4,7 @@ import { useState } from "react";
 import { importCatalogCSV } from "../actions-import";
 import { Upload, Loader2, Download } from "lucide-react";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
   const [loading, setLoading] = useState(false);
@@ -35,17 +36,19 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
       const res = await importCatalogCSV({ csvText: text, type });
       if (res?.error) {
         setError(res.error);
-      } else if (res?.data?.success) {
-        setSuccess(res.data.success);
       } else {
-        setSuccess("Imported successfully.");
+        toast.success(res?.data?.success || "Imported successfully.");
+        // Short delay to let the toast appear, then hard refresh to guarantee UI updates
+        setTimeout(() => {
+          window.location.reload();
+        }, 800);
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to import");
     } finally {
       setLoading(false);
       // Reset input
-      e.target.value = "";
+      if (e.target) e.target.value = "";
     }
   }
 

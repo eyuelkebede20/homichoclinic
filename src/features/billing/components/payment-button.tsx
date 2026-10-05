@@ -11,7 +11,7 @@ export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amo
   const router = useRouter();
 
   async function handlePayment(method: "cash" | "card" | "transfer") {
-    if (!confirm(`Confirm payment of ${amountStr} via ${method.toUpperCase()}?`)) {
+    if (!confirm(`Confirm internal ledger clearance of ${amountStr}?`)) {
       return;
     }
 
@@ -29,19 +29,16 @@ export function PaymentButton({ invoiceId, amountStr }: { invoiceId: string; amo
   return (
     <div className="flex space-x-2">
       <button
-        onClick={() => handlePayment("cash")}
+        onClick={() => handlePayment("transfer")}
         disabled={loading}
-        className="text-xs bg-green-100 text-green-800 hover:bg-green-200 px-3 py-1 rounded disabled:opacity-50"
+        className="text-xs bg-indigo-100 text-indigo-800 hover:bg-indigo-200 px-3 py-1 rounded font-bold disabled:opacity-50 transition-colors"
       >
-        Cash
+        {loading ? "Processing..." : "Clear Ledger"}
       </button>
-      <button
-        onClick={() => handlePayment("card")}
-        disabled={loading}
-        className="text-xs bg-blue-100 text-blue-800 hover:bg-blue-200 px-3 py-1 rounded disabled:opacity-50"
-      >
-        Card
-      </button>
+      {/* 
+      <button onClick={() => handlePayment("cash")} className="...">Cash</button>
+      <button onClick={() => handlePayment("card")} className="...">Card</button> 
+      */}
     </div>
   );
 }

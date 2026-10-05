@@ -6,7 +6,10 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { ApprovalsList } from "@/features/catalogs/components/approvals-list";
 
-export default async function CatalogApprovalsPage() {
+export default async function CatalogApprovalsPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
+  const resolvedParams = await searchParams;
+  const query = resolvedParams.q || "";
+
   const session = await auth.api.getSession({
     headers: await headers()
   });
@@ -31,11 +34,18 @@ export default async function CatalogApprovalsPage() {
     orderBy: { createdAt: "desc" }
   });
 
+  const historyWhere: import("@prisma/client").Prisma.CatalogChangeRequestWhereInput = query ? {
+    status: { not: "PENDING" },
+    OR: [
+      { requestedData: { contains: query, mode: "insensitive" } },
+    ]
+  } : { status: { not: "PENDING" } };
+
   const historyRequests = await prisma.catalogChangeRequest.findMany({
-    where: { status: { not: "PENDING" } },
+    where: historyWhere,
     include: { requestedBy: true, evaluatedBy: true },
     orderBy: { updatedAt: "desc" },
-    take: 20
+    take: 100
   });
 
   return (
@@ -50,13 +60,23 @@ export default async function CatalogApprovalsPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8">
-        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
           <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Pending Requests</h2>
           <ApprovalsList requests={pendingRequests} isPending={true} />
         </div>
 
-        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6">
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Recent History</h2>
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Recent History</h2>
+            <form className="relative w-full md:w-64">
+              <input 
+                name="q" 
+                defaultValue={query} 
+                placeholder="Search history data..." 
+                className="w-full pl-3 pr-3 py-1.5 text-sm rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+              />
+            </form>
+          </div>
           <ApprovalsList requests={historyRequests} isPending={false} />
         </div>
       </div>

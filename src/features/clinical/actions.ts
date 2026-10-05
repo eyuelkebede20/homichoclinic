@@ -292,10 +292,11 @@ export const cancelLabRequest = createSafeAction({
 
 
 export const toggleAdmissionStatus = createSafeAction({
-  schema: z.object({ patientId: z.string(), currentStatus: z.string() }),
+  schema: z.object({ patientId: z.string(), currentStatus: z.string().nullable().optional() }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE, // Doctors can do this
   handler: async (data, ctx) => {
-    const newStatus = data.currentStatus === "Inpatient" ? "Outpatient" : "Inpatient";
+    const current = data.currentStatus || "Outpatient";
+    const newStatus = current === "Inpatient" ? "Outpatient" : "Inpatient";
     const pat = await prisma.patient.update({
       where: { id: data.patientId },
       data: { admissionStatus: newStatus }

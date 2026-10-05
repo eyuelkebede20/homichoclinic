@@ -52,7 +52,7 @@ export function ApprovalsList({ requests, isPending }: { requests: any[], isPend
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-lg overflow-x-auto">
+      <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 rounded-lg overflow-x-auto max-h-[600px] overflow-y-auto">
         <table className="min-w-full text-left text-sm divide-y divide-slate-200 dark:divide-slate-800">
           <thead className="bg-slate-50 dark:bg-slate-800/50">
             <tr>

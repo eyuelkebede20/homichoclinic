@@ -97,8 +97,8 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Billing & Checkout</h1>
-          <p className="text-slate-500 dark:text-slate-400">Manage invoices, apply discounts, and process payments.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Billing & Ledger Clearing</h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage internal invoices, track costs, and clear records for Z-Reporting.</p>
         </div>
         
         <div className="flex gap-4 items-center">
@@ -123,18 +123,18 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
             Export CSV</a>
           {userPermissions.includes(PERMISSIONS.INVOICE_CREATE) && (
             <Link href="/billing/new" className="px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-sm">
-              + Generate Invoice
+              + Manual Record
             </Link>
           )}
         </div>
       </div>
 
       {unbilledQueue.length > 0 && (
-        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col mb-8">
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col mb-8">
           <div className="p-4 bg-yellow-50 dark:bg-yellow-900/10 border-b border-yellow-200 dark:border-yellow-800 flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-yellow-800 dark:text-yellow-500">Action Required: Unbilled Patient Activity</h2>
-              <p className="text-sm text-yellow-700 dark:text-yellow-600">The following patients have pending charges (visits, labs, or prescriptions) that need to be invoiced.</p>
+              <h2 className="text-lg font-bold text-yellow-800 dark:text-yellow-500">Action Required: Reconcile with Ledger</h2>
+              <p className="text-sm text-yellow-700 dark:text-yellow-600">The following patients have pending records (visits, labs, or prescriptions) that need to be reconciled with staff paperwork.</p>
             </div>
           </div>
           <div className="overflow-x-auto">
@@ -163,7 +163,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                       {userPermissions.includes(PERMISSIONS.INVOICE_CREATE) && (
                         <form action={`/api/billing/generate-auto-invoice?patientId=${group.patient.id}`} method="POST">
                           <button type="submit" className="px-3 py-1.5 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-xs">
-                            Generate Invoice
+                            Reconcile Record
                           </button>
                         </form>
                       )}
@@ -176,7 +176,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
         </div>
       )}
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 flex flex-col">
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 flex flex-col">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <thead className="bg-slate-50 dark:bg-slate-950">
@@ -185,6 +185,7 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Patient</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Subtotal</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Discount Applied</th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Saved</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Total</th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase">Action</th>
@@ -197,7 +198,17 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                     {invoice.createdAt.toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {invoice.patient.firstName} {invoice.patient.lastName}
+                    <div className="flex flex-col">
+                      <span>{invoice.patient.firstName} {invoice.patient.lastName}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-[10px] text-slate-500 font-normal">Since {invoice.patient.createdAt.getFullYear()}</span>
+                        {invoice.patient.discountPercent > 0 && (
+                          <span className="text-[10px] bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 px-1.5 py-0.5 rounded font-bold">
+                            {invoice.patient.discountPercent}% OFF
+                          </span>
+                        )}
+                      </div>
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 text-right">
                     {formatCurrency(invoice.subtotal)}
@@ -205,13 +216,16 @@ export default async function BillingDashboardPage({ searchParams }: { searchPar
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600 dark:text-blue-400 text-right">
                     {invoice.discountPercentApplied}%
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-green-600 dark:text-green-400 font-medium text-right">
+                    {formatCurrency(invoice.subtotal - invoice.total)}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900 dark:text-slate-100 text-right">
                     {formatCurrency(invoice.total)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-center">
                     {invoice.status === "paid" ? (
                       <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-300">
-                        Paid
+                        Cleared
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-300">

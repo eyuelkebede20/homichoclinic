@@ -120,7 +120,7 @@ export default async function PharmacyDashboardPage({ searchParams }: { searchPa
         
         {/* Prescriptions Queue */}
         <div className="space-y-6 print:hidden">
-          <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col h-[600px]">
+          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[600px]">
             <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4">Pending Prescriptions</h2>
             
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">

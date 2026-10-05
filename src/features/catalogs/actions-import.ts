@@ -80,9 +80,10 @@ export const importCatalogCSV = createSafeAction({
       if (data.type === "DRUG") {
         if (canApprove) {
           if (id) {
-            await prisma.drug.update({
+            await prisma.drug.upsert({
               where: { id },
-              data: { name, price: priceCents, category, description }
+              update: { name, price: priceCents, category, description },
+              create: { id, name, price: priceCents, category, description }
             });
           } else {
             await prisma.drug.create({
@@ -105,9 +106,10 @@ export const importCatalogCSV = createSafeAction({
       } else { // LAB_TEST
         if (canApprove) {
           if (id) {
-            await prisma.labTest.update({
+            await prisma.labTest.upsert({
               where: { id },
-              data: { name, price: priceCents, description }
+              update: { name, price: priceCents, description },
+              create: { id, name, price: priceCents, description }
             });
           } else {
             await prisma.labTest.create({

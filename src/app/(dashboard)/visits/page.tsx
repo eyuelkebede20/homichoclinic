@@ -58,10 +58,11 @@ export default async function VisitsQueuePage() {
         </>
       )}
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
-          <thead className="bg-slate-50 dark:bg-slate-950">
-            <tr>
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden flex flex-col">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/50">
+            <thead className="bg-slate-50/50 dark:bg-slate-900/30">
+              <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Time</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Patient</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Room</th>
@@ -70,9 +71,9 @@ export default async function VisitsQueuePage() {
               <th className="px-6 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
+          <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
             {visits.map(v => (
-              <tr key={v.id}>
+              <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-300">
                   {v.visitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </td>
@@ -107,7 +108,7 @@ export default async function VisitsQueuePage() {
           </tbody>
         </table>
       </div>
-
+    </div>
     </div>
   );
 }

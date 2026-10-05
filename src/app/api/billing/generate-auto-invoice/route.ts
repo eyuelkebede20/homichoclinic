@@ -88,19 +88,30 @@ export async function POST(request: Request) {
     const discountAmount = Math.round((discountableTotal * patient.discountPercent) / 100);
     const total = subtotal - discountAmount;
 
+    let newInvoiceId = "";
     // 4. Transaction: Create Invoice + Attach Items + Link original models
     await prisma.$transaction(async (tx) => {
       const invoice = await tx.invoice.create({
         data: {
           patientId,
+          status: "paid", // Auto clear the ledger
           discountPercentApplied: patient.discountPercent,
           subtotal,
           total,
           items: {
             create: invoiceItems
+          },
+          payments: {
+            create: [{
+              method: "transfer", // Internal ledger transfer
+              amount: total,
+              actorId: session.user.id
+            }]
           }
         }
       });
+      
+      newInvoiceId = invoice.id;
 
       // Update original entities to point to this invoice
       if (visits.length > 0) {
@@ -125,8 +136,8 @@ export async function POST(request: Request) {
       }
     });
 
-    // Redirect back to billing
-    return NextResponse.redirect(new URL("/billing", request.url), 303);
+    // Redirect to the newly cleared ledger receipt to print
+    return NextResponse.redirect(new URL(`/billing/${newInvoiceId}?print=true`, request.url), 303);
 
   } catch (err: any) {
     console.error("Auto invoice generation error:", err);

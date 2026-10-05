@@ -81,7 +81,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
           <CatalogForm type="drug" />
         </div>
         
-        <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-none">
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden print:shadow-none print:border-none">
           <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-screen overflow-y-auto print:max-h-none print:overflow-visible">
             {drugs.map(d => (
               <EditableDrugRow key={d.id} drug={d} />

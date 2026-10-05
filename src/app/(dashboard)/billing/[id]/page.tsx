@@ -126,17 +126,17 @@ export default async function InvoicePrintPage({ params, searchParams }: { param
         </div>
 
         {invoice.status === "paid" && invoice.payments.length > 0 && (
-          <div className="bg-green-50 text-green-800 p-4 rounded-md border border-green-200 text-sm">
+          <div className="bg-indigo-50 text-indigo-800 p-4 rounded-md border border-indigo-200 text-sm">
             <div className="font-bold mb-1 flex items-center uppercase tracking-wide">
-              Paid in Full
+              Ledger Cleared
             </div>
-            <div>Paid via {invoice.payments[0].method.toUpperCase()} on {invoice.payments[0].createdAt.toLocaleDateString()}</div>
+            <div>Cleared internally on {invoice.payments[0].createdAt.toLocaleDateString()}</div>
           </div>
         )}
         
         {invoice.status === "pending" && (
           <div className="bg-yellow-50 text-yellow-800 p-4 rounded-md border border-yellow-200 text-sm font-bold uppercase tracking-wide">
-            Payment Pending
+            Pending Clearance
           </div>
         )}
 

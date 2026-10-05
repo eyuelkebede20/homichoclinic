@@ -48,7 +48,7 @@ export function InventoryManager({ drugs }: {
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 flex flex-col h-[600px] print:h-auto print:block print:shadow-none print:border-none print:w-full print:p-0">
+    <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 flex flex-col h-[600px] print:h-auto print:block print:shadow-none print:border-none print:w-full print:p-0">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">Inventory Status</h2>
       </div>

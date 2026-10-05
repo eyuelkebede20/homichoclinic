@@ -170,7 +170,8 @@ export const processCatalogApproval = createSafeAction({
     }
 
     // Process approval
-    const payload = data.modifiedPayload ? data.modifiedPayload : JSON.parse(req.requestedData);
+    const rawPayload = data.modifiedPayload ? data.modifiedPayload : JSON.parse(req.requestedData);
+    const { id: _id, ...payload } = rawPayload;
 
     if (req.type === "DRUG") {
       if (req.action === "CREATE") {
@@ -270,7 +271,8 @@ export const bulkApproveCatalogRequests = createSafeAction({
         const req = await prisma.catalogChangeRequest.findUnique({ where: { id } });
         if (!req || req.status !== "PENDING") continue;
 
-        const payload = JSON.parse(req.requestedData);
+        const rawPayload = JSON.parse(req.requestedData);
+        const { id: _id, ...payload } = rawPayload;
 
         if (req.type === "DRUG") {
           if (req.action === "CREATE") await prisma.drug.create({ data: payload });

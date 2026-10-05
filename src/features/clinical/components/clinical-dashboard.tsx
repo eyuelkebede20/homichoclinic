@@ -8,11 +8,11 @@ import { toast } from "sonner";
 
 export function ClinicalDashboard({ 
   patientId, 
-  admissionStatus,
+  admissionStatus = "Outpatient",
   activeVisit
 }: { 
   patientId: string;
-  admissionStatus: string;
+  admissionStatus?: string | null;
   activeVisit?: any;
 }) {
   const [loading, setLoading] = useState(false);

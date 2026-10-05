@@ -90,7 +90,7 @@ export async function getNotifications() {
       title: "Approval Needed",
       desc: `A new ${p.type} catalog request requires approval.`,
       time: p.createdAt.toLocaleTimeString(),
-      link: `/admin`
+      link: `/catalogs/approvals`
     }));
   }
 
