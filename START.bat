@@ -71,7 +71,7 @@ if defined ESC (
     set "Z=%ESC%[0m"
 )
 
-set "PAT=##..##..##..##..##..##.."
+set "PAT=..........##.........."
 set "FULL=#######"
 set "EMPTY=......."
 set "B12=            "
@@ -365,13 +365,11 @@ goto :eof
 REM  :frame "message"   draws ONE animation frame on the same line
 :frame
 call :tick
-set /a F=(F+1)%%4
-if %F%==0 set "CH=|"
-if %F%==1 set "CH=/"
-if %F%==2 set "CH=-"
-if %F%==3 set "CH=\"
-call set "BAR=%%PAT:~%F%,16%%"
-<nul set /p "=   %C%%CH%%Z% %~1  [%BAR%] %EM%:%ES%    %CR%"
+set /a F=(F+1)%%20
+set "POS=%F%"
+if %POS% gtr 10 set /a POS=20 - POS
+call set "BAR=%%PAT:~%POS%,12%%"
+<nul set /p "=   %C%*%Z% %~1  [%BAR%] %EM%:%ES%    %CR%"
 goto :eof
 
 REM  :clearline   erases the animated line
