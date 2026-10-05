@@ -15,8 +15,8 @@ export function NurseDashboard({ visits }: { visits: any[] }) {
         <p className="text-slate-500 dark:text-slate-400">Record patient vitals before doctor consultation.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Waiting for Vitals</h2>
         </div>
         <div className="divide-y divide-slate-200 dark:divide-slate-800">

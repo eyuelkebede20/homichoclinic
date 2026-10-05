@@ -1,12 +1,23 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState } from "react";
-import { Loader2, Pill, CheckCircle2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Loader2, Pill, CheckCircle2, Search } from "lucide-react";
 import { dispensePrescription } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export function PharmacyDashboard({ prescriptions }: { prescriptions: any[] }) {
+  const [query, setQuery] = useState("");
+
+  const filteredPrescriptions = useMemo(() => {
+    if (!query.trim()) return prescriptions;
+    const lowerQuery = query.toLowerCase();
+    return prescriptions.filter(p => {
+      const fullName = `${p.patient.firstName} ${p.patient.lastName}`.toLowerCase();
+      return fullName.includes(lowerQuery);
+    });
+  }, [prescriptions, query]);
+
   return (
     <div className="space-y-6">
       <div>
@@ -14,19 +25,34 @@ export function PharmacyDashboard({ prescriptions }: { prescriptions: any[] }) {
         <p className="text-slate-500 dark:text-slate-400">Pending prescriptions awaiting dispensing.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Dispensing</h3>
-          <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
-            {prescriptions.length} Pending
-          </span>
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex items-center gap-3">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Dispensing</h3>
+            <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
+              {filteredPrescriptions.length} Pending
+            </span>
+          </div>
+          
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="h-4 w-4 text-slate-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search patient name..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              className="block w-full pl-9 pr-3 py-1.5 border border-slate-300 dark:border-slate-700 rounded-md leading-5 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            />
+          </div>
         </div>
         
         <div className="divide-y divide-slate-200 dark:divide-slate-800">
-          {prescriptions.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 italic">No pending prescriptions.</div>
+          {filteredPrescriptions.length === 0 ? (
+            <div className="p-8 text-center text-slate-500 italic">No matching pending prescriptions.</div>
           ) : (
-            prescriptions.map(p => <PrescriptionRow key={p.id} prescription={p} />)
+            filteredPrescriptions.map(p => <PrescriptionRow key={p.id} prescription={p} />)
           )}
         </div>
       </div>

@@ -80,9 +80,12 @@ export function VisitForm({ patients, doctors }: { patients: {id: string, name: 
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 p-6 shadow rounded-lg border border-slate-200 dark:border-slate-800 space-y-4">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200">Schedule Patient Visit</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900/50 p-6 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 space-y-5">
+        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+          <DoorOpen className="w-5 h-5 text-blue-500" />
+          Queue a Patient
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Patient</label>
             <PatientSearchSelect 

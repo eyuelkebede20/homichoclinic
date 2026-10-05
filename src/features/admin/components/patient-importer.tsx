@@ -52,7 +52,7 @@ export function PatientImporter() {
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6 shadow-sm h-full flex flex-col">
+    <div className="bg-white dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800/60 rounded-xl p-6 shadow-sm h-full flex flex-col">
       <div className="flex items-start justify-between mb-4">
         <div>
           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-2">

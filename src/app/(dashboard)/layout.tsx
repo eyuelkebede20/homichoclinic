@@ -34,6 +34,14 @@ export default async function DashboardLayout({
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicLogo = clinicLogoSetting?.value || "";
 
+  let gitHash = "unknown";
+  try {
+    const { execSync } = require("child_process");
+    gitHash = execSync("git rev-parse --short HEAD").toString().trim();
+  } catch (e) {
+    // ignore
+  }
+
   const navItems = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ];
@@ -75,10 +83,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-slate-50 dark:bg-slate-900 print:bg-white print:h-auto">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 print:bg-white print:h-auto">
       
       {/* Sidebar */}
-      <div className="w-64 bg-slate-900 text-white flex flex-col flex-shrink-0 border-r border-slate-800 print:hidden">
+      <div className="w-64 bg-slate-950 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800/50 print:hidden">
         <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
           <div className="flex items-center gap-2 overflow-hidden">
             {clinicLogo ? (
@@ -108,7 +116,7 @@ export default async function DashboardLayout({
               <Link
                 key={item.name}
                 href={item.href}
-                className="flex items-center px-3 py-2.5 text-sm font-medium rounded-md text-slate-300 hover:bg-blue-600 hover:text-white transition-colors group"
+                className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 transition-colors group"
               >
                 <Icon className="mr-3 flex-shrink-0 h-5 w-5 text-slate-400 group-hover:text-blue-200 transition-colors" />
                 {item.name}
@@ -118,18 +126,24 @@ export default async function DashboardLayout({
         </nav>
         
         <div className="p-4 border-t border-slate-800 bg-slate-950">
-          <div className="flex items-center w-full">
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{session.user.name}</p>
-              <p className="text-xs font-medium text-slate-400 capitalize truncate">{session.user.role || "User"}</p>
+          <div className="flex flex-col w-full">
+            <div className="flex items-center w-full mb-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{session.user.name}</p>
+                <p className="text-xs font-medium text-slate-400 capitalize truncate">{session.user.role || "User"}</p>
+              </div>
+              <Link 
+                href="/login" 
+                className="ml-2 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Link>
             </div>
-            <Link 
-              href="/login" 
-              className="ml-2 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </Link>
+            
+            <div className="text-[10px] text-slate-600 text-center border-t border-slate-800/50 pt-2 mt-1">
+              Version: {gitHash}
+            </div>
           </div>
         </div>
       </div>
@@ -138,7 +152,8 @@ export default async function DashboardLayout({
       <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground print:overflow-visible print:block">
         
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-end px-8 shadow-sm print:hidden gap-4">`n          <GlobalNotifications />
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-end px-8 print:hidden gap-4 sticky top-0 z-10">
+          <GlobalNotifications />
           <ThemeToggle />
         </header>
 

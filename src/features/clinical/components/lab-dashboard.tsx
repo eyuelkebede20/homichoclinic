@@ -14,8 +14,8 @@ export function LabDashboard({ requests }: { requests: any[] }) {
         <p className="text-slate-500 dark:text-slate-400">Pending requests and result entry.</p>
       </div>
 
-      <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center">
+      <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
           <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Tests</h3>
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
             {requests.length} Pending

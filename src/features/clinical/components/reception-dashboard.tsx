@@ -66,17 +66,27 @@ export function ReceptionDashboard({
           const waiting = roomVisits.filter(v => v.status === "scheduled");
           
           return (
-            <div key={room} className={`bg-white dark:bg-slate-900 rounded-lg shadow border overflow-hidden flex flex-col ${isActive ? "border-slate-200 dark:border-slate-800" : "border-slate-200 dark:border-slate-800 opacity-70"}`}>
-              <div className={`px-4 py-3 border-b flex justify-between items-center ${isActive ? "bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-800" : "bg-slate-100 dark:bg-slate-900 border-slate-200 dark:border-slate-800"}`}>
+            <div key={room} className={`bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border overflow-hidden flex flex-col transition-all duration-200 ${
+              isActive 
+                ? "border-green-400 dark:border-green-600 ring-1 ring-green-400/50 dark:ring-green-600/50" 
+                : "border-slate-200 dark:border-slate-800/40 opacity-60 grayscale-[50%]"
+            }`}>
+              <div className={`px-4 py-3 border-b flex justify-between items-center ${
+                isActive 
+                  ? "bg-green-50/50 dark:bg-green-900/10 border-green-200 dark:border-green-800/60" 
+                  : "bg-slate-100/50 dark:bg-slate-900/30 border-slate-200 dark:border-slate-800/40"
+              }`}>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200">OPD {room}</h3>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isActive ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"}`}>
+                    <h3 className={`font-bold ${isActive ? "text-green-800 dark:text-green-300" : "text-slate-500 dark:text-slate-400"}`}>
+                      OPD {room}
+                    </h3>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${isActive ? "bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-400 shadow-sm" : "bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400"}`}>
                       {isActive ? "Online" : "Offline"}
                     </span>
                   </div>
                   {activeDoctors && activeDoctors.some(d => d.currentOpdRoom === room) && (
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-0.5 flex items-center gap-1">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1 flex items-center gap-1">
                       <Users className="w-3 h-3" />
                       Dr. {activeDoctors.filter(d => d.currentOpdRoom === room).map(d => d.name).join(", ")}
                     </span>
@@ -88,7 +98,7 @@ export function ReceptionDashboard({
                   className={`p-1.5 rounded-full transition-colors ${isActive ? "bg-red-100 text-red-600 hover:bg-red-200" : "bg-green-100 text-green-600 hover:bg-green-200"}`}
                   title={isActive ? "Take Offline" : "Bring Online"}
                 >
-                  <Power className={`w-3 h-3 ${loadingRoom === room ? "animate-pulse" : ""}`} />
+                  <Power className={`w-3.5 h-3.5 ${loadingRoom === room ? "animate-pulse" : ""}`} />
                 </button>
               </div>
 

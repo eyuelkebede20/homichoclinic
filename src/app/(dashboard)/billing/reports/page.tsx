@@ -8,8 +8,18 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import Link from "next/link";
 import { getStartOfDayLocal, getEndOfDayLocal } from "@/lib/date-utils";
+import { ExpandablePatientRow } from "./expandable-row";
+import { ReportFilters } from "./report-filters";
+import { ExportExcelButton } from "./export-excel-button";
 
-export default async function BillingReportsPage(props: { searchParams: Promise<{ date?: string, sort?: string }> }) {
+import { EthDateTime } from 'ethiopian-calendar-date-converter';
+
+const ETH_MONTHS = [
+  "Meskerem", "Tikimt", "Hidar", "Tahsas", "Tir", "Yekatit",
+  "Megabit", "Miyazya", "Ginbot", "Sene", "Hamle", "Nehase", "Pagume"
+];
+
+export default async function BillingReportsPage(props: { searchParams: Promise<{ ethYear?: string, ethMonth?: string, ethDay?: string }> }) {
   const searchParams = await props.searchParams;
   const session = await auth.api.getSession({ headers: await headers() });
   
@@ -27,209 +37,153 @@ export default async function BillingReportsPage(props: { searchParams: Promise<
     );
   }
 
-  // Determine target date using safe local timezone utils
-  let startOfDay = getStartOfDayLocal();
-  let endOfDay = getEndOfDayLocal();
+  // Determine current Ethiopian date to use as default
+  const todayEth = EthDateTime.fromEuropeanDate(new Date());
   
-  if (searchParams.date) {
-    const parts = searchParams.date.split("-");
-    if (parts.length === 3) {
-      const year = parts[0];
-      const month = parts[1];
-      const day = parts[2];
-      // Construct explicitly with clinic timezone (+03:00)
-      startOfDay = new Date("${year}--T00:00:00+03:00");
-      endOfDay = new Date("${year}--T23:59:59.999+03:00");
-    }
+  const ethYear = searchParams.ethYear ? parseInt(searchParams.ethYear) : todayEth.year;
+  const ethMonth = searchParams.ethMonth ? parseInt(searchParams.ethMonth) : todayEth.month;
+  const ethDay = searchParams.ethDay ? parseInt(searchParams.ethDay) : null;
+  
+  let startOfRange: Date;
+  let endOfRange: Date;
+  let reportType = "Daily";
+  let displayDate = "";
+
+  if (ethDay) {
+    reportType = "Daily";
+    // Construct local range for the specific day
+    const dateObj = new EthDateTime(ethYear, ethMonth, ethDay).toEuropeanDate();
+    const y = dateObj.getFullYear();
+    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getDate()).padStart(2, '0');
+    
+    startOfRange = new Date(`${y}-${m}-${d}T00:00:00+03:00`);
+    endOfRange = new Date(`${y}-${m}-${d}T23:59:59.999+03:00`);
+    displayDate = `${ETH_MONTHS[ethMonth - 1]} ${ethDay}, ${ethYear}`;
+  } else {
+    reportType = "Monthly";
+    // Month starts at day 1
+    const startDateObj = new EthDateTime(ethYear, ethMonth, 1).toEuropeanDate();
+    const sy = startDateObj.getFullYear();
+    const sm = String(startDateObj.getMonth() + 1).padStart(2, '0');
+    const sd = String(startDateObj.getDate()).padStart(2, '0');
+    startOfRange = new Date(`${sy}-${sm}-${sd}T00:00:00+03:00`);
+    
+    // End of month: Month has 30 days (unless pagume, handled safely by max 6)
+    const endDay = ethMonth === 13 ? 6 : 30; // Overshooting pagume gives next month, so limit it
+    const endDateObj = new EthDateTime(ethYear, ethMonth, endDay).toEuropeanDate();
+    const ey = endDateObj.getFullYear();
+    const em = String(endDateObj.getMonth() + 1).padStart(2, '0');
+    const ed = String(endDateObj.getDate()).padStart(2, '0');
+    endOfRange = new Date(`${ey}-${em}-${ed}T23:59:59.999+03:00`);
+    
+    displayDate = `${ETH_MONTHS[ethMonth - 1]} ${ethYear}`;
   }
 
-  // Determine current month range
-  const startOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth(), 1);
-  const endOfMonth = new Date(startOfDay.getFullYear(), startOfDay.getMonth() + 1, 0, 23, 59, 59, 999);
-
-  // Determine current year range
-  const startOfYear = new Date(startOfDay.getFullYear(), 0, 1);
-  const endOfYear = new Date(startOfDay.getFullYear(), 11, 31, 23, 59, 59, 999);
-
-  // Fetch daily payments
-  const dailyPayments = await prisma.payment.findMany({
-    where: { createdAt: { gte: startOfDay, lte: endOfDay } },
+  // Fetch Invoices (Credit Charges) for the period
+  const invoices = await prisma.invoice.findMany({
+    where: { 
+      createdAt: { gte: startOfRange, lte: endOfRange },
+      status: { in: ["sent_to_finance", "pending", "paid"] } 
+    },
     include: {
-      invoice: {
-        include: { patient: true }
-      }
+      patient: true,
+      items: true
     },
     orderBy: { createdAt: "desc" }
   });
 
-  // Calculate daily totals
-  let dailyTotal = 0;
-  const methodTotals: Record<string, number> = { cash: 0, card: 0, transfer: 0 };
+  // Aggregate by Patient
+  const patientAggregates = new Map<string, {
+    patient: any;
+    totalAmount: number;
+    invoices: any[];
+  }>();
+
+  let grandTotal = 0;
+
+  for (const inv of invoices) {
+    grandTotal += inv.total;
+    if (!patientAggregates.has(inv.patientId)) {
+      patientAggregates.set(inv.patientId, {
+        patient: inv.patient,
+        totalAmount: 0,
+        invoices: []
+      });
+    }
+    const agg = patientAggregates.get(inv.patientId)!;
+    agg.totalAmount += inv.total;
+    agg.invoices.push(inv);
+  }
+
+  const sortedPatients = Array.from(patientAggregates.values()).sort((a, b) => b.totalAmount - a.totalAmount);
   
-  // Sort logic based on search params
-  const isSortByDiscount = searchParams.sort === "discount";
-  if (isSortByDiscount) {
-    dailyPayments.sort((a, b) => b.invoice.discountPercentApplied - a.invoice.discountPercentApplied);
-  }
-
-  for (const p of dailyPayments) {
-    dailyTotal += p.amount;
-    methodTotals[p.method] = (methodTotals[p.method] || 0) + p.amount;
-  }
-
-  // Fetch Monthly aggregates
-  const monthlyAgg = await prisma.payment.aggregate({
-    where: { createdAt: { gte: startOfMonth, lte: endOfMonth } },
-    _sum: { amount: true }
-  });
-
-  // Fetch Yearly aggregates
-  const yearlyAgg = await prisma.payment.aggregate({
-    where: { createdAt: { gte: startOfYear, lte: endOfYear } },
-    _sum: { amount: true }
-  });
+  const reportTitle = `Finance ${reportType} Credit Report`;
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8 print:p-0 print:max-w-none">
-      <PrintHeader title="Cashier Shift Reconciliation (Z-Report)" subtitle={"Date: "} />
+      <PrintHeader title={reportTitle} subtitle={`Period: ${displayDate} EC`} />
       
       <div className="flex justify-between items-center print:hidden">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Billing Reports & Reconciliation</h1>
-          <p className="text-slate-500 dark:text-slate-400">Z-Reports, Shift Summaries, and Audits</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Finance & Z-Reports</h1>
+          <p className="text-slate-500 dark:text-slate-400">Payroll deduction credit reports per patient.</p>
         </div>
         <div className="flex gap-3">
-          <Link href="/billing" className="text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-md transition-colors">
-            &larr; Back to Billing
+          <Link href="/dashboard" className="text-sm font-medium bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-4 py-2 rounded-md transition-colors">
+            &larr; Back to Dashboard
           </Link>
-          <PrintButton label="Print Z-Report" />
+          <ExportExcelButton patients={sortedPatients} reportName={`${reportType} Report - ${displayDate}`} />
+          <PrintButton label="Print Report" />
         </div>
       </div>
 
       {/* Date Picker Form (Hidden in print) */}
       <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow border border-slate-200 dark:border-slate-800 print:hidden flex items-center justify-between">
-        <form className="flex items-end gap-4" method="GET">
-          <input type="hidden" name="sort" value={searchParams.sort || ""} />
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Select Date</label>
-            <input 
-              type="date" 
-              name="date" 
-              defaultValue={startOfDay.toISOString().split("T")[0]}
-              className="block rounded border border-slate-300 dark:border-slate-700 bg-transparent px-3 py-1.5 text-sm" 
-            />
-          </div>
-          <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-1.5 rounded text-sm font-medium transition-colors">
-            Load Report
-          </button>
-        </form>
-        
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-500">Sort by:</span>
-          <Link 
-            href={"?date=&sort=time"} 
-            className={"text-sm px-3 py-1 rounded-md "}
-          >
-            Time
-          </Link>
-          <Link 
-            href={"?date=&sort=discount"} 
-            className={"text-sm px-3 py-1 rounded-md "}
-          >
-            Discount %
-          </Link>
-        </div>
+        <ReportFilters 
+          defaultYear={ethYear}
+          defaultMonth={ethMonth}
+          defaultDay={ethDay}
+        />
       </div>
 
       {/* Totals Section */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 print:grid-cols-4 print:gap-4">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Cash</h3>
-          <p className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatCurrency(methodTotals.cash || 0)}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Card</h3>
-          <p className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{formatCurrency(methodTotals.card || 0)}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Daily Transfer</h3>
-          <p className="mt-2 text-2xl font-bold text-purple-600 dark:text-purple-400">{formatCurrency(methodTotals.transfer || 0)}</p>
-        </div>
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/10">
-          <h3 className="text-sm font-medium text-indigo-700 dark:text-indigo-400">Total Daily Revenue</h3>
-          <p className="mt-2 text-2xl font-bold text-indigo-900 dark:text-indigo-300">{formatCurrency(dailyTotal)}</p>
-        </div>
-      </div>
-
-      <div className="flex gap-6 print:hidden">
-        <div className="text-sm text-slate-500">
-          MTD Revenue: <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(monthlyAgg._sum.amount || 0)}</span>
-        </div>
-        <div className="text-sm text-slate-500">
-          YTD Revenue: <span className="font-bold text-slate-900 dark:text-slate-100">{formatCurrency(yearlyAgg._sum.amount || 0)}</span>
+      <div className="grid grid-cols-1 md:grid-cols-1 gap-6 print:grid-cols-1 print:gap-4">
+        <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-lg shadow border border-indigo-200 dark:border-indigo-800 text-center">
+          <h3 className="text-lg font-medium text-indigo-700 dark:text-indigo-400">Total Credit Expenses ({reportType})</h3>
+          <p className="mt-2 text-4xl font-bold text-indigo-900 dark:text-indigo-300">{formatCurrency(grandTotal)}</p>
+          <p className="text-sm text-indigo-600 mt-2">{sortedPatients.length} Patients</p>
         </div>
       </div>
 
       {/* Activity Table */}
-      <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden print:shadow-none print:border-none print:overflow-visible">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center">
-          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Shift Activity Ledger</h2>
-          <span className="text-sm text-slate-500">{dailyPayments.length} transactions</span>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Patient Expense Summary</h2>
+          <span className="text-sm text-slate-500">Click a row to expand details</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto print:overflow-visible">
           <table className="w-full text-left border-collapse">
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider w-8"></th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Patient Name</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Discount</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Method</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Amount Paid</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider w-48">Hardcopy Signature</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Employee ID</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Invoices</th>
+                <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Total Expense</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-slate-900 divide-y divide-slate-200 dark:divide-slate-800">
-              {dailyPayments.map(payment => (
-                <tr key={payment.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                    {payment.invoice.patient.firstName} {payment.invoice.patient.lastName}
-                    <div className="text-xs text-slate-500 font-normal">{payment.createdAt.toLocaleTimeString()}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-slate-500">
-                    {payment.invoice.discountPercentApplied > 0 ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
-                        {payment.invoice.discountPercentApplied}% OFF
-                      </span>
-                    ) : "-"}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm text-slate-500 capitalize">
-                    {payment.method}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {formatCurrency(payment.amount)}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="h-8 border-b-2 border-dotted border-slate-400 dark:border-slate-600 w-32 mx-auto"></div>
-                  </td>
-                </tr>
+              {sortedPatients.map((agg, idx) => (
+                <ExpandablePatientRow key={agg.patient.id} agg={agg} index={idx} />
               ))}
-              {dailyPayments.length === 0 && (
+              {sortedPatients.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No payments recorded for this date.</td>
+                  <td colSpan={5} className="px-6 py-12 text-center text-slate-500">No expenses recorded for this period.</td>
                 </tr>
               )}
             </tbody>
           </table>
-        </div>
-      </div>
-      
-      <div className="mt-8 pt-8 border-t border-slate-200 dark:border-slate-800 flex justify-between items-end print:flex hidden">
-        <div className="text-center w-64">
-          <div className="h-10 border-b border-black dark:border-white mb-2"></div>
-          <p className="text-sm font-bold">Cashier Signature</p>
-        </div>
-        <div className="text-center w-64">
-          <div className="h-10 border-b border-black dark:border-white mb-2"></div>
-          <p className="text-sm font-bold">Manager/Auditor Signature</p>
         </div>
       </div>
     </div>

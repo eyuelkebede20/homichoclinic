@@ -66,9 +66,16 @@ export const importCatalogCSV = createSafeAction({
       const priceEtb = parseFloat(row["price"] || "0");
       const priceCents = isNaN(priceEtb) ? 0 : Math.round(priceEtb * 100);
       const category = row["category"] || null;
-      // tat can be appended to description or stored if we add a column later, for now we map it to description if it exists
       const tat = row["tat"];
-      const description = tat ? `TAT: ${tat}` : null;
+      const rawDescription = row["description"];
+      
+      let description: string | null = null;
+      if (rawDescription) {
+        description = rawDescription;
+        if (tat) description += ` (TAT: ${tat})`;
+      } else if (tat) {
+        description = `TAT: ${tat}`;
+      }
 
       if (data.type === "DRUG") {
         if (canApprove) {

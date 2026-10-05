@@ -24,17 +24,17 @@ export async function GET(request: Request) {
 
   if (type === "drug") {
     const items = await prisma.drug.findMany({ orderBy: { name: "asc" } });
-    csvContent = "id,nameOfMed,price,tat,category\n";
+    csvContent = "id,nameOfMed,description,price,tat,category\n";
     for (const item of items) {
       const price = item.price / 100; // to ETB
-      csvContent += `"${item.id}","${item.name}",${price},"","${item.category || ""}"\n`;
+      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"","${item.category || ""}"\n`;
     }
   } else if (type === "lab") {
     const items = await prisma.labTest.findMany({ orderBy: { name: "asc" } });
-    csvContent = "id,nameOfTest,price,tat,category\n";
+    csvContent = "id,nameOfTest,description,price,tat,category\n";
     for (const item of items) {
       const price = item.price / 100;
-      csvContent += `"${item.id}","${item.name}",${price},"",""\n`;
+      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"",""\n`;
     }
   } else {
     return new Response("Invalid type", { status: 400 });

@@ -10,6 +10,7 @@ import { HeavyDutyToggle } from "@/features/admin/components/heavy-duty-toggle";
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
+import { SystemUpdater } from "@/features/admin/components/system-updater";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
 import { CreateUserModal } from "@/features/admin/components/create-user-modal";
 import Link from "next/link";
@@ -76,14 +77,15 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
 
       {tab === "users" && (
         <>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <PatientImporter />
-            <div className="flex flex-col gap-6">
-              <HeavyDutyToggle initial={isHeavyDuty} />
-              <LowPowerToggle initial={isLowPower} />
-              <DatabaseBackupButton />
-              <DevWipePatients />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 md:row-span-2 flex flex-col">
+              <PatientImporter />
             </div>
+            <HeavyDutyToggle initial={isHeavyDuty} />
+            <LowPowerToggle initial={isLowPower} />
+            <DatabaseBackupButton />
+            <SystemUpdater />
+            <DevWipePatients />
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">

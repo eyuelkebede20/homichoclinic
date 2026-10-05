@@ -230,3 +230,30 @@ export const createUser = createSafeAction({
     return { success: "User created successfully." };
   }
 });
+
+import { exec } from "child_process";
+import { promisify } from "util";
+const execAsync = promisify(exec);
+
+export const triggerSystemUpdate = createSafeAction({
+  schema: z.object({}),
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    try {
+      // Execute git pull
+      const { stdout, stderr } = await execAsync("git pull origin main");
+      
+      // We log it
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.USER_MANAGE,
+        reason: "Triggered System Update via Git Pull",
+        newValue: { stdout, stderr }
+      });
+
+      return { success: true, message: stdout };
+    } catch (error: any) {
+      throw new Error(`Update failed: ${error.message}`);
+    }
+  }
+});

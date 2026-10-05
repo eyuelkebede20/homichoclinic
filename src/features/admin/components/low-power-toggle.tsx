@@ -15,7 +15,7 @@ export function LowPowerToggle({ initial }: { initial: boolean }) {
   };
 
   return (
-    <div className="flex flex-col justify-between bg-white dark:bg-slate-900 p-6 border border-slate-200 dark:border-slate-800 rounded-lg shadow-sm h-full">
+    <div className="flex flex-col justify-between bg-white dark:bg-slate-900/50 p-6 border border-slate-200 dark:border-slate-800/60 rounded-xl shadow-sm h-full">
       <div>
         <h3 className="font-semibold text-slate-800 dark:text-slate-200">Old Browser / Low Power Mode</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mt-1">

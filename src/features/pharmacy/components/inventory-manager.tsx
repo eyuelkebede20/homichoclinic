@@ -9,6 +9,7 @@ export function InventoryManager({ drugs }: {
   drugs: { 
     id: string; 
     name: string; 
+    description: string | null;
     batches: { quantity: number; expiryDate: Date }[] 
   }[] 
 }) {
@@ -70,6 +71,7 @@ export function InventoryManager({ drugs }: {
           <thead className="sticky top-0 bg-white dark:bg-slate-900 z-10">
             <tr>
               <th className="text-left text-xs font-medium text-slate-500 uppercase py-2">Drug</th>
+              <th className="text-left text-xs font-medium text-slate-500 uppercase py-2">Description</th>
               <th className="text-right text-xs font-medium text-slate-500 uppercase py-2">Total Stock</th>
               <th className="text-right text-xs font-medium text-slate-500 uppercase py-2 print:hidden">Action</th>
             </tr>
@@ -82,6 +84,7 @@ export function InventoryManager({ drugs }: {
               return (
                 <tr key={drug.id} className="print:break-inside-avoid">
                   <td className="py-3 text-sm font-medium text-slate-800 dark:text-slate-200">{drug.name}</td>
+                  <td className="py-3 text-sm text-slate-500">{drug.description}</td>
                   <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400">
                     {totalStock > 0 ? totalStock : (
                       <span className="text-red-500 font-bold text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">Out of Stock</span>

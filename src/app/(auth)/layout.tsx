@@ -6,7 +6,7 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col sm:flex-row">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row">
       {/* LEFT SIDE: Branding & Features */}
       <div className="hidden sm:flex sm:w-1/2 lg:w-5/12 bg-gradient-to-br from-blue-700 to-blue-900 flex-col justify-center px-12 lg:px-20 text-white relative overflow-hidden">
         {/* Abstract background shapes */}
@@ -18,7 +18,7 @@ export default function AuthLayout({
 
         <div className="relative z-10 space-y-8">
           <div>
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30 shadow-sm">
               <span className="text-2xl font-bold text-white">✚</span>
             </div>
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
@@ -34,8 +34,8 @@ export default function AuthLayout({
               "Patient Registration",
               "OPD & Doctor Consultation",
               "Laboratory & Pharmacy",
-              "Billing & Payment",
-              "Reports & Management",
+              "Billing",
+              "Reports",
             ].map((feature, idx) => (
               <div key={idx} className="flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-blue-300" />
@@ -47,12 +47,12 @@ export default function AuthLayout({
       </div>
 
       {/* RIGHT SIDE: Form */}
-      <div className="w-full sm:w-1/2 lg:w-7/12 flex items-center justify-center p-6 sm:p-12 bg-white">
+      <div className="w-full sm:w-1/2 lg:w-7/12 flex items-center justify-center p-6 sm:p-12 bg-white dark:bg-slate-900">
         <div className="w-full max-w-md space-y-8">
           {children}
           
-          <div className="text-center text-slate-400 text-xs mt-12">
-            Clinic ERP System &copy; 2026
+          <div className="text-center text-slate-400 dark:text-slate-500 text-xs mt-12">
+            Clinic ERP System &copy; {new Date().getFullYear()}
           </div>
         </div>
       </div>

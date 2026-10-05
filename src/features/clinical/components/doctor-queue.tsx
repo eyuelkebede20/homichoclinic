@@ -34,8 +34,8 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
   const currentVisits = filtered.slice(startIndex, startIndex + itemsPerPage);
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
-      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
+    <div className="bg-white dark:bg-slate-900/50 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/60 overflow-hidden flex flex-col">
+      <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center">
         <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200 whitespace-nowrap">Active Patient Queue</h2>
         <div className="relative w-full sm:w-64">
           <input
@@ -75,7 +75,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
               )}
               
               <div className="border-l border-slate-200 dark:border-slate-700 pl-3 h-6 flex items-center">
-                <VisitStatusActions visitId={visit.id} currentStatus={visit.status} />
+                <VisitStatusActions visitId={visit.id} currentStatus={visit.status} patientId={visit.patientId} />
               </div>
             </div>
           </li>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateDoctorOpd } from "@/features/clinical/actions";
 import { Loader2, Stethoscope } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -13,17 +13,25 @@ export function DoctorOpdSelector({
   role: string 
 }) {
   const [loading, setLoading] = useState(false);
+  const [selectedRoom, setSelectedRoom] = useState<string>(initialRoom === null ? "off" : initialRoom.toString());
   const router = useRouter();
+
+  useEffect(() => {
+    setSelectedRoom(initialRoom === null ? "off" : initialRoom.toString());
+  }, [initialRoom]);
 
   if (role !== "Doctor") return null;
 
   const handleChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value; 
+    setSelectedRoom(val);
     const room = val === "off" ? null : parseInt(val);
     
     setLoading(true);
-    await updateDoctorOpd({ room });
+    const res = await updateDoctorOpd({ room });
     setLoading(false);
+    
+    // Invalidate full cache and trigger strict refresh to update patient lists
     router.refresh();
   };
 
@@ -34,7 +42,7 @@ export function DoctorOpdSelector({
           <Stethoscope className="h-4 w-4 text-blue-400" />
         </div>
         <select 
-          value={initialRoom === null ? "off" : initialRoom.toString()}
+          value={selectedRoom}
           onChange={handleChange}
           disabled={loading}
           className="w-full text-sm font-semibold bg-slate-950/50 hover:bg-slate-900 text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-2.5 pl-9 pr-8 outline-none transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-inner focus:ring-2 focus:ring-blue-500/30 appearance-none"

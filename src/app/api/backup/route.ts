@@ -39,8 +39,8 @@ export async function GET() {
   const tmpFilePath = path.join(os.tmpdir(), fileName);
 
   try {
-    // Run pg_dump
-    await execAsync(`pg_dump "${databaseUrl}" -F p -f "${tmpFilePath}"`);
+    // Run pg_dump with --clean to ensure it can be safely restored later
+    await execAsync(`pg_dump "${databaseUrl}" -F p --clean --if-exists -f "${tmpFilePath}"`);
     
     // Read the file
     const fileBuffer = await fs.readFile(tmpFilePath);

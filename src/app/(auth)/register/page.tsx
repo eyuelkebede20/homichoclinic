@@ -40,19 +40,19 @@ export default function RegisterPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-lg font-medium leading-6 text-slate-900">Create an account</h3>
-        <p className="mt-1 text-sm text-slate-500">Register to access the clinic system.</p>
+        <h3 className="text-xl font-bold leading-6 text-slate-900 dark:text-slate-100">Create an account</h3>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Register to access the clinic system.</p>
       </div>
 
       <form className="space-y-4" onSubmit={handleRegister}>
         {error && (
-          <div className="p-3 text-sm text-red-600 bg-red-50 rounded-md border border-red-200">
+          <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/10 rounded-md border border-red-200 dark:border-red-900/50">
             {error}
           </div>
         )}
 
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="name">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="name">
             Full Name
           </label>
           <div className="mt-1">
@@ -60,7 +60,7 @@ export default function RegisterPage() {
               id="name"
               type="text"
               required
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-slate-950 dark:text-slate-100 transition-colors"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -68,7 +68,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="email">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="email">
             Email address
           </label>
           <div className="mt-1">
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               id="email"
               type="email"
               required
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-slate-950 dark:text-slate-100 transition-colors"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
@@ -84,7 +84,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700" htmlFor="password">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300" htmlFor="password">
             Password
           </label>
           <div className="mt-1">
@@ -92,7 +92,7 @@ export default function RegisterPage() {
               id="password"
               type="password"
               required
-              className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="appearance-none block w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md shadow-sm placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-slate-950 dark:text-slate-100 transition-colors"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -103,16 +103,17 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Register"}
+            {loading ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+            {loading ? "Registering..." : "Register"}
           </button>
         </div>
       </form>
       
       <div className="text-center text-sm">
-        <span className="text-slate-500">Already have an account?</span>{" "}
-        <Link href="/login" className="font-medium text-blue-600 hover:text-blue-500">
+        <span className="text-slate-500 dark:text-slate-400">Already have an account?</span>{" "}
+        <Link href="/login" className="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 transition-colors">
           Sign in
         </Link>
       </div>
