@@ -41,15 +41,34 @@ export const createPatient = createSafeAction({
     const yob = data.yob || null;
     
     let permanentSince = data.permanentSince;
-    if (!permanentSince || permanentSince.trim() === "") {
-      permanentSince = "NaN";
-    }
-    
     let discountPercent = 0;
     let resolvedPrimaryId = data.primaryPatientId || null;
+    let salutation: string | null = null;
+    let department: string | null = null;
+    let c_m: string | null = null;
 
     if (data.patientType === "Soldier") {
       discountPercent = 100;
+      salutation = data.rank || null;
+      department = data.division || null;
+      c_m = "M";
+
+      // Parse permanentSince from militaryId if possible
+      if (data.militaryId && data.militaryId.includes('/')) {
+        const parts = data.militaryId.split('/');
+        const lastPart = parts[parts.length - 1];
+        if (lastPart && lastPart.length === 2) {
+          const yearVal = parseInt(lastPart, 10);
+          if (!isNaN(yearVal)) {
+            // If the date is <50 then 20**, if it is >50 then 19**
+            if (yearVal < 50) {
+              permanentSince = `20${lastPart}`;
+            } else {
+              permanentSince = `19${lastPart}`;
+            }
+          }
+        }
+      }
     } else if (data.patientType === "Civilian Family") {
       // Resolve staff by phone, militaryId, or employeeId
       if (data.staffSearchStr && !resolvedPrimaryId) {
@@ -76,6 +95,9 @@ export const createPatient = createSafeAction({
         discountPercent = 95;
       }
     } else {
+      if (!permanentSince || permanentSince.trim() === "") {
+        permanentSince = "NaN";
+      }
       const yearsOfService = getECYearsOfService(permanentSince);
 
       if (yearsOfService >= 20) discountPercent = 100;
@@ -85,7 +107,9 @@ export const createPatient = createSafeAction({
       else discountPercent = 50;
     }
 
-    
+    if (!permanentSince || permanentSince.trim() === "") {
+      permanentSince = "NaN";
+    }
 
     const newPatient = await prisma.patient.create({
       data: {
@@ -102,6 +126,9 @@ export const createPatient = createSafeAction({
         discountPercent: discountPercent,
         primaryPatientId: resolvedPrimaryId,
         relationship: data.relationship || null,
+        salutation,
+        department,
+        c_m,
       },
     });
 

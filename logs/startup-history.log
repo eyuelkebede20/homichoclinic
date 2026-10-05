@@ -1,0 +1,20 @@
+Mon 10/05/2026 11:24:20.51 - START requested
+Mon 10/05/2026 11:26:11.39 - START requested
+Mon 10/05/2026 11:26:12.11 - step 1: Checking Docker
+Mon 10/05/2026 11:26:37.06 - FAILED: docker compose up
+Mon 10/05/2026 11:27:37.78 - START requested
+Mon 10/05/2026 11:27:38.19 - step 1: Checking Docker
+Mon 10/05/2026 11:27:48.05 - FAILED: docker compose up
+Mon 10/05/2026 11:28:20.67 - step 3: Checking .env settings
+Mon 10/05/2026 11:28:20.75 - step 4: Checking update watcher
+Mon 10/05/2026 11:28:20.87 - step 5: Starting the clinic system
+Mon 10/05/2026 11:28:29.72 - FAILED: docker compose up
+Mon 10/05/2026 11:28:51.83 - START requested
+Mon 10/05/2026 11:28:52.16 - step 1: Checking Docker
+Mon 10/05/2026 11:28:59.89 - FAILED: docker compose up
+Mon 10/05/2026 11:29:18.47 - step 3: Checking .env settings
+Mon 10/05/2026 11:29:18.55 - step 4: Checking update watcher
+Mon 10/05/2026 11:29:18.66 - step 5: Starting the clinic system
+Mon 10/05/2026 11:29:22.41 - FAILED: docker compose up
+Mon 10/05/2026 11:32:56.93 - START requested
+Mon 10/05/2026 11:32:57.35 - step 1: Checking Docker
