@@ -1,5 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# update flag + DB backups (created at runtime, never committed)
+backups/
+run/
+
 # dependencies
 /node_modules
 /.pnp

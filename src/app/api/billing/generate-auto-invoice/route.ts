@@ -105,7 +105,7 @@ export async function POST(request: Request) {
             create: [{
               method: "transfer", // Internal ledger transfer
               amount: total,
-              actorId: session.user.id
+              cashierId: session.user.id
             }]
           }
         }

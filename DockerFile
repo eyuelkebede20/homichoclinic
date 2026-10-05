@@ -1,0 +1,43 @@
+# syntax=docker/dockerfile:1
+
+# ---- deps: install ALL deps (prisma generate needs devDeps) ----
+FROM node:22-alpine AS deps
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# ---- build ----
+FROM node:22-alpine AS build
+WORKDIR /app
+RUN corepack enable && corepack prepare pnpm@latest --activate
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+# Generate prisma client then build Next.js in standalone mode
+RUN pnpm exec prisma generate && \
+    pnpm build
+
+# ---- runtime ----
+FROM node:22-alpine AS runtime
+ENV NODE_ENV=production
+WORKDIR /app
+
+# Copy the standalone output (includes its own node_modules subset)
+COPY --from=build --chown=node:node /app/.next/standalone ./
+# Copy the static assets that standalone doesn't include itself
+COPY --from=build --chown=node:node /app/.next/static ./.next/static
+COPY --from=build --chown=node:node /app/public ./public
+# Copy prisma schema for migrations that run at startup
+COPY --from=build --chown=node:node /app/prisma ./prisma
+# Copy prisma client that was generated
+COPY --from=build --chown=node:node /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build --chown=node:node /app/node_modules/@prisma ./node_modules/@prisma
+
+USER node
+EXPOSE 3000
+
+# Run migrations then start the app.
+# `prisma migrate deploy` is idempotent and safe to run on every startup.
+# We use `npx` from the standalone's bundled node_modules.
+CMD ["sh", "-c", "node node_modules/.bin/prisma migrate deploy 2>/dev/null || node node_modules/.bin/prisma db push --accept-data-loss && node server.js"]

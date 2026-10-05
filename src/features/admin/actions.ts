@@ -231,29 +231,46 @@ export const createUser = createSafeAction({
   }
 });
 
-import { exec } from "child_process";
-import { promisify } from "util";
-const execAsync = promisify(exec);
+import fs from "fs";
+import path from "path";
 
+/**
+ * Writes a flag file that the host-side systemd path unit
+ * (clinic-update.path) watches. When the file appears, systemd runs
+ * update.sh as root — no docker.sock, no shell exec from the app.
+ *
+ * The flag file path must match:
+ *   - compose volume mount: ./run:/run/updater
+ *   - systemd unit: PathExists=/opt/clinic/run/update.request
+ */
 export const triggerSystemUpdate = createSafeAction({
   schema: z.object({}),
   requiredPermission: PERMISSIONS.USER_MANAGE,
-  handler: async (data, ctx) => {
-    try {
-      // Execute git pull
-      const { stdout, stderr } = await execAsync("git pull origin main");
-      
-      // We log it
-      await logAudit({
-        actorId: ctx.userId,
-        action: PERMISSIONS.USER_MANAGE,
-        reason: "Triggered System Update via Git Pull",
-        newValue: { stdout, stderr }
-      });
+  handler: async (_data, ctx) => {
+    const flagPath = "/run/updater/update.request";
 
-      return { success: true, message: stdout };
+    try {
+      // Ensure the directory exists (should already be mounted by compose)
+      fs.mkdirSync(path.dirname(flagPath), { recursive: true });
+      // Writing an empty file is the signal; systemd detects its creation
+      fs.writeFileSync(flagPath, "");
     } catch (error: any) {
-      throw new Error(`Update failed: ${error.message}`);
+      throw new Error(
+        `Could not write update flag: ${error.message}. ` +
+        `Make sure the compose volume ./run:/run/updater is mounted and writable by uid 1000.`
+      );
     }
-  }
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      reason: "Triggered system update via flag file",
+    });
+
+    return {
+      success: true,
+      message: "Update requested. The system will update and restart in about a minute.",
+    };
+  },
 });
+
