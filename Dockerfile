@@ -21,6 +21,7 @@ RUN pnpm exec prisma generate && \
 # ---- runtime ----
 FROM node:22-alpine AS runtime
 ENV NODE_ENV=production
+ENV HOSTNAME="0.0.0.0"
 WORKDIR /app
 
 # Copy the standalone output (includes its own node_modules subset)

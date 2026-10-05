@@ -4,3 +4,6 @@ node_modules
 .next
 backups
 run
+
+logs
+.gemini
