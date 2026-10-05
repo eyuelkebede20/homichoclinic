@@ -30,7 +30,8 @@ COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
 # Copy prisma schema for migrations that run at startup
 COPY --from=build --chown=node:node /app/prisma ./prisma
-# Copy prisma client that was generated
+# Copy the entire node_modules from deps to ensure Prisma CLI and Client are perfectly intact (needed for pnpm symlinks)
+COPY --from=build --chown=node:node /app/node_modules ./node_modules
 
 USER node
 EXPOSE 3100
@@ -38,4 +39,4 @@ EXPOSE 3100
 # Run migrations then start the app.
 # `prisma migrate deploy` is idempotent and safe to run on every startup.
 # We use `npx` from the standalone's bundled node_modules.
-CMD ["sh", "-c", "node node_modules/.bin/prisma migrate deploy 2>/dev/null || node node_modules/.bin/prisma db push --accept-data-loss && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy 2>/dev/null || npx prisma db push --accept-data-loss && node server.js"]
