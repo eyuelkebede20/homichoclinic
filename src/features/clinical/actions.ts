@@ -261,7 +261,8 @@ export const updateDoctorOpd = createSafeAction({
       where: { id: ctx.userId },
       data: { currentOpdRoom: data.room },
     });
-    revalidatePath("/dashboard"); return user;
+    revalidatePath("/", "layout"); 
+    return user;
   }
 });
 

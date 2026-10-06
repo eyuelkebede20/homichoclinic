@@ -32,9 +32,24 @@ export default async function VisitsQueuePage() {
   // Get today's visits
   const today = getStartOfDayLocal();
   
+  let doctorWhereClause = {};
+  if (role === "Doctor") {
+    const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    if (fullUser?.currentOpdRoom) {
+      doctorWhereClause = {
+        OR: [
+          { doctorId: session.user.id },
+          { opdRoom: fullUser.currentOpdRoom }
+        ]
+      };
+    } else {
+      doctorWhereClause = { doctorId: session.user.id };
+    }
+  }
+
   const [visits, doctors, opdSetting] = await Promise.all([
     prisma.visit.findMany({
-      where: { visitDate: { gte: today } },
+      where: { visitDate: { gte: today }, ...doctorWhereClause },
       include: { patient: true },
       orderBy: { visitDate: "asc" }
     }),
