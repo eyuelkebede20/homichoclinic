@@ -208,7 +208,7 @@ export const createUser = createSafeAction({
         accounts: {
           create: {
             id: crypto.randomUUID(),
-            accountId: data.email,
+            accountId: userId,
             providerId: "credential",
             password: hashedPassword,
             createdAt: new Date(),
