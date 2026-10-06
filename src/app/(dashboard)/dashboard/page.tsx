@@ -94,10 +94,16 @@ export default async function DashboardPage() {
 
     const pendingVisits = await prisma.visit.findMany({
       where: {
-        OR: [
-          { doctorId: session.user.id },
-          ...(currentOpdRoom ? [{ opdRoom: currentOpdRoom }] : [])
-        ],
+        ...(currentOpdRoom 
+          ? { 
+              opdRoom: currentOpdRoom,
+              OR: [
+                { doctorId: session.user.id },
+                { doctorId: null }
+              ]
+            }
+          : { doctorId: session.user.id }
+        ),
         status: { in: ["scheduled", "in_progress"] },
         visitDate: { gte: today },
       },
