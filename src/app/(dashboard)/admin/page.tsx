@@ -10,6 +10,7 @@ import { HeavyDutyToggle } from "@/features/admin/components/heavy-duty-toggle";
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 import { DevWipeCatalogs } from "@/features/admin/components/dev-wipe-catalogs";
+import { DevSeedDatabase } from "@/features/admin/components/dev-seed-db";
 import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
 import { SystemUpdater } from "@/features/admin/components/system-updater";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
@@ -88,6 +89,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             <SystemUpdater />
             <DevWipePatients />
             <DevWipeCatalogs />
+            <DevSeedDatabase />
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">
