@@ -14,6 +14,8 @@ import { PharmacyDashboard } from "@/features/clinical/components/pharmacy-dashb
 import { CashierDashboard } from "@/features/clinical/components/cashier-dashboard";
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
+import { DoctorWeeklyAppointmentsCard } from "@/features/clinical/components/doctor-weekly-appointments-card";
+import { DoctorAwaitingReviewCard } from "@/features/clinical/components/doctor-awaiting-review-card";
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -46,6 +48,9 @@ export default async function DashboardPage() {
       try { activeOpds = JSON.parse(sysSetting.value); } catch(e) {}
     }
 
+    const totalRoomsSetting = await prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } });
+    const totalRoomsCount = totalRoomsSetting?.value ? parseInt(totalRoomsSetting.value) : 5;
+
     const today = getStartOfDayLocal();
     const activeVisits = await prisma.visit.findMany({
       where: {
@@ -70,7 +75,7 @@ export default async function DashboardPage() {
     return (
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
         <VisitForm patients={patients} doctors={doctors} />
-        <ReceptionDashboard activeOpds={activeOpds} activeVisits={activeVisits} activeDoctors={doctors.filter(d => d.currentOpdRoom != null).map(d => ({ name: d.name, currentOpdRoom: d.currentOpdRoom }))} />
+        <ReceptionDashboard activeOpds={activeOpds} activeVisits={activeVisits} activeDoctors={doctors.filter(d => d.currentOpdRoom != null).map(d => ({ name: d.name, currentOpdRoom: d.currentOpdRoom }))} totalRoomsCount={totalRoomsCount} />
       </div>
     );
   }
@@ -85,12 +90,19 @@ export default async function DashboardPage() {
     const weekStart = startOfWeek(today);
     const weekEnd = endOfWeek(today);
     
-    const weeklyAppointments = await prisma.visit.count({
+    const weeklyAppointmentsData = await prisma.visit.findMany({
       where: {
         doctorId: session.user.id,
         visitDate: { gte: weekStart, lte: weekEnd }
-      }
+      },
+      include: {
+        patient: {
+          select: { id: true, firstName: true, lastName: true, yob: true, gender: true, militaryId: true, employeeId: true }
+        }
+      },
+      orderBy: { visitDate: "asc" }
     });
+    const weeklyAppointments = weeklyAppointmentsData.length;
 
     const pendingVisits = await prisma.visit.findMany({
       where: {
@@ -154,20 +166,13 @@ export default async function DashboardPage() {
         <DoctorLabResultsInbox results={unreadLabResults} />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/60 relative overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-10">
-              {/* Decorative element could go here */}
-            </div>
-            <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">My Appointments This Week</h3>
-            <p className="mt-2 text-4xl font-semibold text-slate-900 dark:text-slate-100">{weeklyAppointments}</p>
-          </div>
-          <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-orange-200 dark:border-orange-900/30">
-            <h3 className="text-sm font-medium text-orange-600 dark:text-orange-500">Patients Awaiting Review</h3>
-            <p className="mt-2 text-4xl font-semibold text-slate-900 dark:text-slate-100">{pendingVisits.length}</p>
-          </div>
+          <DoctorWeeklyAppointmentsCard appointments={weeklyAppointmentsData as any} count={weeklyAppointments} />
+          <DoctorAwaitingReviewCard count={pendingVisits.length} />
         </div>
 
-        <DoctorPatientQueue visits={pendingVisits} />
+        <div id="patient-queue-section">
+          <DoctorPatientQueue visits={pendingVisits} />
+        </div>
       </div>
     );
   }

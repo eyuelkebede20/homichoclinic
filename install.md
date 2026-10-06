@@ -168,6 +168,11 @@ At the end you should see:
   Status: ONLINE
 ```
 
+7. **Seed the database with initial admin accounts**:
+   Open a browser on the server and navigate to:
+   `http://localhost:3000/api/seed-db`
+   This will create the default roles and an admin user (password: `password123`) so you can log in.
+
 ---
 
 ## 7. Set a static IP (run once, as Administrator)

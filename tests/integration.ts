@@ -111,7 +111,7 @@ async function run() {
       }
     });
     await prisma.visit.update({ where: { id: visit.id }, data: { invoiceId: invoice.id } });
-    console.log("   Invoice created! Total: \`\ Birr\`");
+    console.log(`   Invoice created! Total: ${total} Birr`);
 
     console.log("🎉 All Tests Passed Successfully! E2E Workflow verified.");
 

@@ -72,6 +72,7 @@ call :status "   [OK] Backup saved: !BACKUP_FILE!"
 
 :: ── [2/5] Git pull ───────────────────────────────────────────
 call :status "[2/5] Pulling latest code..."
+git stash >> "%STATUS_FILE%" 2>&1
 git pull --ff-only >> "%STATUS_FILE%" 2>&1
 if errorlevel 1 (
     call :status "   [!] git pull failed - no changes applied."

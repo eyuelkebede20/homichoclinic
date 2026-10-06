@@ -164,24 +164,32 @@ The app **must expose `GET /health`** returning HTTP 200 (ideally after a `SELEC
 ```dockerfile
 # syntax=docker/dockerfile:1
 
-# ---- deps (production only) ----
+# ---- deps (production + dev for prisma) ----
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package*.json ./
-RUN --mount=type=cache,target=/root/.npm npm ci --omit=dev
+RUN npm ci
+
+# ---- build ----
+FROM node:22-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN npx prisma generate && npm run build
 
 # ---- runtime ----
 FROM node:22-alpine
 ENV NODE_ENV=production
 WORKDIR /app
 
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
 COPY --chown=node:node . .
 
 USER node
 EXPOSE 3000
-# Adjust to your entry file
-CMD ["node", "src/index.js"]
+CMD ["sh", "-c", "if [ -d prisma/migrations ]; then npx prisma migrate deploy; else npx prisma db push --accept-data-loss; fi && npx prisma db seed 2>/dev/null ; node server.js"]
 ```
 
 If the app has a build step (TypeScript, bundler), add a `build` stage and copy only the output (e.g. `dist/`) into the runtime stage.
@@ -242,6 +250,7 @@ echo "[1/5] Backing up database..."
 docker compose exec -T db pg_dump -U "$DB_USER" "$DB_NAME" | gzip > "backups/pre-update-$(date +%F_%H%M).sql.gz"
 
 echo "[2/5] Pulling latest code..."
+git stash
 git pull --ff-only
 
 echo "[3/5] Building and restarting..."
@@ -329,6 +338,9 @@ chmod +x update.sh
 docker compose up -d --build
 docker compose ps                      # both services should show "healthy"
 sudo systemctl enable docker           # start on boot
+
+# Seed the database with initial admin accounts
+curl http://localhost:3000/api/seed-db
 ```
 
 Then install the systemd units (3.7) and the cron job (3.8).

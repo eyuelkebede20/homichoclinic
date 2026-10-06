@@ -27,6 +27,7 @@ export default function LoginPage() {
       {
         onSuccess: () => {
           router.push("/dashboard");
+          router.refresh();
         },
         onError: (ctx) => {
           setError(ctx.error.message || "Invalid credentials");

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Search, Loader2, UserPlus } from "lucide-react";
 import { searchPatientsFast } from "@/features/patients/actions";
 import { createVisit } from "@/features/clinical/actions";
@@ -74,10 +75,10 @@ export function ReceptionPatientSearch() {
           )}
           {results.map(p => (
             <div key={p.id} className="p-3 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex justify-between items-center transition-colors">
-              <div>
-                <p className="font-bold text-slate-800 dark:text-slate-200">{p.firstName} {p.lastName}</p>
+              <Link href={`/patients/${p.id}`} className="block flex-1">
+                <p className="font-bold text-slate-800 dark:text-slate-200 hover:text-blue-600 transition-colors">{p.firstName} {p.lastName}</p>
                 <p className="text-xs text-slate-500">{p.contactNumber || "No Phone"} • DOB: {new Date(p.dateOfBirth).getFullYear()}</p>
-              </div>
+              </Link>
               <button
                 onClick={(e) => { e.preventDefault(); handleAdmit(p.id); }}
                 disabled={admittingId === p.id}

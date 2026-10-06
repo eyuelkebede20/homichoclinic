@@ -26,13 +26,15 @@ export default async function DashboardLayout({
   const userPermissions = ROLE_PERMISSIONS[role] || [];
   
   // Fetch full user for custom fields like currentOpdRoom
-  const [fullUser, clinicNameSetting, clinicLogoSetting] = await Promise.all([
+  const [fullUser, clinicNameSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
     prisma.user.findUnique({ where: { id: session.user.id } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
-    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
+    prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicLogo = clinicLogoSetting?.value || "";
+  const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
 
   let gitHash = "unknown";
   try {
@@ -106,7 +108,7 @@ export default async function DashboardLayout({
             <div className="mb-6 px-3">
               <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">My Station</p>
-                <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} />
+                <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} totalRoomsCount={totalRoomsCount} />
               </div>
             </div>
           )}

@@ -137,21 +137,21 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                   <div className="flex items-center justify-end gap-2">
                     {/* Impeccable Icon Actions */}
                     <Link 
-                      href={`/patients/${visit.patientId}`}
+                      href={`/patients/${visit.patientId}#medical-history`}
                       title="View Medical History"
                       className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg transition-all"
                     >
                       <FileText className="w-4 h-4" />
                     </Link>
                     <Link 
-                      href={`/patients/${visit.patientId}`}
+                      href={`/patients/${visit.patientId}#prescription`}
                       title="Prescribe Medication"
                       className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 rounded-lg transition-all"
                     >
                       <Pill className="w-4 h-4" />
                     </Link>
                     <Link 
-                      href={`/patients/${visit.patientId}`}
+                      href={`/patients/${visit.patientId}#lab-request`}
                       title="Order Lab Tests"
                       className="p-2 text-slate-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-400 rounded-lg transition-all"
                     >

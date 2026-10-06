@@ -69,7 +69,7 @@ export function DoctorOrders({
     <div className="space-y-6">
       
       {/* Lab Request Form */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+      <div id="lab-request" className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 scroll-mt-24">
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Request Lab Tests</h3>
         <form onSubmit={handleLabSubmit} className="space-y-4">
           <div className="max-h-60 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-md p-4 bg-slate-50 dark:bg-slate-950 flex flex-wrap gap-2">
@@ -101,7 +101,7 @@ export function DoctorOrders({
       </div>
 
       {/* Prescription Form */}
-      <div className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800">
+      <div id="prescription" className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 scroll-mt-24">
         <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Write Prescription</h3>
         <form onSubmit={handleRxSubmit} className="space-y-4">
           

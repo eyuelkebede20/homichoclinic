@@ -6,7 +6,13 @@ REM  before git pull can change the file on disk.
 (
     if /i not "%~1"=="child" (
         echo   [..] Checking for system updates from GitHub...
-        git pull origin main 2>nul
+        git stash
+        git pull origin main
+        if errorlevel 1 (
+            echo   [!] Error: Failed to pull latest changes. Stopping.
+            pause
+            exit /b 1
+        )
         echo.
         cmd /k ""%~f0" child"
         exit /b
@@ -106,7 +112,12 @@ docker info >nul 2>&1
 if not errorlevel 1 goto :docker_ok
 
 set "DD=%ProgramFiles%\Docker\Docker\Docker Desktop.exe"
+if exist "%DD%" goto :start_docker
+
+set "DD=%LOCALAPPDATA%\Docker\Docker\Docker Desktop.exe"
 if not exist "%DD%" goto :docker_fail
+
+:start_docker
 
 echo   %Y%[..]%Z% Docker Desktop is not running - starting it now.
 echo        This can take 1-2 minutes after a reboot.

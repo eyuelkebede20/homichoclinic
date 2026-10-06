@@ -44,7 +44,8 @@ services:
       DB_HOST: db
       DB_PORT: 5432
       # Override DATABASE_URL to use the compose service hostname `db`
-      DATABASE_URL: "postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public"
+      # If your password has special characters like @, define DOCKER_DATABASE_URL in .env
+      DATABASE_URL: "${DOCKER_DATABASE_URL:-postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}?schema=public}"
       BETTER_AUTH_URL: "http://${LAN_IP:-localhost}:${APP_PORT:-3000}"
     ports:
       - "${APP_PORT:-3000}:3000"

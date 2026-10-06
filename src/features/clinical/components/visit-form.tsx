@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { PatientSearchSelect } from "@/components/patient-search-select";
 import { toast } from "sonner";
 
-export function VisitForm({ patients, doctors }: { patients: {id: string, name: string}[], doctors: {id: string, name: string}[] }) {
+export function VisitForm({ patients, doctors }: { patients: {id: string, name: string}[], doctors: {id: string, name: string, currentOpdRoom?: number | null}[] }) {
   const [loading, setLoading] = useState(false);
   const [assignedRoom, setAssignedRoom] = useState<number | null>(null);
   const [patientId, setPatientId] = useState("");
@@ -99,7 +99,9 @@ export function VisitForm({ patients, doctors }: { patients: {id: string, name: 
             <select required name="doctorId" className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm">
               <option value="">-- Select Doctor --</option>
               {doctors.map(d => (
-                <option key={d.id} value={d.id}>{d.name}</option>
+                <option key={d.id} value={d.id}>
+                  Dr. {d.name} {d.currentOpdRoom ? `(OPD ${d.currentOpdRoom})` : "(Off Duty)"}
+                </option>
               ))}
             </select>
           </div>

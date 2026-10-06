@@ -274,3 +274,29 @@ export const triggerSystemUpdate = createSafeAction({
   },
 });
 
+const updateSystemSettingSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+});
+
+export const updateSystemSetting = createSafeAction({
+  schema: updateSystemSettingSchema,
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    await prisma.systemSetting.upsert({
+      where: { key: data.key },
+      update: { value: data.value },
+      create: { key: data.key, value: data.value },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      reason: `Updated system setting ${data.key} to ${data.value}`,
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  }
+});
+

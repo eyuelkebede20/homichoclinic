@@ -15,6 +15,7 @@ import { DatabaseBackupButton } from "@/features/admin/components/database-backu
 import { SystemUpdater } from "@/features/admin/components/system-updater";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
 import { CreateUserModal } from "@/features/admin/components/create-user-modal";
+import { OpdRoomsManager } from "@/features/admin/components/opd-rooms-manager";
 import Link from "next/link";
 
 export default async function AdminDashboardPage(props: { searchParams: Promise<{ tab?: string; q?: string }> }) {
@@ -40,18 +41,20 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicLogoSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
     prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
-    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
+    prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
 
   const isLowPower = lowPowerSetting?.value !== "false";
   const isHeavyDuty = heavyDutySetting?.value === "true";
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicLogo = clinicLogoSetting?.value || "";
+  const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -85,6 +88,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             </div>
             <HeavyDutyToggle initial={isHeavyDuty} />
             <LowPowerToggle initial={isLowPower} />
+            <OpdRoomsManager initialCount={totalRoomsCount} />
             <DatabaseBackupButton />
             <SystemUpdater />
             <DevWipePatients />
@@ -116,7 +120,15 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             {users.map(user => (
               <tr key={user.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {user.name}
+                  <div className="flex items-center gap-2">
+                    {user.name}
+                    {user.currentOpdRoom !== null && (
+                      <span className="relative flex h-2.5 w-2.5" title={`Online in OPD ${user.currentOpdRoom}`}>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-slate-500 mt-1">Role: {user.role || "User"}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">

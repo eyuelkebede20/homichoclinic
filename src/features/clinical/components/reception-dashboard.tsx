@@ -6,7 +6,7 @@ import { ReceptionPatientSearch } from "./reception-patient-search";
 import { CancelVisitButton } from "./cancel-visit-button";
 import { toggleOpdRoom } from "../actions";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type VisitWithPatient = {
   id: string;
@@ -19,15 +19,26 @@ type VisitWithPatient = {
 export function ReceptionDashboard({ 
   activeOpds, 
   activeVisits,
-  activeDoctors
+  activeDoctors,
+  totalRoomsCount
 }: { 
   activeOpds: number[]; 
   activeVisits: VisitWithPatient[];
   activeDoctors?: { name: string, currentOpdRoom: number | null }[];
+  totalRoomsCount?: number;
 }) {
   const router = useRouter();
   const [loadingRoom, setLoadingRoom] = useState<number | null>(null);
-  const totalRooms = [1, 2, 3, 4, 5]; // Assume 5 rooms in the clinic
+  const [searchOpd, setSearchOpd] = useState("");
+  const totalRooms = Array.from({ length: totalRoomsCount || 5 }, (_, i) => i + 1);
+
+  // Auto-refresh the dashboard every 5 seconds to show real-time queue updates
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   async function handleToggleRoom(room: number) {
     setLoadingRoom(room);
@@ -37,6 +48,8 @@ export function ReceptionDashboard({
     router.refresh();
   }
 
+  const filteredRooms = totalRooms.filter(room => room.toString().includes(searchOpd));
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -45,8 +58,17 @@ export function ReceptionDashboard({
           <p className="text-slate-500 dark:text-slate-400">Live view of OPD queues and active patients.</p>
         </div>
         
-        <div className="flex-1 max-w-xl mx-4">
+        <div className="flex flex-col sm:flex-row flex-1 max-w-2xl mx-4 gap-4 w-full">
           <ReceptionPatientSearch />
+          <div className="relative flex-1 min-w-[200px]">
+            <input 
+              type="text" 
+              placeholder="Search OPD..." 
+              value={searchOpd}
+              onChange={(e) => setSearchOpd(e.target.value)}
+              className="w-full pl-3 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
         </div>
 
         <Link 
@@ -59,7 +81,7 @@ export function ReceptionDashboard({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-        {totalRooms.map(room => {
+        {filteredRooms.map(room => {
           const isActive = activeOpds.includes(room);
           const roomVisits = activeVisits.filter(v => v.opdRoom === room);
           const inProgress = roomVisits.find(v => v.status === "in_progress");
@@ -86,9 +108,20 @@ export function ReceptionDashboard({
                     </span>
                   </div>
                   {activeDoctors && activeDoctors.some(d => d.currentOpdRoom === room) && (
-                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1 flex items-center gap-1">
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-1 flex items-center gap-1.5">
                       <Users className="w-3 h-3" />
-                      Dr. {activeDoctors.filter(d => d.currentOpdRoom === room).map(d => d.name).join(", ")}
+                      <div className="flex items-center gap-1">
+                        {activeDoctors.filter(d => d.currentOpdRoom === room).map((d, i) => (
+                          <span key={i} className="flex items-center gap-1">
+                            <span className="relative flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            Dr. {d.name}
+                            {i < activeDoctors.filter(doc => doc.currentOpdRoom === room).length - 1 ? ", " : ""}
+                          </span>
+                        ))}
+                      </div>
                     </span>
                   )}
                 </div>

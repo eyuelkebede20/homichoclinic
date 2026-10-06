@@ -38,7 +38,8 @@ export function TestUserSwitcher() {
         {
           onSuccess: () => {
             setLoadingEmail(null);
-            window.location.href = "/dashboard";
+            router.push("/dashboard");
+            router.refresh(); // Refresh RSC payload without a hard reload
           },
           onError: (ctx) => {
             toast.error("Error logging in: " + ctx.error.message);
@@ -57,7 +58,8 @@ export function TestUserSwitcher() {
     setLoadingEmail("logout");
     try {
       await signOut();
-      window.location.href = "/login";
+      router.push("/login");
+      router.refresh();
     } catch (err) {
       console.error(err);
       setLoadingEmail(null);
