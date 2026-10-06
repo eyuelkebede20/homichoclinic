@@ -8,11 +8,11 @@ async function main() {
 
   // 2. Define the staff we want to create
   const staffToCreate = [
-    { role: "Admin", name: "Alice Admin" },
-    { role: "Manager", name: "Mark Manager" },
-    { role: "Doctor", name: "Dr. Drake" },
+    { role: "Admin", name: "Zenebe Admin" },
+    { role: "Manager", name: "Fiseha Manager" },
+    { role: "Doctor", name: ".Cashier" },
     { role: "Reception", name: "Rachel Reception" },
-    { role: "Cashier", name: "Charlie Cashier" },
+    { role: "Dataencoder", name: "Danny Dataencoder" },
     { role: "Laboratory", name: "Leo LabTech" },
     { role: "Pharmacy", name: "Penny Pharmacist" },
   ];

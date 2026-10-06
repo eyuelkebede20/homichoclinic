@@ -9,7 +9,7 @@ export async function GET() {
       { role: "Manager", name: "Mark Manager" },
       { role: "Doctor", name: "Dr. Drake" },
       { role: "Reception", name: "Rachel Reception" },
-      { role: "Cashier", name: "Charlie Cashier" },
+      { role: "Dataencoder", name: "Danny Dataencoder" },
       { role: "Laboratory", name: "Leo LabTech" },
       { role: "Pharmacy", name: "Penny Pharmacist" },
     ];

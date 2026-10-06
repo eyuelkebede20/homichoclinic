@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency } from "../../billing/utils";
 
-export function CashierDashboard({ visits, invoices = [] }: { visits: any[], invoices?: any[] }) {
+export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[], invoices?: any[] }) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">

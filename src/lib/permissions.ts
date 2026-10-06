@@ -73,11 +73,11 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.VISIT_UPDATE,
     PERMISSIONS.HISTORY_READ,
   ],
-  Cashier: [
+  Dataencoder: [
     PERMISSIONS.INVOICE_CREATE,
     PERMISSIONS.INVOICE_READ,
     PERMISSIONS.PAYMENT_CREATE,
-    PERMISSIONS.DISCOUNT_READ, // Cashiers can only read the discount
+    PERMISSIONS.DISCOUNT_READ, // Dataencoders can only read the discount
     PERMISSIONS.PATIENT_READ,
   ],
   Doctor: [

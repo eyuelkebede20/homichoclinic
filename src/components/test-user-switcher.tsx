@@ -12,7 +12,7 @@ const TEST_ACCOUNTS = [
   { role: "Manager", email: "manager@clinic.com", color: "bg-orange-600" },
   { role: "Doctor", email: "doctor@clinic.com", color: "bg-blue-600" },
   { role: "Reception", email: "reception@clinic.com", color: "bg-green-600" },
-  { role: "Cashier", email: "cashier@clinic.com", color: "bg-emerald-600" },
+  { role: "Dataencoder", email: "dataencoder@clinic.com", color: "bg-emerald-600" },
   { role: "Laboratory", email: "laboratory@clinic.com", color: "bg-purple-600" },
   { role: "Pharmacy", email: "pharmacy@clinic.com", color: "bg-pink-600" },
 ];

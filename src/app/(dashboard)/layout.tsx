@@ -8,6 +8,9 @@ import { GlobalNotifications } from "@/components/global-notifications";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { DoctorOpdSelector } from "@/features/clinical/components/doctor-opd-selector";
+import { LanguageToggle } from "@/components/language-toggle";
+import { TutorialManager } from "@/components/tutorial-manager";
+import { SidebarTutorialToggle } from "@/components/sidebar-tutorial-toggle";
 
 export default async function DashboardLayout({
   children,
@@ -44,44 +47,47 @@ export default async function DashboardLayout({
     // ignore
   }
 
+  const { getDictionary } = await import("@/lib/i18n");
+  const dict = await getDictionary();
+
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+    { name: dict["nav.dashboard"] || "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   ];
 
   if (userPermissions.includes(PERMISSIONS.VISIT_READ)) {
-    navItems.push({ name: "Appointments", href: "/visits", icon: Calendar });
+    navItems.push({ name: dict["nav.appointments"] || "Appointments", href: "/visits", icon: Calendar });
   }
   if (userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
-    navItems.push({ name: "Patients", href: "/patients", icon: Users });
+    navItems.push({ name: dict["nav.patients"] || "Patients", href: "/patients", icon: Users });
   }
   const isManagerOrAdmin = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
 
   if (userPermissions.includes(PERMISSIONS.LAB_READ)) {
-    navItems.push({ name: "Laboratory", href: "/laboratory", icon: FlaskConical });
+    navItems.push({ name: dict["nav.laboratory"] || "Laboratory", href: "/laboratory", icon: FlaskConical });
   }
   if (isManagerOrAdmin || role === "Laboratory") {
-    navItems.push({ name: "Lab Catalog", href: "/laboratory/catalog", icon: Tags });
+    navItems.push({ name: dict["nav.labCatalog"] || "Lab Catalog", href: "/laboratory/catalog", icon: Tags });
   }
   
   if (userPermissions.includes(PERMISSIONS.INVENTORY_READ)) {
-    navItems.push({ name: "Pharmacy", href: "/pharmacy", icon: Pill });
+    navItems.push({ name: dict["nav.pharmacy"] || "Pharmacy", href: "/pharmacy", icon: Pill });
   }
   if (isManagerOrAdmin || role === "Pharmacy") {
-    navItems.push({ name: "Pharmacy Catalog", href: "/pharmacy/catalog", icon: Tags });
+    navItems.push({ name: dict["nav.pharmacyCatalog"] || "Pharmacy Catalog", href: "/pharmacy/catalog", icon: Tags });
   }
   if (isManagerOrAdmin) {
-    navItems.push({ name: "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
+    navItems.push({ name: dict["nav.catalogApprovals"] || "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
-    navItems.push({ name: "Billing", href: "/billing", icon: Receipt });
+    navItems.push({ name: dict["nav.billing"] || "Billing", href: "/billing", icon: Receipt });
   }
 
   if (userPermissions.includes(PERMISSIONS.AUDIT_READ)) {
-    navItems.push({ name: "Audit Logs", href: "/audit", icon: Activity });
+    navItems.push({ name: dict["nav.auditLogs"] || "Audit Logs", href: "/audit", icon: Activity });
   }
 
   if (userPermissions.includes(PERMISSIONS.USER_MANAGE)) {
-    navItems.push({ name: "Admin", href: "/admin", icon: Shield });
+    navItems.push({ name: dict["nav.admin"] || "Admin", href: "/admin", icon: Shield });
   }
 
   return (
@@ -101,13 +107,14 @@ export default async function DashboardLayout({
             )}
             <span className="font-bold text-lg tracking-wide truncate" title={clinicName}>{clinicName}</span>
           </div>
+          <LanguageToggle />
         </div>
         
         <nav className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
           {role === "Doctor" && (
             <div className="mb-6 px-3">
               <div className="bg-slate-800/50 p-3 rounded-lg border border-slate-700">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">My Station</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">{dict["nav.myStation"] || "My Station"}</p>
                 <DoctorOpdSelector initialRoom={fullUser?.currentOpdRoom || null} role={role} totalRoomsCount={totalRoomsCount} />
               </div>
             </div>
@@ -134,6 +141,7 @@ export default async function DashboardLayout({
                 <p className="text-sm font-medium text-white truncate">{session.user.name}</p>
                 <p className="text-xs font-medium text-slate-400 capitalize truncate">{session.user.role || "User"}</p>
               </div>
+              <SidebarTutorialToggle role={role} />
               <Link 
                 href="/login" 
                 className="ml-2 p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-md transition-colors"
@@ -153,6 +161,8 @@ export default async function DashboardLayout({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col overflow-hidden bg-background text-foreground print:overflow-visible print:block">
         
+        <TutorialManager role={role} />
+
         {/* Top Navbar */}
         <header className="h-16 border-b border-slate-200 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-end px-8 print:hidden gap-4 sticky top-0 z-10">
           <GlobalNotifications />

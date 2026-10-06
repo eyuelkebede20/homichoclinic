@@ -11,7 +11,7 @@ import { ReceptionDashboard } from "@/features/clinical/components/reception-das
 import { NurseDashboard } from "@/features/clinical/components/nurse-dashboard";
 import { LabDashboard } from "@/features/clinical/components/lab-dashboard";
 import { PharmacyDashboard } from "@/features/clinical/components/pharmacy-dashboard";
-import { CashierDashboard } from "@/features/clinical/components/cashier-dashboard";
+import { DataencoderDashboard } from "@/features/clinical/components/dataencoder-dashboard";
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
 import { DoctorWeeklyAppointmentsCard } from "@/features/clinical/components/doctor-weekly-appointments-card";
@@ -42,35 +42,26 @@ export default async function DashboardPage() {
 
   // 1. Reception Default
   if (role === "Reception") {
-    const sysSetting = await prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } });
+    const today = getStartOfDayLocal();
+
+    const [sysSetting, totalRoomsSetting, activeVisits, patientsRaw, doctors] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } }),
+      prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
+      prisma.visit.findMany({
+        where: { status: { in: ["scheduled", "in_progress"] }, visitDate: { gte: today }, deletedAt: null },
+        include: { patient: { select: { id: true, firstName: true, lastName: true, contactNumber: true } } }
+      }),
+      prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } }),
+      prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true, currentOpdRoom: true }, orderBy: { name: "asc" } })
+    ]);
+
     let activeOpds = [1, 2, 3];
     if (sysSetting && sysSetting.value) {
       try { activeOpds = JSON.parse(sysSetting.value); } catch(e) {}
     }
 
-    const totalRoomsSetting = await prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } });
     const totalRoomsCount = totalRoomsSetting?.value ? parseInt(totalRoomsSetting.value) : 5;
-
-    const today = getStartOfDayLocal();
-    const activeVisits = await prisma.visit.findMany({
-      where: {
-        status: { in: ["scheduled", "in_progress"] },
-        visitDate: { gte: today },
-        deletedAt: null
-      },
-      include: {
-        patient: { select: { id: true, firstName: true, lastName: true, contactNumber: true } }
-      }
-    });
-
-    const patientsRaw = await prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } });
     const patients = patientsRaw.map(p => ({ id: p.id, name: p.firstName + " " + p.lastName }));
-    
-    const doctors = await prisma.user.findMany({
-      where: { role: "Doctor" },
-      select: { id: true, name: true, currentOpdRoom: true },
-      orderBy: { name: "asc" }
-    });
 
     return (
       <div className="p-8 max-w-[1600px] mx-auto space-y-8">
@@ -84,82 +75,53 @@ export default async function DashboardPage() {
 
   // 2. Doctor Dashboard
   if (role === "Doctor") {
-    const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
-    const currentOpdRoom = fullUser?.currentOpdRoom || null;
-
     const weekStart = startOfWeek(today);
     const weekEnd = endOfWeek(today);
+
+    // Fetch user first because we need currentOpdRoom
+    const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });
+    const currentOpdRoom = fullUser?.currentOpdRoom || null;
     
-    const weeklyAppointmentsData = await prisma.visit.findMany({
-      where: {
-        doctorId: session.user.id,
-        visitDate: { gte: weekStart, lte: weekEnd }
-      },
-      include: {
-        patient: {
-          select: { id: true, firstName: true, lastName: true, yob: true, gender: true, militaryId: true, employeeId: true }
-        }
-      },
-      orderBy: { visitDate: "asc" }
-    });
+    const [weeklyAppointmentsData, pendingVisits, unreadLabResults] = await Promise.all([
+      prisma.visit.findMany({
+        where: { doctorId: session.user.id, visitDate: { gte: weekStart, lte: weekEnd } },
+        include: { patient: { select: { id: true, firstName: true, lastName: true, yob: true, gender: true, militaryId: true, employeeId: true } } },
+        orderBy: { visitDate: "asc" }
+      }),
+      prisma.visit.findMany({
+        where: {
+          ...(currentOpdRoom ? { opdRoom: currentOpdRoom, OR: [{ doctorId: session.user.id }, { doctorId: null }] } : { doctorId: session.user.id }),
+          status: { in: ["scheduled", "in_progress"] },
+          visitDate: { gte: today },
+        },
+        include: { patient: { include: { labRequests: { where: { status: "completed", createdAt: { gte: today } } } } } },
+        orderBy: { updatedAt: "desc" }
+      }),
+      prisma.labResult.findMany({
+        where: { isReadByDoctor: false, request: { requestedBy: session.user.id } },
+        include: { request: { include: { patient: true, test: true } } },
+        orderBy: { createdAt: "desc" }
+      })
+    ]);
+
+    const { getDictionary } = await import("@/lib/i18n");
+    const dict = await getDictionary();
+
     const weeklyAppointments = weeklyAppointmentsData.length;
-
-    const pendingVisits = await prisma.visit.findMany({
-      where: {
-        ...(currentOpdRoom 
-          ? { 
-              opdRoom: currentOpdRoom,
-              OR: [
-                { doctorId: session.user.id },
-                { doctorId: null }
-              ]
-            }
-          : { doctorId: session.user.id }
-        ),
-        status: { in: ["scheduled", "in_progress"] },
-        visitDate: { gte: today },
-      },
-      include: {
-        patient: {
-          include: {
-            labRequests: {
-              where: {
-                status: "completed",
-                createdAt: { gte: today }
-              }
-            }
-          }
-        }
-      },
-      orderBy: { updatedAt: "desc" }
-    });
-
-    const unreadLabResults = await prisma.labResult.findMany({
-      where: {
-        isReadByDoctor: false,
-        request: { requestedBy: session.user.id }
-      },
-      include: {
-        request: {
-          include: { patient: true, test: true }
-        }
-      },
-      orderBy: { createdAt: "desc" }
-    });
 
     return (
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-3">
-              Doctor Overview 
+              {dict["dash.doctorOverview"] || "Doctor Overview"}
               {currentOpdRoom && (
                 <span className="text-sm font-semibold bg-blue-100 text-blue-700 px-3 py-1 rounded-full">
-                  Operating in OPD {currentOpdRoom}
+                  {dict["dash.operatingInOpd"] || "Operating in OPD"} {currentOpdRoom}
                 </span>
               )}
             </h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Welcome back, Dr. {session.user.name}</p>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">{dict["dash.welcomeBackDr"] || "Welcome back, Dr."} {session.user.name}</p>
           </div>
         </div>
         
@@ -197,51 +159,50 @@ export default async function DashboardPage() {
     return <div className="p-8 max-w-7xl mx-auto"><LabDashboard requests={requests} /></div>;
   }
 
-  // 6. Cashier Dashboard
-  if (role === "Cashier") {
-    const completedVisits = await prisma.visit.findMany({
-      where: { status: "completed", invoiceId: null },
-      include: { patient: true },
-      orderBy: { updatedAt: "desc" }
-    });
+  // 6. Dataencoder Dashboard
+  if (role === "Dataencoder") {
+    const [completedVisits, invoices] = await Promise.all([
+      prisma.visit.findMany({
+        where: { status: "completed", invoiceId: null },
+        include: { patient: true },
+        orderBy: { updatedAt: "desc" }
+      }),
+      prisma.invoice.findMany({
+        include: { 
+          patient: true,
+          labRequests: { include: { test: true } },
+          prescriptionItems: { include: { drug: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 100
+      })
+    ]);
     
-    const invoices = await prisma.invoice.findMany({
-      include: { 
-        patient: true,
-        labRequests: { include: { test: true } },
-        prescriptionItems: { include: { drug: true } }
-      },
-      orderBy: { createdAt: "desc" },
-      take: 100
-    });
-    
-    return <div className="p-8 max-w-7xl mx-auto"><CashierDashboard visits={completedVisits} invoices={invoices} /></div>;
+    return <div className="p-8 max-w-7xl mx-auto"><DataencoderDashboard visits={completedVisits} invoices={invoices} /></div>;
   }
 
   // 5. Pharmacy Dashboard
   if (role === "Pharmacy" || role === "Pharmacist") {
-    const prescriptions = await prisma.prescription.findMany({
-      where: { status: "pending" },
-      include: { patient: { select: { firstName: true, lastName: true } }, items: { include: { drug: { select: { name: true } } } } },
-      orderBy: { createdAt: "asc" }
-    });
-    
-    const allDrugs = await prisma.drug.findMany({
-      include: {
-        batches: { where: { quantity: { gt: 0 } } }
-      }
-    });
+    const [prescriptions, allDrugs, expiringBatches] = await Promise.all([
+      prisma.prescription.findMany({
+        where: { status: "pending" },
+        include: { patient: { select: { firstName: true, lastName: true } }, items: { include: { drug: { select: { name: true } } } } },
+        orderBy: { createdAt: "asc" }
+      }),
+      prisma.drug.findMany({
+        include: { batches: { where: { quantity: { gt: 0 } } } }
+      }),
+      prisma.stockBatch.count({
+        where: {
+          expiryDate: { lte: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000) },
+          quantity: { gt: 0 }
+        }
+      })
+    ]);
 
     const lowStockCount = allDrugs.filter(d => 
       d.batches.reduce((sum, b) => sum + b.quantity, 0) < 10 // Hardcoded threshold for now
     ).length;
-
-    const expiringBatches = await prisma.stockBatch.count({
-      where: {
-        expiryDate: { lte: new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000) },
-        quantity: { gt: 0 }
-      }
-    });
 
     return (
       <div className="p-8 max-w-7xl mx-auto space-y-8">
@@ -281,13 +242,16 @@ export default async function DashboardPage() {
     );
   }
 
-  // 4. Default / Fallback Dashboard (Admins, Cashiers, Lab)
+  const { getDictionary } = await import("@/lib/i18n");
+  const dict = await getDictionary();
+
+  // 4. Default / Fallback Dashboard (Admins, Dataencoders, Lab)
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Welcome to Clinic ERP</h1>
-          <p className="text-slate-500 dark:text-slate-400">Hello, {session.user.name}</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{dict["dash.welcome"] || "Welcome to Clinic ERP"}</h1>
+          <p className="text-slate-500 dark:text-slate-400">{dict["dash.hello"] || "Hello"}, {session.user.name}</p>
         </div>
         <PrintButton />
       </div>
@@ -295,11 +259,11 @@ export default async function DashboardPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Placeholder cards */}
         <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/60">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">System Status</h3>
-          <p className="mt-2 text-xl font-semibold text-emerald-600 dark:text-emerald-500">Online</p>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict["dash.systemStatus"] || "System Status"}</h3>
+          <p className="mt-2 text-xl font-semibold text-emerald-600 dark:text-emerald-500">{dict["dash.online"] || "Online"}</p>
         </div>
         <div className="bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/60">
-          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Your Role</h3>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{dict["dash.yourRole"] || "Your Role"}</h3>
           <p className="mt-2 text-xl font-semibold text-blue-600 dark:text-blue-500">{role}</p>
         </div>
       </div>

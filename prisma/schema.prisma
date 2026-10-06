@@ -370,7 +370,7 @@ model Payment {
   
   amount        Int
   method        String    // cash, card, transfer
-  cashierId     String    // Who took the payment
+  dataencoderId String    // Who took the payment
   
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { deleteUser, resetUserPassword, updateUserRole } from "../actions";
 import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
@@ -9,7 +9,11 @@ import { toast } from "sonner";
 export function UserActionsRow({ user }: { user: { id: string; email: string; role: string | null } }) {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
+  const [currentRole, setCurrentRole] = useState(user.role || "User");
   const router = useRouter();
+  useEffect(() => {
+    setCurrentRole(user.role || "User");
+  }, [user.role]);
 
   async function handleDelete() {
     if (!confirm(`Are you sure you want to permanently delete user ${user.email}?`)) return;
@@ -39,27 +43,34 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
   }
 
   async function handleRoleChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const role = e.target.value;
-    if (!confirm(`Change role to ${role}?`)) {
-      e.target.value = user.role || "User";
+    const newRole = e.target.value;
+    if (!confirm(`Change role to ${newRole}?`)) {
+      e.target.value = currentRole;
       return;
     }
+    
+    setCurrentRole(newRole); // Optimistic update
     setLoading(true);
-    const res = await updateUserRole({ userId: user.id, role });
+    const res = await updateUserRole({ userId: user.id, role: newRole });
     setLoading(false);
-    if (res.error) toast.error(res.error);
-    else router.refresh();
+    
+    if (res.error) {
+      toast.error(res.error);
+      setCurrentRole(user.role || "User"); // Revert on failure
+    } else {
+      router.refresh();
+    }
   }
 
   return (
     <div className="flex items-center gap-3">
       <select
-        defaultValue={user.role || "User"}
+        value={currentRole}
         onChange={handleRoleChange}
         disabled={loading}
         className="text-xs rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 py-1 px-2"
       >
-        {["User", "Admin", "Manager", "Reception", "Cashier", "Doctor", "Laboratory", "Testing", "Pharmacy"].map((r) => (
+        {["User", "Admin", "Manager", "Reception", "Dataencoder", "Doctor", "Laboratory", "Testing", "Pharmacy"].map((r) => (
           <option key={r} value={r}>{r}</option>
         ))}
       </select>

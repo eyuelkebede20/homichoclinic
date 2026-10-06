@@ -85,7 +85,7 @@ export const recordPayment = createSafeAction({
           invoiceId: invoice.id,
           amount: invoice.total,
           method: data.method,
-          cashierId: ctx.userId,
+          dataencoderId: ctx.userId,
         },
       });
 

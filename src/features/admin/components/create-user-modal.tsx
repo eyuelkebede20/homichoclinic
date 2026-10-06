@@ -61,7 +61,7 @@ export function CreateUserModal() {
             <label className="block text-sm font-medium mb-1">Role</label>
             <select required name="role" className="w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2">
               <option value="Reception">Reception</option>
-              <option value="Cashier">Cashier</option>
+              <option value="Dataencoder">Dataencoder</option>
               <option value="Doctor">Doctor</option>
               <option value="Laboratory">Laboratory</option>
               <option value="Pharmacy">Pharmacy</option>
