@@ -15,7 +15,7 @@ export function OpdRoomsManager({ initialCount }: { initialCount: number }) {
     if (newCount < 1) return;
     setLoading(true);
     setCount(newCount);
-    const res = await updateSystemSetting("totalOpdRooms", newCount.toString());
+    const res = await updateSystemSetting({ key: "totalOpdRooms", value: newCount.toString() });
     setLoading(false);
     
     if (res?.error) {
