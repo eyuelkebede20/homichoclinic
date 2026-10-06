@@ -4,6 +4,7 @@ import { prisma } from "./prisma";
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
+  trustedOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
   advanced: {
     cookiePrefix: "clinic_v2",
   },

@@ -241,6 +241,11 @@ call :stephdr 5 "Starting the clinic system"
 echo         First run takes 2-4 minutes. Later starts about 30 seconds.
 echo.
 
+REM Detect the primary IPv4 address to configure the auth system for LAN access
+set "LAN_IP=localhost"
+for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /c:"IPv4"') do for /f %%J in ("%%I") do set "LAN_IP=%%J"
+echo   [..] Configuring system for network access on IP: %LAN_IP%
+
 if exist "logs\compose.done" del "logs\compose.done"
 start "" /b cmd /c "docker compose up -d --build >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
 

@@ -40,4 +40,4 @@ EXPOSE 3100
 # Run migrations then start the app.
 # `prisma migrate deploy` is idempotent and safe to run on every startup.
 # We use `npx` from the standalone's bundled node_modules.
-CMD ["sh", "-c", "npx prisma migrate deploy 2>/dev/null || npx prisma db push --accept-data-loss && node server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy 2>/dev/null || npx prisma db push --accept-data-loss ; npx prisma db seed 2>/dev/null ; node server.js"]
