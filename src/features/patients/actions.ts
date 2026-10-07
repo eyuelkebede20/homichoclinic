@@ -272,9 +272,12 @@ export const searchPatientsFast = createSafeAction({
     return await prisma.patient.findMany({
       where: {
         OR: [
-          { firstName: { startsWith: term, mode: "insensitive" } },
-          { lastName: { startsWith: term, mode: "insensitive" } },
-          { contactNumber: { startsWith: term } }
+          { firstName: { contains: term, mode: "insensitive" } },
+          { lastName: { contains: term, mode: "insensitive" } },
+          { contactNumber: { contains: term, mode: "insensitive" } },
+          { employeeId: { contains: term, mode: "insensitive" } },
+          { militaryId: { contains: term, mode: "insensitive" } },
+          { id: { contains: term, mode: "insensitive" } }
         ]
       },
       take: 8,
