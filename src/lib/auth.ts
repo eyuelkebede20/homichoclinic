@@ -4,7 +4,28 @@ import { prisma } from "./prisma";
 
 export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET,
-  trustedOrigins: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  baseURL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+  trustedOrigins: (request) => {
+    const origin = request?.headers?.get("origin") || request?.headers?.get("referer");
+    const host = request?.headers?.get("host");
+    const origins = [
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ];
+    if (origin) {
+      try {
+        const u = new URL(origin);
+        origins.push(u.origin);
+      } catch (e) {}
+    }
+    if (host) {
+      origins.push(`http://${host}`);
+      origins.push(`https://${host}`);
+    }
+    if (process.env.BETTER_AUTH_URL) origins.push(process.env.BETTER_AUTH_URL);
+    if (process.env.TRUSTED_ORIGINS) origins.push(...process.env.TRUSTED_ORIGINS.split(",").map(s => s.trim()));
+    return Array.from(new Set(origins));
+  },
   advanced: {
     cookiePrefix: "clinic_v2",
   },
