@@ -111,7 +111,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
                       )}
                     </div>
                     <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">Test: {req.test.name}</div>
-                    <div className="flex justify-end gap-2">{canResult ? <LabResultForm requestId={req.id} /> : <span className="text-slate-400 text-xs">View Only</span>}</div>
+                    <div className="flex justify-end gap-2">{canResult ? <LabResultForm requestId={req.id} testName={req.test.name} /> : <span className="text-slate-400 text-xs">View Only</span>}</div>
                   </li>
                 ))}
               </ul>

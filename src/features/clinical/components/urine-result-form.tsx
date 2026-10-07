@@ -167,7 +167,7 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
           2. Chemical Examination
         </h5>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Albumin Qual */}
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Albumin (Qualitative)</label>

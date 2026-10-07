@@ -129,7 +129,7 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2">
           1. General Cell Counts & Core Parameters
         </h5>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">W.B.C.</label>
             <div className="text-[10px] text-slate-400 mb-1">4.0 - 11.0 ×10³/µL</div>
@@ -203,7 +203,7 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2">
           2. Differential White Cell Count (%)
         </h5>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Neutrophils</label>
             <div className="text-[9px] text-slate-400 mb-1">40 - 75%</div>
@@ -299,7 +299,7 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2">
           3. Coagulation, E.S.R. & RBC Indices
         </h5>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 text-xs">
           <div>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Bleeding Time</label>
             <div className="text-[9px] text-slate-400 mb-1">2 - 7 min</div>

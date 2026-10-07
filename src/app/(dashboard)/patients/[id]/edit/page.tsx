@@ -17,9 +17,10 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
   }
 
   const role = session.user.role || "User";
+  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  const canUpdate = userPermissions.includes("patient:update");
   
-  
-  if (role !== "Admin") {
+  if (!canUpdate && role !== "Admin") {
     return (
       <div className="p-8 text-center text-red-600">
         <h2 className="text-2xl font-bold">Access Denied</h2>

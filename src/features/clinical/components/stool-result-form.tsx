@@ -70,7 +70,7 @@ export function StoolResultForm({ initialData, onSubmit, onCancel, loading = fal
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 text-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
         {/* Appearance */}
         <div>
           <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Appearance</label>
@@ -236,7 +236,7 @@ export function StoolResultForm({ initialData, onSubmit, onCancel, loading = fal
         </div>
 
         {/* Ova and Parasite */}
-        <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
           <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
             <span>Ova and Parasite</span>
             <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-normal">Click chips to quickly insert parasites</span>
@@ -279,7 +279,7 @@ export function StoolResultForm({ initialData, onSubmit, onCancel, loading = fal
         </div>
 
         {/* Remarks */}
-        <div className="col-span-1 sm:col-span-2 lg:col-span-4">
+        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
           <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Remarks</label>
           <textarea
             value={remarks}
