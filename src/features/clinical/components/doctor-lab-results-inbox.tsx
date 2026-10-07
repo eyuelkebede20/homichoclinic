@@ -29,7 +29,7 @@ export function DoctorLabResultsInbox({
     <div className="bg-white dark:bg-slate-900 rounded-lg shadow border border-indigo-200 dark:border-indigo-800 overflow-hidden mb-8">
       <div className="px-6 py-4 border-b border-indigo-100 dark:border-indigo-900 flex justify-between items-center bg-indigo-50 dark:bg-indigo-900/30">
         <h2 className="text-lg font-bold text-indigo-900 dark:text-indigo-100 flex items-center gap-2">
-          <Beaker className="w-5 h-5" />
+          <Beaker className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
           New Lab Results ({results.length})
         </h2>
       </div>

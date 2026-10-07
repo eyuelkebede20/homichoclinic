@@ -23,6 +23,14 @@ type QueueVisit = {
   };
 };
 
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300",
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+];
+
 export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -80,7 +88,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                 {/* Patient Info */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-sm border border-blue-200/50 dark:border-blue-800/50">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-white/30 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}>
                       <User className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col">
@@ -139,21 +147,21 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                     <Link 
                       href={`/patients/${visit.patientId}#medical-history`}
                       title="View Medical History"
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg transition-all"
+                      className="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                     >
                       <FileText className="w-4 h-4" />
                     </Link>
                     <Link 
                       href={`/patients/${visit.patientId}#prescription`}
                       title="Prescribe Medication"
-                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 rounded-lg transition-all"
+                      className="p-2 text-indigo-500 hover:text-indigo-700 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
                     >
                       <Pill className="w-4 h-4" />
                     </Link>
                     <Link 
                       href={`/patients/${visit.patientId}#lab-request`}
                       title="Order Lab Tests"
-                      className="p-2 text-slate-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-400 rounded-lg transition-all"
+                      className="p-2 text-fuchsia-500 hover:text-fuchsia-700 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 rounded-lg transition-all"
                     >
                       <FlaskConical className="w-4 h-4" />
                     </Link>

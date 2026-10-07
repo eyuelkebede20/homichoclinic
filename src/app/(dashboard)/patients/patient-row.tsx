@@ -16,11 +16,19 @@ export function PatientRow({ patient }: { patient: import('@prisma/client').Pati
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.employeeId || patient.militaryId || patient.id.slice(-6)}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.salutation || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-        {patient.firstName} {patient.lastName}
+        <span className="flex items-center gap-2">
+          <span className={`w-2 h-2 rounded-full shrink-0 ${isNanSince ? "bg-red-400" : "bg-emerald-400"}`} />
+          {patient.firstName} {patient.lastName}
+        </span>
       </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{calculateECAge(patient.yob)}</td>
-      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.permanentSince || "-"}</td>
+      <td className="px-3 py-4 whitespace-nowrap text-sm">
+        {isNanSince
+          ? <span className="text-red-500 text-xs font-semibold">Missing ⚠</span>
+          : <span className="text-slate-500">{patient.permanentSince}</span>
+        }
+      </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.department || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.contactNumber || "-"}</td>

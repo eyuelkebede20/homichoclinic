@@ -18,6 +18,7 @@ export function DoctorAwaitingReviewCard({ count }: { count: number }) {
       onClick={handleClick}
       className="w-full text-left bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-orange-200 dark:border-orange-900/30 relative overflow-hidden hover:border-orange-400 hover:shadow-md transition-all group"
     >
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-400 to-amber-400" />
       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
         <Users className="w-24 h-24 text-orange-600" />
       </div>

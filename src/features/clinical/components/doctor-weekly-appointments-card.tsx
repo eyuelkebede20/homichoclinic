@@ -31,6 +31,7 @@ export function DoctorWeeklyAppointmentsCard({ appointments, count }: { appointm
         onClick={() => setIsOpen(true)}
         className="w-full text-left bg-white dark:bg-slate-900/50 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800/60 relative overflow-hidden hover:border-blue-400 hover:shadow-md transition-all group"
       >
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500" />
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
           <Clock className="w-24 h-24 text-blue-600" />
         </div>
