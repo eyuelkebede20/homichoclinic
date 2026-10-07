@@ -34,9 +34,9 @@ export function ClinicalDashboard({
     const data = {
       patientId,
       bp: fd.get("bp") as string || undefined,
-      heartRate: fd.get("hr") ? Number(fd.get("hr")) : undefined,
-      temp: fd.get("temp") ? Number(fd.get("temp")) : undefined,
-      weight: fd.get("weight") ? Number(fd.get("weight")) : undefined,
+      heartRate: fd.get("hr") && !isNaN(parseFloat(fd.get("hr") as string)) ? parseFloat(fd.get("hr") as string) : undefined,
+      temp: fd.get("temp") && !isNaN(parseFloat(fd.get("temp") as string)) ? parseFloat(fd.get("temp") as string) : undefined,
+      weight: fd.get("weight") && !isNaN(parseFloat(fd.get("weight") as string)) ? parseFloat(fd.get("weight") as string) : undefined,
       subjective: fd.get("subjective") as string || undefined,
       objective: fd.get("objective") as string || undefined,
       assessment: fd.get("assessment") as string || undefined,

@@ -51,7 +51,7 @@ export function DoctorOrders({
     const filledItems = rxItems.filter(i => i.search || i.drugId || i.instructions);
     
     // Check if any filled item is invalid
-    const invalidItems = filledItems.filter(i => !i.drugId || i.quantity <= 0 || !i.instructions);
+    const invalidItems = filledItems.filter(i => !i.drugId || i.quantity <= 0 || !i.instructions.trim());
     
     if (filledItems.length === 0) {
       toast.success("Please complete at least one prescription item.");
