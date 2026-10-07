@@ -47,11 +47,12 @@ SELF="$ROOT/$(basename "${BASH_SOURCE[0]}")"
 cd "$ROOT" || exit 1
 mkdir -p logs
 
-USE_COLOR=1; NO_UPDATE=0; PAUSE=0; CHILD=0
+USE_COLOR=1; NO_UPDATE=0; PAUSE=0; CHILD=0; NEEDS_BUILD=0
 REQUIRE_UPDATE="${REQUIRE_UPDATE:-0}"
 for a in "$@"; do
   case "$a" in
     --child)     CHILD=1 ;;
+    --updated)   NEEDS_BUILD=1 ;;
     --no-update) NO_UPDATE=1 ;;
     --no-color)  USE_COLOR=0 ;;
     --pause)     PAUSE=1 ;;
@@ -77,8 +78,15 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
   {
     echo
     echo "  ${Y}[..]${Z} Checking for system updates from GitHub..."
+    git rev-parse HEAD > .git-old 2>/dev/null || true
     if timeout 30 git pull --ff-only; then
       log "git pull OK"
+      git rev-parse HEAD > .git-new 2>/dev/null || true
+      if ! cmp -s .git-old .git-new; then
+        UPDATED_ARG="--updated"
+      else
+        UPDATED_ARG=""
+      fi
     else
       log "git pull failed"
       if [ "$REQUIRE_UPDATE" = 1 ]; then
@@ -87,8 +95,9 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
       fi
       echo "  ${Y}[!] Could not reach GitHub or the pull failed.${Z}"
       echo "      Continuing with the version already on this PC."
+      UPDATED_ARG=""
     fi
-    exec bash "$SELF" --child "$@"
+    exec bash "$SELF" --child $UPDATED_ARG "$@"
   }
 fi
 
@@ -333,8 +342,19 @@ echo
 LAN_IP=$(lan_ip)
 info "Network address of this PC: $LAN_IP"
 
-dc up -d --build > logs/compose.log 2>&1 &
-if spin_pid $! "Building and starting containers"; then
+if ! docker image inspect clinic-app:latest >/dev/null 2>&1; then
+  NEEDS_BUILD=1
+fi
+
+if [ "$NEEDS_BUILD" = 1 ]; then
+  dc up -d --build > logs/compose.log 2>&1 &
+  msg="Building and starting containers"
+else
+  dc up -d > logs/compose.log 2>&1 &
+  msg="Starting containers"
+fi
+
+if spin_pid $! "$msg"; then
   ok "Containers started in $(fmt_el)."
 else
   echo "  ${R}[!] docker compose failed. Last lines of its output:${Z}"
