@@ -154,7 +154,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
           <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
           <input name="permanentSince" type="date" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-          <p className="text-[10px] text-slate-500 mt-1">Leave empty to flag as missing (NaN) for Receptionists to fix.</p>
+          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">⚠ If left empty, the patient will be flagged for a receptionist to provide this date later. It determines the discount tier.</p>
         </div>
       )}
 
