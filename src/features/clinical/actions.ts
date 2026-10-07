@@ -190,6 +190,20 @@ export const createPrescription = createSafeAction({
   schema: prescriptionCreateSchema,
   requiredPermission: PERMISSIONS.PRESCRIPTION_CREATE,
   handler: async (data, ctx) => {
+    for (const item of data.items) {
+      const drug = await prisma.drug.findUnique({
+        where: { id: item.drugId },
+        include: { batches: true }
+      });
+      if (!drug) {
+        throw new Error(`Drug not found.`);
+      }
+      const totalStock = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
+      if (totalStock < item.quantity) {
+        throw new Error(`Insufficient stock for ${drug.name}. Available: ${totalStock}, Requested: ${item.quantity}.`);
+      }
+    }
+
     const rx = await prisma.prescription.create({
       data: {
         patientId: data.patientId,

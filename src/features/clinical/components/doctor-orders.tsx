@@ -47,16 +47,25 @@ export function DoctorOrders({
     e.preventDefault();
     setLoading(true);
     
-    // Filter out invalid items
-    const validItems = rxItems.filter(i => i.drugId && i.quantity > 0 && i.instructions);
+    // Filter empty rows that the user hasn't typed anything in
+    const filledItems = rxItems.filter(i => i.search || i.drugId || i.instructions);
     
-    if (validItems.length === 0) {
+    // Check if any filled item is invalid
+    const invalidItems = filledItems.filter(i => !i.drugId || i.quantity <= 0 || !i.instructions);
+    
+    if (filledItems.length === 0) {
       toast.success("Please complete at least one prescription item.");
       setLoading(false);
       return;
     }
+    
+    if (invalidItems.length > 0) {
+      toast.error("One or more prescription items are invalid (e.g. out of stock or missing dosage). Please fix or remove them.");
+      setLoading(false);
+      return;
+    }
 
-    const res = await createPrescription({ patientId, items: validItems });
+    const res = await createPrescription({ patientId, items: filledItems as any });
     setLoading(false);
     if (res.error) toast.error(res.error);
     else {
