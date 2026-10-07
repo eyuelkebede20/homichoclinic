@@ -164,7 +164,7 @@ export default async function DashboardPage() {
   // 4. Lab Dashboard
   if (role === "Lab Technician") {
     const requests = await prisma.labRequest.findMany({
-      where: { status: { in: ["requested", "in_progress"] } },
+      where: { status: { in: ["requested", "in_progress", "urgent"] } },
       include: { patient: { select: { firstName: true, lastName: true } }, test: { select: { name: true } } },
       orderBy: { createdAt: "asc" }
     });

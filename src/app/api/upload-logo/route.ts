@@ -17,9 +17,10 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const destination = path.join(process.cwd(), 'public', 'icon.png');
     await fs.writeFile(destination, buffer);
-    return NextResponse.json({ message: 'Logo uploaded successfully' }, { status: 200 });
+    // Redirect back to the admin page
+    return NextResponse.redirect(new URL('/admin?tab=clinic', request.url), 303);
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.redirect(new URL('/admin?tab=clinic&error=1', request.url), 303);
   }
 }

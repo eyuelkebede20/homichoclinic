@@ -20,7 +20,8 @@ export default function AdminClinicPage() {
     <div className="max-w-md mx-auto p-6">
       <h1 className="text-2xl font-bold mb-4">Upload Clinic Logo</h1>
       <p className="mb-2">Current logo:</p>
-      <Image src="/icon.png" alt="Current logo" width={120} height={120} className="border" />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`/icon.png?t=${new Date().getTime()}`} alt="Current logo" width={120} height={120} className="border object-contain" />
       <form
         action="/api/upload-logo"
         method="POST"

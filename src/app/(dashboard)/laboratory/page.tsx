@@ -34,7 +34,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const whereClause: import("@prisma/client").Prisma.LabRequestWhereInput = {
-    OR: [{ status: "completed" }, { status: "requested", createdAt: { gte: oneWeekAgo } }],
+    OR: [{ status: "completed" }, { status: { in: ["requested", "urgent"] }, createdAt: { gte: oneWeekAgo } }],
   };
 
   if (query) {
@@ -51,7 +51,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
     take: 100, // Keep logs up to 100 recent
   });
 
-  const pendingRequests = requests.filter((r) => r.status === "requested");
+  const pendingRequests = requests.filter((r) => r.status === "requested" || r.status === "urgent");
   const completedRequests = requests.filter((r) => r.status === "completed");
 
   const canResult = userPermissions.includes(PERMISSIONS.LAB_RESULT);

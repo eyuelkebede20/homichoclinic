@@ -69,6 +69,10 @@ export const importCatalogCSV = createSafeAction({
       const tat = row["tat"];
       const rawDescription = row["description"];
       
+      const amountInStockStr = row["amountinstock"];
+      const amountInStock = amountInStockStr ? parseInt(amountInStockStr, 10) : null;
+      const parsedAmountInStock = amountInStock !== null && !isNaN(amountInStock) ? amountInStock : null;
+
       let description: string | null = null;
       if (rawDescription) {
         description = rawDescription;
@@ -79,15 +83,28 @@ export const importCatalogCSV = createSafeAction({
 
       if (data.type === "DRUG") {
         if (canApprove) {
+          let drug;
           if (id) {
-            await prisma.drug.upsert({
+            drug = await prisma.drug.upsert({
               where: { id },
-              update: { name, price: priceCents, category, description },
-              create: { id, name, price: priceCents, category, description }
+              update: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock },
+              create: { id, name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
             });
           } else {
-            await prisma.drug.create({
-              data: { name, price: priceCents, category, description }
+            drug = await prisma.drug.create({
+              data: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
+            });
+          }
+
+          if (parsedAmountInStock !== null) {
+            await prisma.stockBatch.create({
+              data: {
+                drugId: drug.id,
+                batchNumber: `import-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                expiryDate: new Date('2099-12-31'),
+                quantity: parsedAmountInStock,
+                cost: 0,
+              }
             });
           }
           processedCount++;
@@ -97,7 +114,7 @@ export const importCatalogCSV = createSafeAction({
               type: "DRUG",
               action: id ? "UPDATE" : "CREATE",
               targetId: id || null,
-              requestedData: JSON.stringify({ name, price: priceCents, category, description }),
+              requestedData: JSON.stringify({ name, price: priceCents, category, description, amountInStock: parsedAmountInStock }),
               requestedById: ctx.userId,
             }
           });

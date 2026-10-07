@@ -23,6 +23,13 @@ import { prisma } from "@/lib/prisma";
 import { TestUserSwitcher } from "@/components/test-user-switcher";
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  // Read the current logo file (if present) to use as favicon
+  const fs = await import('fs');
+  const path = await import('path');
+  const logoFile = path.join(process.cwd(), 'public', 'icon.png');
+  const logoExists = fs.existsSync(logoFile);
+  const logoPath = logoExists ? "/icon.png" : undefined;
+
   // Gracefully handle db errors during initial build or if db is unreachable
   let isLowPower = true; // Default to true for OptiPlex machines
   try {
@@ -40,6 +47,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       suppressHydrationWarning
     >
       <head>
+        {logoPath && <link rel="icon" href={logoPath} />}
         <script
           dangerouslySetInnerHTML={{
             __html: `
