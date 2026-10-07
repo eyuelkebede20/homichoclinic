@@ -72,7 +72,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               name="q"
               defaultValue={query}
               type="text" 
-              placeholder="Search by name or phone..." 
+              placeholder="Search by name, phone or employee ID..." 
               className="pl-9 pr-4 py-2 w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900"
             />
           </form>

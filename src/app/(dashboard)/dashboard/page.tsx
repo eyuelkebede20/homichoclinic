@@ -94,7 +94,19 @@ export default async function DashboardPage() {
           status: { in: ["scheduled", "in_progress"] },
           visitDate: { gte: today },
         },
-        include: { patient: { include: { labRequests: { where: { status: "completed", createdAt: { gte: today } } } } } },
+        include: {
+          patient: {
+            include: {
+              labRequests: {
+                where: {
+                  status: { in: ["urgent", "requested", "completed"] },
+                  createdAt: { gte: today },
+                },
+                include: { test: true },
+              },
+            },
+          },
+        },
         orderBy: { updatedAt: "desc" }
       }),
       prisma.labResult.findMany({

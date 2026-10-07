@@ -3,9 +3,9 @@ import { zSafeString } from "@/lib/sanitize";
 
 export const visitCreateSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
-  doctorId: z.string().optional(),
-  notes: zSafeString().optional(),
-  visitDate: z.string().optional(), // Date string
+  doctorId: z.string().nullable().optional(),
+  notes: zSafeString().nullable().optional(),
+  visitDate: z.string().nullable().optional(), // Date string
   status: z.enum(["scheduled", "in_progress", "completed", "cancelled"]).default("scheduled"),
 });
 
@@ -17,14 +17,15 @@ export const visitUpdateSchema = z.object({
 export const medicalRecordCreateSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
   source: z.enum(["system", "paper_import"]).default("system"),
-  originalDate: z.string().optional(), // Used if paper_import
-  attachments: z.string().optional(), // URL or JSON array of URLs
+  originalDate: z.string().nullable().optional(), // Used if paper_import
+  attachments: z.string().nullable().optional(), // URL or JSON array of URLs
   content: zSafeString().pipe(z.string().min(1, "Record content is required")),
 });
 
 export const labRequestSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
   testIds: z.array(z.string()).min(1, "At least one test must be selected"),
+  isUrgent: z.boolean().optional(),
 });
 
 export const labResultSchema = z.object({

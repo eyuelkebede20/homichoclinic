@@ -4,17 +4,17 @@ import { zSafeString } from "@/lib/sanitize";
 export const patientCreateSchema = z.object({
   firstName: zSafeString().pipe(z.string().min(1, "First name is required")),
   lastName: zSafeString().pipe(z.string().min(1, "Last name is required")),
-  yob: z.string().optional(),
-  gender: zSafeString().optional(),
-  contactNumber: zSafeString().optional(),
-  patientType: zSafeString().optional(),
-  militaryId: zSafeString().optional(),
-  rank: zSafeString().optional(),
-  division: zSafeString().optional(),
-  permanentSince: z.string().optional(),
-  primaryPatientId: z.string().optional(),
-  staffSearchStr: z.string().optional(),
-  relationship: z.string().optional(),
+  yob: z.string().nullable().optional(),
+  gender: zSafeString().nullable().optional(),
+  contactNumber: zSafeString().nullable().optional(),
+  patientType: zSafeString().nullable().optional(),
+  militaryId: zSafeString().nullable().optional(),
+  rank: zSafeString().nullable().optional(),
+  division: zSafeString().nullable().optional(),
+  permanentSince: z.string().nullable().optional(),
+  primaryPatientId: z.string().nullable().optional(),
+  staffSearchStr: z.string().nullable().optional(),
+  relationship: z.string().nullable().optional(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({

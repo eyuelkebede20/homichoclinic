@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, FlaskConical, Stethoscope, User, FileText, Pill } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, FlaskConical, Stethoscope, User, FileText, Pill, AlertTriangle } from "lucide-react";
 import { VisitStatusActions } from "./visit-status-actions";
 import { calculateECAge } from "@/lib/ethiopian-calendar";
 
@@ -130,14 +130,38 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
 
                 {/* Flags / Lab Results */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {visit.patient.labRequests.length > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 shadow-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {visit.patient.labRequests.length} Result{visit.patient.labRequests.length > 1 ? 's' : ''} Ready
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400 dark:text-slate-600 italic">No alerts</span>
-                  )}
+                  {(() => {
+                    const labReqs = (visit.patient.labRequests as any[]) || [];
+                    const urgentReqs = labReqs.filter((r) => r.status === "urgent");
+                    const completedReqs = labReqs.filter((r) => r.status === "completed");
+
+                    if (urgentReqs.length > 0) {
+                      return (
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 dark:bg-red-950/70 border border-red-300 dark:border-red-700 px-2.5 py-1 text-xs font-extrabold text-red-700 dark:text-red-300 shadow-sm animate-pulse">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                            ⚡ STAT / URGENT LAB ({urgentReqs.length})
+                          </span>
+                          {completedReqs.length > 0 && (
+                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold ml-1">
+                              +{completedReqs.length} Result Ready
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (completedReqs.length > 0) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 shadow-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {completedReqs.length} Result{completedReqs.length > 1 ? "s" : ""} Ready
+                        </span>
+                      );
+                    }
+
+                    return <span className="text-xs text-slate-400 dark:text-slate-600 italic">No alerts</span>;
+                  })()}
                 </td>
 
                 {/* Quick Actions */}

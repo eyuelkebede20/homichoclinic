@@ -50,7 +50,15 @@ export default async function VisitsQueuePage() {
   const [visits, doctors, opdSetting] = await Promise.all([
     prisma.visit.findMany({
       where: { visitDate: { gte: today }, ...doctorWhereClause },
-      include: { patient: true },
+      include: {
+        patient: {
+          include: {
+            labRequests: {
+              where: { createdAt: { gte: today }, status: "urgent" },
+            },
+          },
+        },
+      },
       orderBy: { visitDate: "asc" }
     }),
     canCreateVisit ? prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true } }) : [],
@@ -87,13 +95,22 @@ export default async function VisitsQueuePage() {
             </tr>
           </thead>
           <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
-            {visits.map(v => (
+            {visits.map(v => {
+              const hasUrgentLab = (v.patient as any).labRequests && (v.patient as any).labRequests.length > 0;
+              return (
               <tr key={v.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 dark:text-slate-300">
                   {v.visitDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
-                  {v.patient.firstName} {v.patient.lastName}
+                  <div className="flex items-center gap-2">
+                    <span>{v.patient.firstName} {v.patient.lastName}</span>
+                    {hasUrgentLab && (
+                      <span className="text-[10px] font-extrabold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 px-2 py-0.5 rounded-full border border-red-300 dark:border-red-800 animate-pulse">
+                        ⚡ STAT LAB
+                      </span>
+                    )}
+                  </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-blue-600 dark:text-blue-400">
                   {v.opdRoom ? `OPD ${v.opdRoom}` : "-"}
@@ -114,7 +131,7 @@ export default async function VisitsQueuePage() {
                   <VisitStatusActions visitId={v.id} currentStatus={v.status} />
                 </td>
               </tr>
-            ))}
+            );})}
             {visits.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-6 py-8 text-center text-sm text-slate-500">No visits scheduled for today.</td>
