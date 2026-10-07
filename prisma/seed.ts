@@ -8,17 +8,20 @@ async function main() {
 
   // 2. Define the staff we want to create
   const staffToCreate = [
-    { role: "Admin", name: "Zenebe Admin" },
-    { role: "Manager", name: "Fiseha Manager" },
-    { role: "Doctor", name: ".Cashier" },
-    { role: "Reception", name: "Rachel Reception" },
-    { role: "Dataencoder", name: "Danny Dataencoder" },
-    { role: "Laboratory", name: "Leo LabTech" },
-    { role: "Pharmacy", name: "Penny Pharmacist" },
+    { role: "Doctor", name: "Senayt Tadesse", email: "senayt@clinic.com" },
+    { role: "Doctor", name: "Tsegneh Tirfe", email: "tsegineh@clinic.com" },
+    { role: "Doctor", name: "Miliyon Mideksa", email: "miliyon@clinic.com" },
+    { role: "Doctor", name: "Fiseha Muleta", email: "fiseha@clinic.com" },
+    { role: "Pharmacy", name: "Anteneh Getachew", email: "anteneh@clinic.com" },
+    { role: "Laboratory", name: "Dula Tulu", email: "dula@clinic.com" },
+    { role: "Laboratory", name: "Girma Kaba", email: "girma@clinic.com" },
+    { role: "Reception", name: "Marta Kumsa", email: "marta@clinic.com" },
+    { role: "Dataencoder", name: "Aynalem", email: "aynalem@clinic.com" },
+    { role: "Admin", name: "System Admin", email: "admin@clinic.com" } // Keeping an admin just in case
   ];
 
   for (const staff of staffToCreate) {
-    const email = `${staff.role.toLowerCase()}@clinic.com`;
+    const email = staff.email;
 
     // Check if exists
     const existingUser = await prisma.user.findFirst({ where: { email } });
@@ -47,64 +50,6 @@ async function main() {
     } else {
       console.log(`User ${email} already exists. Skipping.`);
     }
-  }
-
-  // 3. Seed some basic Catalogs for testing (if they don't exist)
-
-  // Drugs
-  const drugs = [
-    { name: "Amoxicillin 500mg", price: 1500 }, // $15.00
-    { name: "Paracetamol 500mg", price: 500 }, // $5.00
-    { name: "Ibuprofen 400mg", price: 800 }, // $8.00
-  ];
-
-  for (const d of drugs) {
-    const existing = await prisma.drug.findFirst({ where: { name: d.name } });
-    if (!existing) {
-      const drug = await prisma.drug.create({ data: d });
-      // Add a stock batch so Pharmacy can dispense it
-      await prisma.stockBatch.create({
-        data: {
-          drugId: drug.id,
-          batchNumber: `BATCH-${Math.floor(Math.random() * 1000)}`,
-          expiryDate: new Date("2028-12-31"),
-          quantity: 100,
-          cost: Math.floor(d.price * 0.5),
-        },
-      });
-      console.log(`Created Drug: ${d.name} & StockBatch`);
-    }
-  }
-
-  // Lab Tests
-  const tests = [
-    { name: "Complete Blood Count (CBC)", price: 4500 }, // $45.00
-    { name: "Lipid Panel", price: 6000 }, // $60.00
-    { name: "Malaria Rapid Diagnostic", price: 2000 }, // $20.00
-  ];
-
-  for (const t of tests) {
-    const existing = await prisma.labTest.findFirst({ where: { name: t.name } });
-    if (!existing) {
-      await prisma.labTest.create({ data: t });
-      console.log(`Created LabTest: ${t.name}`);
-    }
-  }
-
-  // 4. Seed a dummy Patient
-  const existingPatient = await prisma.patient.findFirst({ where: { contactNumber: "555-0192" } });
-  if (!existingPatient) {
-    await prisma.patient.create({
-      data: {
-        firstName: "John",
-        lastName: "Doe",
-        gender: "male",
-        yob: "1985",
-        contactNumber: "555-0192",
-        discountPercent: 10,
-      },
-    });
-    console.log(`Created dummy Patient: John Doe`);
   }
 
   console.log("Seed completed successfully! Password for all accounts is: password123");
