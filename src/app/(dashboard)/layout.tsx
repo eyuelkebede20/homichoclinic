@@ -36,8 +36,19 @@ export default async function DashboardLayout({
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
   const clinicName = clinicNameSetting?.value || "Clinic ERP";
-  const clinicLogo = clinicLogoSetting?.value || "";
+  let clinicLogo = clinicLogoSetting?.value || "";
   const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
+
+  if (clinicLogo === "/icon.png") {
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const stat = fs.statSync(path.join(process.cwd(), "public", "icon.png"));
+      clinicLogo = `/icon.png?v=${stat.mtimeMs}`;
+    } catch (e) {
+      // ignore
+    }
+  }
 
   let gitHash = "unknown";
   try {

@@ -27,8 +27,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const fs = await import('fs');
   const path = await import('path');
   const logoFile = path.join(process.cwd(), 'public', 'icon.png');
-  const logoExists = fs.existsSync(logoFile);
-  const logoPath = logoExists ? "/icon.png" : undefined;
+  let logoPath: string | undefined = undefined;
+  try {
+    if (fs.existsSync(logoFile)) {
+      const stat = fs.statSync(logoFile);
+      logoPath = `/icon.png?v=${stat.mtimeMs}`;
+    }
+  } catch(e) {}
 
   // Gracefully handle db errors during initial build or if db is unreachable
   let isLowPower = true; // Default to true for OptiPlex machines

@@ -17,6 +17,15 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(arrayBuffer);
     const destination = path.join(process.cwd(), 'public', 'icon.png');
     await fs.writeFile(destination, buffer);
+    
+    // Also save this path to the DB so the layouts know to use it
+    const { prisma } = await import('@/lib/prisma');
+    await prisma.systemSetting.upsert({
+      where: { key: 'clinicLogo' },
+      update: { value: '/icon.png' },
+      create: { key: 'clinicLogo', value: '/icon.png' }
+    });
+
     // Redirect back to the admin page
     return NextResponse.redirect(new URL('/admin?tab=clinic', request.url), 303);
   } catch (error) {

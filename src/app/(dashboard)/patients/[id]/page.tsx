@@ -222,6 +222,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     </div>
   </div>
 )}
+{canReadHistory && (
           <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Laboratory Results</h2>
             <div className="space-y-4">
@@ -275,6 +276,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               )}
             </div>
           </div>
+)}
         </div>
 
         {/* Sidebar / Manager Actions */}

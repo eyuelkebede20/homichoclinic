@@ -264,19 +264,8 @@ set "LAN_IP=localhost"
 for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { ((Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias (Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -ExpandProperty InterfaceAlias -First 1) -ErrorAction Stop).IPAddress)[0] } catch { 'localhost' }"`) do set "LAN_IP=%%I"
 echo   [..] Configuring system for network access on IP: %LAN_IP%
 
-set "NEEDS_BUILD=0"
-if /i "%~2"=="--updated" set "NEEDS_BUILD=1"
-docker image inspect clinic-app:latest >nul 2>&1
-if errorlevel 1 set "NEEDS_BUILD=1"
-
-if exist "logs\compose.done" del "logs\compose.done"
-if "%NEEDS_BUILD%"=="1" (
-    echo   [..] Building and starting containers ^(code changed or missing^)...
-    start "" /b cmd /c "docker compose up -d --build >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
-) else (
-    echo   [..] Starting existing containers...
-    start "" /b cmd /c "docker compose up -d >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
-)
+echo   [..] Starting containers ^(building if code changed^)...
+start "" /b cmd /c "docker compose up -d --build >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
 
 call :mark
 

@@ -1,10 +1,29 @@
 import { CheckCircle2 } from "lucide-react";
+import { prisma } from "@/lib/prisma";
 
-export default function AuthLayout({
+export default async function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const [clinicNameSetting, clinicLogoSetting] = await Promise.all([
+    prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
+  ]);
+  const clinicName = clinicNameSetting?.value || "Clinic ERP";
+  let clinicLogo = clinicLogoSetting?.value || "";
+
+  if (clinicLogo === "/icon.png") {
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const stat = fs.statSync(path.join(process.cwd(), "public", "icon.png"));
+      clinicLogo = `/icon.png?v=${stat.mtimeMs}`;
+    } catch (e) {
+      // ignore
+    }
+  }
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col sm:flex-row">
       {/* LEFT SIDE: Branding & Features */}
@@ -18,11 +37,16 @@ export default function AuthLayout({
 
         <div className="relative z-10 space-y-8">
           <div>
-            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30 shadow-sm">
-              <span className="text-2xl font-bold text-white">✚</span>
-            </div>
+            {clinicLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinicLogo} alt="Logo" className="w-16 h-16 object-contain rounded-xl bg-white p-1 mb-6 shadow-sm" />
+            ) : (
+              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30 shadow-sm">
+                <span className="text-2xl font-bold text-white">✚</span>
+              </div>
+            )}
             <h1 className="text-4xl font-extrabold tracking-tight mb-2">
-              Clinic ERP
+              {clinicName}
             </h1>
             <p className="text-blue-100 text-lg leading-relaxed max-w-md">
               Integrated Healthcare Management System for Industrial Clinic.
@@ -34,7 +58,6 @@ export default function AuthLayout({
               "Patient Registration",
               "OPD & Doctor Consultation",
               "Laboratory & Pharmacy",
-              "Billing",
               "Reports",
             ].map((feature, idx) => (
               <div key={idx} className="flex items-center gap-3">
