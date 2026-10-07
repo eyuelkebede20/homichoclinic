@@ -197,6 +197,7 @@ model LabTest {
   name          String
   description   String?
   price         Int       // Integer minor units (cents/santim)
+  options       String?   // Predefined result options (e.g., "Positive, Negative", "Clear, Turbid")
   isOperational Boolean   @default(true) // Can be toggled off if machine breaks
   
   requests      LabRequest[]

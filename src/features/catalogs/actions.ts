@@ -296,3 +296,47 @@ export const bulkApproveCatalogRequests = createSafeAction({
     return { success: "Bulk approved." };
   }
 });
+
+
+export const updateLabTest = createSafeAction({
+  schema: catalogUpdateSchema,
+  requiredPermission: PERMISSIONS.CATALOG_REQUEST,
+  handler: async (data, ctx) => {
+    const canApprove = await hasApprovePermission(ctx.userId);
+
+    if (canApprove) {
+      const test = await prisma.labTest.update({
+        where: { id: data.id },
+        data: {
+          name: data.name,
+          description: data.description,
+          options: data.options,
+          price: data.price,
+        }
+      });
+      await logAudit({
+        actorId: ctx.userId,
+        action: PERMISSIONS.CATALOG_APPROVE,
+        resourceId: test.id,
+        newValue: JSON.stringify(test),
+        reason: "Directly updated lab test details/price/options",
+      });
+      revalidatePath("/catalogs");
+      revalidatePath("/laboratory/catalog");
+      return test;
+    } else {
+      await prisma.catalogChangeRequest.create({
+        data: {
+          type: "LAB_TEST",
+          action: "UPDATE",
+          targetId: data.id,
+          requestedData: JSON.stringify(data),
+          requestedById: ctx.userId,
+        }
+      });
+      revalidatePath("/catalogs");
+      revalidatePath("/laboratory/catalog");
+      return { success: "Approval request submitted." };
+    }
+  }
+});

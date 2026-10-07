@@ -573,3 +573,34 @@ export const generateCreditCharge = createSafeAction({
     return { success: true };
   }
 });
+
+
+export const undoDenyVisitBilling = createSafeAction({
+  schema: z.object({ visitId: z.string() }),
+  requiredPermission: PERMISSIONS.VISIT_UPDATE,
+  handler: async (data, ctx) => {
+    const visit = await prisma.visit.update({
+      where: { id: data.visitId },
+      data: { status: "scheduled" },
+    });
+    revalidatePath("/billing");
+    revalidatePath("/visits");
+    return visit;
+  },
+});
+
+
+export const denyVisitBilling = createSafeAction({
+  schema: z.object({ visitId: z.string().min(1) }),
+  requiredPermission: PERMISSIONS.VISIT_READ,
+  handler: async (data, ctx) => {
+    await prisma.visit.update({
+      where: { id: data.visitId },
+      data: { status: "denied" }
+    });
+    revalidatePath("/dashboard");
+    revalidatePath("/dataencoder/denied");
+    return { success: true };
+  }
+});
+

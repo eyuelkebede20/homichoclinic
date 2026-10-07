@@ -4,6 +4,7 @@ export const catalogCreateSchema = z.object({
   name: z.string().min(1, "Name is required"),
   description: z.string().optional(),
   category: z.string().optional(),
+  options: z.string().optional().nullable(),
   price: z.number().int().min(0, "Price cannot be negative"), // Minor units
 });
 
