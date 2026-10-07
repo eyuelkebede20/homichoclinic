@@ -35,7 +35,7 @@ export default async function DashboardLayout({
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
-  const clinicName = clinicNameSetting?.value || "Clinic System";
+  const clinicName = clinicNameSetting?.value || "Clinic ERP";
   const clinicLogo = clinicLogoSetting?.value || "";
   const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
 

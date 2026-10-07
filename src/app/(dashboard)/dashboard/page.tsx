@@ -242,6 +242,11 @@ export default async function DashboardPage() {
     );
   }
 
+  const [clinicNameSetting] = await Promise.all([
+    prisma.systemSetting.findUnique({ where: { key: "clinicName" } })
+  ]);
+  const clinicName = clinicNameSetting?.value || "Clinic ERP";
+
   const { getDictionary } = await import("@/lib/i18n");
   const dict = await getDictionary();
 
@@ -250,7 +255,7 @@ export default async function DashboardPage() {
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{dict["dash.welcome"] || "Welcome to Clinic ERP"}</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{dict["dash.welcome"] ? dict["dash.welcome"] : `Welcome to ${clinicName}`}</h1>
           <p className="text-slate-500 dark:text-slate-400">{dict["dash.hello"] || "Hello"}, {session.user.name}</p>
         </div>
         <PrintButton />
