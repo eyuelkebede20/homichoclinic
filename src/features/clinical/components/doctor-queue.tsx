@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, Stethoscope, User, AlertTriangle } from "lucide-react";
 import { VisitStatusActions } from "./visit-status-actions";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 
 type QueueVisit = {
   id: string;
@@ -98,7 +98,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                       <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mt-1 gap-2">
                         <span className="capitalize">{visit.patient.gender || "Unknown"}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                        <span>{calculateECAge(visit.patient.yob)}</span>
+                        <span>{calculateAge(visit.patient.yob)}</span>
                         {(visit.patient.militaryId || visit.patient.employeeId) && (
                           <>
                             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />

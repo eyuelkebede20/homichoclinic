@@ -15,7 +15,7 @@ export const patientCreateSchema = z.object({
   primaryPatientId: z.string().nullable().optional(),
   staffSearchStr: z.string().nullable().optional(),
   relationship: z.string().nullable().optional(),
-  hasPaperwork: z.boolean().optional().default(false),
+  hasPaperwork: z.boolean().optional(),
 });
 
 export const patientUpdateSchema = patientCreateSchema.extend({

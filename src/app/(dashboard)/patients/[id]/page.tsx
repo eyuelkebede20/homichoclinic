@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
 import { PaperImportForm } from "@/features/clinical/components/paper-import-form";
 import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
@@ -15,6 +15,7 @@ import { ClinicalDashboard } from "@/features/clinical/components/clinical-dashb
 import { MedicalRecordItem } from "@/features/patients/components/medical-record-item";
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
 import { StructuredLabResultView } from "@/features/clinical/components/structured-lab-result-view";
+import { PendingApprovalBanner } from "@/features/patients/components/pending-approval-banner";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -106,6 +107,15 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     ]);
   }
 
+  let referralDestinations: string[] = [];
+  if (canWriteHistory) {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } });
+    if (setting) {
+      try { referralDestinations = JSON.parse(setting.value); } catch(e) {}
+    }
+  }
+
+
   let doctorsList: { id: string; name: string }[] = [];
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
 
@@ -130,6 +140,10 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         {canReadHistory && <PrintButton label="Print Medical History" />}
       </div>
 
+      {patient.status === "PENDING" && (
+        <PendingApprovalBanner patientId={patient.id} canApprove={role === "Admin" || role === "Manager"} />
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">
         {/* Patient Info Card */}
         <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
@@ -145,7 +159,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                   </span>
                 )}
               </h2>
-              {(role === "Admin" || role === "Manager" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
+              {(role === "Admin" || role === "Manager" || (role === "Reception" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link
                   href={`/patients/${patient.id}/edit`}
                   className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors"
@@ -164,7 +178,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Age</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateECAge(patient.yob)}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateAge(patient.yob)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</dt>
@@ -205,7 +219,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />}
+            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} />}
 
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>

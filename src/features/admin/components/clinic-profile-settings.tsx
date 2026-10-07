@@ -5,12 +5,15 @@ import { saveClinicProfile } from "../actions";
 
 export function ClinicProfileSettings({
   initialName,
+  initialAmharicName,
   initialLogo
 }: {
   initialName: string;
+  initialAmharicName: string;
   initialLogo: string;
 }) {
   const [name, setName] = useState(initialName);
+  const [amharicName, setAmharicName] = useState(initialAmharicName);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -29,7 +32,7 @@ export function ClinicProfileSettings({
     
     try {
       // Just save name now, logo is handled via file upload to /icon.png
-      const res = await saveClinicProfile({ clinicName: name, clinicLogo: "/icon.png" });
+      const res = await saveClinicProfile({ clinicName: name, clinicNameAmharic: amharicName, clinicLogo: "/icon.png" });
       if (res.error) {
         setError(res.error);
       } else {
@@ -55,7 +58,7 @@ export function ClinicProfileSettings({
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Clinic Name
+              Clinic Name (English)
             </label>
             <input
               type="text"
@@ -66,13 +69,26 @@ export function ClinicProfileSettings({
               required
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Clinic Name (Amharic)
+            </label>
+            <input
+              type="text"
+              value={amharicName}
+              onChange={(e) => setAmharicName(e.target.value)}
+              className="w-full px-3 py-2 border rounded-md border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 focus:outline-none focus:ring-2 focus:ring-blue-500 font-amharic"
+              placeholder="e.g. አክሜ ጤና ክሊኒክ"
+            />
+            <p className="text-xs text-slate-500 mt-1">This will be used alongside the logo in official letters.</p>
+          </div>
           <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition disabled:opacity-50"
             >
-              {loading ? "Saving..." : "Save Name"}
+              {loading ? "Saving..." : "Save Names"}
             </button>
           </div>
         </form>

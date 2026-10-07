@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, FlaskConical, Pill, Receipt, LogOut, Shield, Ta
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GlobalNotifications } from "@/components/global-notifications";
-import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, getUserPermissions } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { DoctorOpdSelector } from "@/features/clinical/components/doctor-opd-selector";
 import { LanguageToggle } from "@/components/language-toggle";
@@ -25,8 +25,8 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
-  const role = session.user.role || "User";
-  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  const role = session.user.role as string;
+  const userPermissions = getUserPermissions(role);
   
   // Fetch full user for custom fields like currentOpdRoom
   const [fullUser, clinicNameSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
@@ -90,7 +90,7 @@ export default async function DashboardLayout({
     navItems.push({ name: dict["nav.catalogApprovals"] || "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
-    navItems.push({ name: dict["nav.billing"] || "Billing", href: "/billing", icon: Receipt });
+    navItems.push({ name: dict["nav.dataEncoder"] || "Data Encoder", href: "/dataencoder", icon: Receipt });
   }
 
   if (userPermissions.includes(PERMISSIONS.AUDIT_READ)) {

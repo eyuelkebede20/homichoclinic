@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { User, X, Clock, CheckCircle } from "lucide-react";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 
 type WeeklyAppointment = {
   id: string;
@@ -103,7 +103,7 @@ export function DoctorWeeklyAppointmentsCard({ appointments, count }: { appointm
                               <div className="flex items-center text-xs text-slate-500 mt-0.5 gap-2">
                                 <span className="capitalize">{visit.patient.gender || "Unknown"}</span>
                                 <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                                <span>{calculateECAge(visit.patient.yob)}</span>
+                                <span>{calculateAge(visit.patient.yob)}</span>
                               </div>
                             </div>
                           </div>

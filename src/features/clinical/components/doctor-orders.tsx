@@ -1,24 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { requestLabTest, createPrescription } from "../actions";
-import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle } from "lucide-react";
+import { requestLabTest, createPrescription, saveReferral } from "../actions";
+import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send } from "lucide-react";
 import { toast } from "sonner";
 import { isStoolTest, isUrineTest, isHematologyTest } from "../types/lab-panels";
 
 export function DoctorOrders({ 
   patientId, 
   labTests, 
-  drugs 
+  drugs,
+  referralDestinations = []
 }: { 
   patientId: string;
   labTests: { id: string; name: string }[];
   drugs: { id: string; name: string }[];
+  referralDestinations?: string[];
 }) {
   const [loading, setLoading] = useState(false);
   const [rxItems, setRxItems] = useState([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
   const [isUrgent, setIsUrgent] = useState(false);
+
+  const [refType, setRefType] = useState("Standard Referral");
+  const [refDest, setRefDest] = useState("");
+  const [refReason, setRefReason] = useState("");
 
   // Identify the 3 core default tests from the catalog or fallback
   const stoolTest = labTests.find(t => isStoolTest(t.name));
@@ -86,6 +92,95 @@ export function DoctorOrders({
     else {
       toast.success("Prescription sent to pharmacy.");
       setRxItems([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
+    }
+  }
+
+  async function handleReferralSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!refDest.trim() || !refReason.trim()) {
+      toast.error("Destination and Reason are required.");
+      return;
+    }
+    setLoading(true);
+    const res = await saveReferral({
+      patientId,
+      type: refType,
+      destination: refDest,
+      reason: refReason
+    });
+    setLoading(false);
+    if (res.error) toast.error(res.error);
+    else {
+      toast.success("Referral created successfully.");
+      
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(`
+          <html>
+            <head>
+              <title>Medical Referral</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; color: #111; max-width: 800px; margin: 0 auto; }
+                .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+                .title { font-size: 26px; font-weight: bold; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 1px; }
+                .subtitle { font-size: 16px; color: #444; }
+                .section { margin-bottom: 25px; }
+                .label { font-weight: bold; color: #333; }
+                .box { border: 1px solid #ccc; padding: 15px; border-radius: 5px; min-height: 150px; margin-top: 10px; background: #fafafa; }
+                .footer { margin-top: 60px; display: flex; justify-content: space-between; align-items: flex-end; }
+                .signature-block { text-align: center; }
+                .signature-line { border-bottom: 1px solid #000; width: 250px; margin-bottom: 5px; }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div class="title">MEDICAL REFERRAL FORM</div>
+                <div class="subtitle">Official Patient Transfer / Consultation Request</div>
+              </div>
+              
+              <div style="display: flex; justify-content: space-between; margin-bottom: 25px;">
+                <div>
+                  <p><span class="label">Date:</span> ${new Date().toLocaleDateString()}</p>
+                  <p><span class="label">Time:</span> ${new Date().toLocaleTimeString()}</p>
+                </div>
+                <div style="text-align: right;">
+                  <p><span class="label">Referral Type:</span> ${refType}</p>
+                  <p><span class="label">Patient ID:</span> ${patientId}</p>
+                </div>
+              </div>
+
+              <div class="section" style="background: #f0f4f8; padding: 15px; border-left: 4px solid #3b82f6;">
+                <p style="margin: 0;"><span class="label" style="font-size: 18px;">To (Destination Facility / Specialist):</span></p>
+                <p style="font-size: 20px; font-weight: bold; margin: 5px 0 0 0;">${refDest}</p>
+              </div>
+
+              <div class="section">
+                <p><span class="label">Clinical Findings / Reason for Referral:</span></p>
+                <div class="box" style="white-space: pre-wrap; font-size: 15px;">${refReason}</div>
+              </div>
+              
+              <div class="footer">
+                <div style="font-size: 12px; color: #666;">
+                  Printed from Clinical System<br/>
+                  Please attach any relevant lab results.
+                </div>
+                <div class="signature-block">
+                  <div class="signature-line"></div>
+                  <div>Referring Doctor's Signature / Stamp</div>
+                </div>
+              </div>
+            </body>
+          </html>
+        `);
+        printWindow.document.close();
+        printWindow.focus();
+        setTimeout(() => {
+          printWindow.print();
+        }, 250);
+      }
+
+      setRefDest("");
+      setRefReason("");
     }
   }
 
@@ -274,8 +369,10 @@ export function DoctorOrders({
       </div>
 
       {/* Prescription Form */}
-      <div id="prescription" className="bg-white dark:bg-slate-900 p-6 rounded-lg shadow border border-slate-200 dark:border-slate-800 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4">Write Prescription</h3>
+      <div id="prescription" className="bg-white dark:bg-slate-900 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+          Write Prescription
+        </h3>
         <form onSubmit={handleRxSubmit} className="space-y-4">
           
           {rxItems.map((item, index) => (
@@ -295,7 +392,7 @@ export function DoctorOrders({
                     setRxItems(newItems);
                   }}
                   list={`drug-list-${index}`}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
                 />
                 <datalist id={`drug-list-${index}`}>
                   {drugs.map(d => (
@@ -316,7 +413,7 @@ export function DoctorOrders({
                     newItems[index].quantity = parseInt(e.target.value) || 1;
                     setRxItems(newItems);
                   }}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
               <div className="flex-1">
@@ -330,7 +427,7 @@ export function DoctorOrders({
                     newItems[index].instructions = e.target.value;
                     setRxItems(newItems);
                   }}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm"
+                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
                 />
               </div>
             </div>
@@ -344,11 +441,80 @@ export function DoctorOrders({
             >
               + Add another drug
             </button>
-            <button type="submit" disabled={loading} className="py-2 px-6 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Sign & Send to Pharmacy"}
+            <button type="submit" disabled={loading} className="py-2 px-6 rounded-xl shadow-sm text-sm font-bold text-white bg-green-600 hover:bg-green-700 disabled:opacity-50 transition-all flex items-center gap-2">
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Sign & Send to Pharmacy
             </button>
           </div>
 
+        </form>
+      </div>
+
+      {/* Referral Form */}
+      <div id="referral-form" className="bg-gradient-to-br from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 p-6 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800 scroll-mt-24">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-1 flex items-center gap-2">
+          <Send className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+          Send Patient Referral
+        </h3>
+        <p className="text-xs text-slate-500 mb-5">Generate a printable referral letter and save the destination for future use.</p>
+        
+        <form onSubmit={handleReferralSubmit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Referral Type</label>
+              <select 
+                value={refType} 
+                onChange={(e) => setRefType(e.target.value)}
+                className="w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="Standard Referral">Standard Referral</option>
+                <option value="Specialist Consultation">Specialist Consultation</option>
+                <option value="Emergency Transfer">Emergency Transfer</option>
+                <option value="Higher Facility Transfer">Higher Facility Transfer</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Destination Facility</label>
+              <input 
+                type="text"
+                required
+                value={refDest}
+                onChange={(e) => setRefDest(e.target.value)}
+                placeholder="Type or select from history"
+                list="referral-destinations-list"
+                className="w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+              />
+              <datalist id="referral-destinations-list">
+                {referralDestinations.map((dest, idx) => (
+                  <option key={idx} value={dest} />
+                ))}
+              </datalist>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Reason & Findings</label>
+            <textarea
+              required
+              rows={3}
+              value={refReason}
+              onChange={(e) => setRefReason(e.target.value)}
+              placeholder="Detailed reason for referral, patient's current state, etc..."
+              className="w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+            <button 
+              type="submit" 
+              disabled={loading} 
+              className="py-2 px-6 rounded-xl shadow-sm text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center gap-2"
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+              Generate & Print Referral
+            </button>
+          </div>
         </form>
       </div>
 

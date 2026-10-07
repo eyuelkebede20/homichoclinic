@@ -14,4 +14,8 @@ export const updateUserRoleSchema = z.object({
   role: z.string().min(1, "Role is required"),
 });
 
-export const clinicProfileSchema = z.object({ clinicName: z.string().min(1), clinicLogo: z.string() });
+export const clinicProfileSchema = z.object({ 
+  clinicName: z.string().min(1), 
+  clinicNameAmharic: z.string().optional(),
+  clinicLogo: z.string() 
+});

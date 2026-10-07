@@ -65,7 +65,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.CATALOG_APPROVE,
     PERMISSIONS.CATALOG_REQUEST,
   ],
-  Receptionist: [
+  Reception: [
     PERMISSIONS.PATIENT_CREATE,
     PERMISSIONS.PATIENT_READ,
     PERMISSIONS.PATIENT_UPDATE,
@@ -108,3 +108,20 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.CATALOG_REQUEST,
   ],
 };
+
+export function getUserPermissions(roleStr: string | null | undefined): PermissionString[] {
+  if (!roleStr) return [];
+  // Normalize role string (e.g., 'receptionist' -> 'Reception', 'DataEncoder' -> 'Dataencoder')
+  const r = roleStr.toLowerCase();
+  let mappedRole = roleStr;
+  
+  if (r.includes("admin")) mappedRole = "Admin";
+  else if (r.includes("manager")) mappedRole = "Manager";
+  else if (r.includes("reception")) mappedRole = "Reception";
+  else if (r.includes("dataencoder") || r.includes("data encoder")) mappedRole = "Dataencoder";
+  else if (r.includes("doctor")) mappedRole = "Doctor";
+  else if (r.includes("lab")) mappedRole = "Laboratory";
+  else if (r.includes("pharmacy") || r.includes("pharmacist")) mappedRole = "Pharmacy";
+  
+  return ROLE_PERMISSIONS[mappedRole] || ROLE_PERMISSIONS[roleStr.charAt(0).toUpperCase() + roleStr.slice(1).toLowerCase()] || [];
+}

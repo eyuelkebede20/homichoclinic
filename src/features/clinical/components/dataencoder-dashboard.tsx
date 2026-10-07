@@ -5,24 +5,24 @@ import { Loader2, Receipt, FileText } from "lucide-react";
 import { generateCreditCharge } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { formatCurrency } from "../../billing/utils";
+import { formatCurrency } from "../../dataencoder/utils";
 
 export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[], invoices?: any[] }) {
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Billing & Credit Charges</h2>
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Data Encoder & Credit Charges</h2>
           <p className="text-slate-500 dark:text-slate-400">Process completed visits for Finance payroll deduction and view financial logs.</p>
         </div>
-        <a href="/billing/reports" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors">
+        <a href="/dataencoder/reports" className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors">
           View Monthly/Daily Reports &rarr;
         </a>
       </div>
 
       <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 dark:text-slate-200">Ready for Billing</h3>
+          <h3 className="font-bold text-slate-800 dark:text-slate-200">Ready for Data Encoder</h3>
           <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-full">
             {visits.length} Unbilled Visits
           </span>
@@ -30,7 +30,7 @@ export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[],
         
         <div className="divide-y divide-slate-200 dark:divide-slate-800">
           {visits.length === 0 ? (
-            <div className="p-8 text-center text-slate-500 italic">No visits waiting for billing.</div>
+            <div className="p-8 text-center text-slate-500 italic">No visits waiting for Data Encoder.</div>
           ) : (
             visits.map(v => <UnbilledVisitRow key={v.id} visit={v} />)
           )}

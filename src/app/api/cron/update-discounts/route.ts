@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getECYearsOfService } from "@/lib/ethiopian-calendar";
+import { getYearsOfService } from "@/lib/date-utils";
 
 export async function GET() {
   // Simple cron endpoint to recalculate all civilian staff discounts on Ethiopian New Year
@@ -21,7 +21,7 @@ export async function GET() {
     for (const patient of patients) {
       if (!patient.permanentSince || patient.permanentSince === "NaN") continue;
       
-      const yearsOfService = getECYearsOfService(patient.permanentSince);
+      const yearsOfService = getYearsOfService(patient.permanentSince);
 
       let newDiscount = 50;
       if (yearsOfService >= 20) newDiscount = 100;

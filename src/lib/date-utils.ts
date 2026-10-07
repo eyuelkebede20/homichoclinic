@@ -1,43 +1,46 @@
-/**
- * Clinic Timezone configuration.
- * Ethiopia uses East Africa Time (EAT), which is UTC+3.
- */
-const CLINIC_TIMEZONE = 'Africa/Addis_Ababa';
-const CLINIC_UTC_OFFSET = '+03:00';
+export function getYearsOfService(permanentSince: string | null | undefined): number {
+  if (!permanentSince || permanentSince === "NaN" || permanentSince.trim() === "") return 0;
+  
+  const match = permanentSince.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!match) {
+    const yearMatch = permanentSince.match(/\b(19|20)\d{2}\b/);
+    if (yearMatch) {
+      const pYear = parseInt(yearMatch[0], 10);
+      const now = new Date();
+      return Math.max(0, now.getFullYear() - pYear);
+    }
+    return 0;
+  }
 
-/**
- * Returns a Date object representing the start of the current day (00:00:00)
- * in the clinic's local timezone.
- * 
- * Why? Servers (like Vercel) run in UTC. If we use `new Date().setHours(0,0,0,0)`, 
- * it will roll over at 3:00 AM local time instead of midnight, causing "today's visits" 
- * to unexpectedly disappear in the afternoon.
- */
-export function getStartOfDayLocal(): Date {
-  const d = new Date();
-  const options = { timeZone: CLINIC_TIMEZONE, year: 'numeric', month: 'numeric', day: 'numeric' } as const;
-  const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(d);
+  const pYear = parseInt(match[1], 10);
+  const pMonth = parseInt(match[2], 10);
+  const pDay = parseInt(match[3], 10);
+
+  const now = new Date();
   
-  const year = parts.find(p => p.type === 'year')?.value;
-  const month = parts.find(p => p.type === 'month')?.value.padStart(2, '0');
-  const day = parts.find(p => p.type === 'day')?.value.padStart(2, '0');
-  
-  // Construct ISO string with explicit timezone offset for midnight
-  return new Date(`${year}-${month}-${day}T00:00:00${CLINIC_UTC_OFFSET}`);
+  let years = now.getFullYear() - pYear;
+  if (now.getMonth() + 1 < pMonth || (now.getMonth() + 1 === pMonth && now.getDate() < pDay)) {
+    years--;
+  }
+
+  return Math.max(0, years);
 }
 
-/**
- * Returns a Date object representing the end of the current day (23:59:59.999)
- * in the clinic's local timezone.
- */
-export function getEndOfDayLocal(): Date {
-  const d = new Date();
-  const options = { timeZone: CLINIC_TIMEZONE, year: 'numeric', month: 'numeric', day: 'numeric' } as const;
-  const parts = new Intl.DateTimeFormat('en-US', options).formatToParts(d);
-  
-  const year = parts.find(p => p.type === 'year')?.value;
-  const month = parts.find(p => p.type === 'month')?.value.padStart(2, '0');
-  const day = parts.find(p => p.type === 'day')?.value.padStart(2, '0');
-  
-  return new Date(`${year}-${month}-${day}T23:59:59.999${CLINIC_UTC_OFFSET}`);
+export function calculateAge(yob: string | null | undefined): string {
+  if (!yob || yob === "NaN" || yob.trim() === "") return "N/A";
+  const parsedYob = parseInt(yob, 10);
+  if (isNaN(parsedYob)) return yob; // fallback if it's some text
+
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  const age = currentYear - parsedYob;
+  if (age < 0) return "0";
+  return age.toString();
+}
+
+export function getStartOfDayLocal(): Date {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
 }

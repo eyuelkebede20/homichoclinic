@@ -618,3 +618,49 @@ export const denyVisitBilling = createSafeAction({
   }
 });
 
+
+const referralSchema = z.object({
+  patientId: z.string(),
+  type: z.string(),
+  destination: z.string(),
+  reason: z.string()
+});
+
+export const saveReferral = createSafeAction({
+  schema: referralSchema,
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    let dests: string[] = [];
+    const setting = await prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } });
+    if (setting) {
+      try { dests = JSON.parse(setting.value); } catch(e) {}
+    }
+    
+    if (!dests.includes(data.destination.trim()) && data.destination.trim() !== "") {
+      dests.push(data.destination.trim());
+      await prisma.systemSetting.upsert({
+        where: { key: "referral_destinations" },
+        update: { value: JSON.stringify(dests) },
+        create: { key: "referral_destinations", value: JSON.stringify(dests) }
+      });
+    }
+
+    const record = await prisma.medicalRecord.create({
+      data: {
+        patientId: data.patientId,
+        enteredById: ctx.userId,
+        content: `REFERRAL ISSUED\nType: ${data.type}\nDestination: ${data.destination}\nReason/Findings: ${data.reason}`,
+      }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "referral:create",
+      resourceId: record.id,
+      newValue: { destination: data.destination, type: data.type }
+    });
+
+    revalidatePath(`/patients/${data.patientId}`);
+    return record;
+  }
+});

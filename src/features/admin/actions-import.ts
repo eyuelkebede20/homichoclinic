@@ -5,10 +5,10 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getECYearsOfService } from "@/lib/ethiopian-calendar";
+import { getYearsOfService } from "@/lib/date-utils";
 
 function calculateDiscount(permanentSinceStr: string | null): number {
-  const yearsOfService = getECYearsOfService(permanentSinceStr);
+  const yearsOfService = getYearsOfService(permanentSinceStr);
   
   if (yearsOfService >= 20) return 100;
   if (yearsOfService >= 15) return 75;
@@ -47,6 +47,7 @@ export const importPatientsCSV = createSafeAction({
     const phoneToPatientId = new Map<string, string>();
     
     let createdCount = 0;
+    let updatedCount = 0;
     const errors: string[] = [];
 
     // First pass: We want to insert all Primary Staff Members first
@@ -143,11 +144,40 @@ export const importPatientsCSV = createSafeAction({
         computedDiscount = calculateDiscount(permanentSince); 
       }
 
-      const existing = await prisma.patient.findFirst({
-        where: { firstName, lastName, contactNumber: finalPhone }
-      });
+      let existing = null;
+      if (employeeId) {
+        existing = await prisma.patient.findFirst({
+          where: { employeeId: employeeId }
+        });
+      }
 
-      if (!existing) {
+      if (existing) {
+        const updatedPat = await prisma.patient.update({
+          where: { id: existing.id },
+          data: {
+            firstName,
+            lastName,
+            contactNumber: finalPhone,
+            gender: gender,
+            yob: yob,
+            discountPercent: computedDiscount,
+            relationship: relationship || (isDependent ? "Dependent" : "Staff"),
+            primaryPatientId: primaryPatientId !== null ? primaryPatientId : existing.primaryPatientId,
+            promoCode: promoCode || "-",
+            employeeId: employeeId || existing.employeeId,
+            salutation: salutation,
+            department: department,
+            permanentSince: permanentSince,
+            c_m: c_m,
+            emergencyContact: emergencyContact,
+            emergencyMobile: emergencyMobile
+          }
+        });
+        updatedCount++;
+        if (finalPhone !== "-") {
+          phoneToPatientId.set(finalPhone, updatedPat.id);
+        }
+      } else {
         const newPat = await prisma.patient.create({
           data: {
             firstName,
@@ -173,8 +203,6 @@ export const importPatientsCSV = createSafeAction({
         if (finalPhone !== "-") {
           phoneToPatientId.set(finalPhone, newPat.id);
         }
-      } else {
-        errors.push(`Skipped duplicate patient: ${firstName} ${lastName} (Phone: ${finalPhone})`);
       }
     }
 
@@ -191,6 +219,6 @@ export const importPatientsCSV = createSafeAction({
     revalidatePath("/patients");
     revalidatePath("/admin");
 
-    return { created: createdCount, errors };
+    return { created: createdCount, updated: updatedCount, errors };
   }
 });

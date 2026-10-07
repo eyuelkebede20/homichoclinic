@@ -66,20 +66,18 @@ export const importCatalogCSV = createSafeAction({
       const priceEtb = parseFloat(row["price"] || "0");
       const priceCents = isNaN(priceEtb) ? 0 : Math.round(priceEtb * 100);
       const category = row["category"] || null;
-      const tat = row["tat"];
       const rawDescription = row["description"];
       
       const amountInStockStr = row["amountinstock"];
       const amountInStock = amountInStockStr ? parseInt(amountInStockStr, 10) : null;
       const parsedAmountInStock = amountInStock !== null && !isNaN(amountInStock) ? amountInStock : null;
 
-      let description: string | null = null;
-      if (rawDescription) {
-        description = rawDescription;
-        if (tat) description += ` (TAT: ${tat})`;
-      } else if (tat) {
-        description = `TAT: ${tat}`;
-      }
+      const batchNumber = row["batchnumber"] || row["batch_number"] || row["batch"] || null;
+      const expiryDateStr = row["expirydate"] || row["expiry_date"] || row["expiry"] || null;
+      const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date("2099-12-31");
+      const validExpiry = isNaN(expiryDate.getTime()) ? new Date("2099-12-31") : expiryDate;
+
+      const description: string | null = rawDescription || null;
 
       if (data.type === "DRUG") {
         if (canApprove) {
@@ -100,8 +98,8 @@ export const importCatalogCSV = createSafeAction({
             await prisma.stockBatch.create({
               data: {
                 drugId: drug.id,
-                batchNumber: `import-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                expiryDate: new Date('2099-12-31'),
+                batchNumber: batchNumber || `import-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                expiryDate: validExpiry,
                 quantity: parsedAmountInStock,
                 cost: 0,
               }

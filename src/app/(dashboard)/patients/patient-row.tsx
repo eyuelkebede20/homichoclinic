@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 import { admitPatient } from "@/features/visits/actions";
 import { toast } from "sonner";
 
@@ -44,7 +44,7 @@ export function PatientRow({ patient, totalOpdRooms = 5 }: { patient: import('@p
         </span>
       </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500 capitalize">{patient.gender || "-"}</td>
-      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{calculateECAge(patient.yob)}</td>
+      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{calculateAge(patient.yob)}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm">
         {isNanSince
           ? <span className="text-red-500 text-xs font-semibold">Missing ⚠</span>
