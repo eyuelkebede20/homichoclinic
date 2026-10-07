@@ -100,7 +100,15 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
                         </span>
                         <span className="text-xs text-slate-500">{req.createdAt.toLocaleString()}</span>
                       </div>
-                      <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">Pending</span>
+                      {req.status === "urgent" ? (
+                        <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/50 px-2.5 py-0.5 text-xs font-bold text-red-800 dark:text-red-300 animate-pulse border border-red-200 dark:border-red-800">
+                          URGENT
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
+                          Pending
+                        </span>
+                      )}
                     </div>
                     <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">Test: {req.test.name}</div>
                     <div className="flex justify-end gap-2">{canResult ? <LabResultForm requestId={req.id} /> : <span className="text-slate-400 text-xs">View Only</span>}</div>
