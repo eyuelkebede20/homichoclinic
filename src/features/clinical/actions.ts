@@ -128,13 +128,13 @@ export const requestLabTest = createSafeAction({
   schema: labRequestSchema,
   requiredPermission: PERMISSIONS.LAB_REQUEST,
   handler: async (data, ctx) => {
-    // createMany is not always available with SQLite, but we are on Postgres so it's fine.
+    const status = data.isUrgent ? "urgent" : "requested";
     const requests = await prisma.labRequest.createManyAndReturn({
       data: data.testIds.map(testId => ({
         patientId: data.patientId,
         testId: testId,
         requestedBy: ctx.userId,
-        status: "requested",
+        status: status,
       })),
     });
 
@@ -142,7 +142,7 @@ export const requestLabTest = createSafeAction({
       actorId: ctx.userId,
       action: PERMISSIONS.LAB_REQUEST,
       resourceId: data.patientId,
-      newValue: { testCount: data.testIds.length },
+      newValue: { testCount: data.testIds.length, isUrgent: !!data.isUrgent },
     });
 
     revalidatePath(`/patients/${data.patientId}`);
@@ -190,6 +190,20 @@ export const createPrescription = createSafeAction({
   schema: prescriptionCreateSchema,
   requiredPermission: PERMISSIONS.PRESCRIPTION_CREATE,
   handler: async (data, ctx) => {
+    for (const item of data.items) {
+      const drug = await prisma.drug.findUnique({
+        where: { id: item.drugId },
+        include: { batches: true }
+      });
+      if (!drug) {
+        throw new Error(`Drug not found.`);
+      }
+      const totalStock = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
+      if (totalStock < item.quantity) {
+        throw new Error(`Insufficient stock for ${drug.name}. Available: ${totalStock}, Requested: ${item.quantity}.`);
+      }
+    }
+
     const rx = await prisma.prescription.create({
       data: {
         patientId: data.patientId,
@@ -312,30 +326,30 @@ export const toggleAdmissionStatus = createSafeAction({
 export const addClinicalNote = createSafeAction({
   schema: z.object({ 
     patientId: z.string(), 
-    content: z.string(),
-    bp: z.string().optional(),
-    heartRate: z.coerce.number().optional(),
-    temp: z.coerce.number().optional(),
-    weight: z.coerce.number().optional(),
-    subjective: z.string().optional(),
-    objective: z.string().optional(),
-    assessment: z.string().optional(),
-    plan: z.string().optional(),
+    content: z.string().optional().default("SOAP Entry"),
+    bp: z.string().nullable().optional(),
+    heartRate: z.coerce.number().nullable().optional(),
+    temp: z.coerce.number().nullable().optional(),
+    weight: z.coerce.number().nullable().optional(),
+    subjective: z.string().nullable().optional(),
+    objective: z.string().nullable().optional(),
+    assessment: z.string().nullable().optional(),
+    plan: z.string().nullable().optional(),
   }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
   handler: async (data, ctx) => {
     const record = await prisma.medicalRecord.create({
       data: {
         patientId: data.patientId,
-        content: data.content,
-        bp: data.bp,
-        heartRate: data.heartRate,
-        temp: data.temp,
-        weight: data.weight,
-        subjective: data.subjective,
-        objective: data.objective,
-        assessment: data.assessment,
-        plan: data.plan,
+        content: data.content || "SOAP Entry",
+        bp: data.bp || null,
+        heartRate: data.heartRate || null,
+        temp: data.temp || null,
+        weight: data.weight || null,
+        subjective: data.subjective || null,
+        objective: data.objective || null,
+        assessment: data.assessment || null,
+        plan: data.plan || null,
         source: "system",
         enteredById: ctx.userId
       }
@@ -604,3 +618,49 @@ export const denyVisitBilling = createSafeAction({
   }
 });
 
+
+const referralSchema = z.object({
+  patientId: z.string(),
+  type: z.string(),
+  destination: z.string(),
+  reason: z.string()
+});
+
+export const saveReferral = createSafeAction({
+  schema: referralSchema,
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    let dests: string[] = [];
+    const setting = await prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } });
+    if (setting) {
+      try { dests = JSON.parse(setting.value); } catch(e) {}
+    }
+    
+    if (!dests.includes(data.destination.trim()) && data.destination.trim() !== "") {
+      dests.push(data.destination.trim());
+      await prisma.systemSetting.upsert({
+        where: { key: "referral_destinations" },
+        update: { value: JSON.stringify(dests) },
+        create: { key: "referral_destinations", value: JSON.stringify(dests) }
+      });
+    }
+
+    const record = await prisma.medicalRecord.create({
+      data: {
+        patientId: data.patientId,
+        enteredById: ctx.userId,
+        content: `REFERRAL ISSUED\nType: ${data.type}\nDestination: ${data.destination}\nReason/Findings: ${data.reason}`,
+      }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "referral:create",
+      resourceId: record.id,
+      newValue: { destination: data.destination, type: data.type }
+    });
+
+    revalidatePath(`/patients/${data.patientId}`);
+    return record;
+  }
+});

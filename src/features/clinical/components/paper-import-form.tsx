@@ -47,13 +47,15 @@ export function PaperImportForm({ patientId }: PaperImportFormProps) {
     setSuccess(false);
 
     const formData = new FormData(e.currentTarget);
+    const rawAttachments = formData.get("attachments");
+    const rawOriginalDate = formData.get("originalDate");
     
     const result = await createMedicalRecord({
       patientId,
       source,
-      originalDate: source === "paper_import" ? (formData.get("originalDate") as string) : undefined,
+      originalDate: source === "paper_import" && typeof rawOriginalDate === "string" && rawOriginalDate.trim() ? rawOriginalDate.trim() : undefined,
       content: content,
-      attachments: formData.get("attachments") as string, // Might be a URL in real app
+      attachments: typeof rawAttachments === "string" && rawAttachments.trim() ? rawAttachments.trim() : undefined,
     });
 
     setLoading(false);

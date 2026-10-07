@@ -35,9 +35,12 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   const whereClause = query ? {
     OR: [
-      { firstName: { startsWith: query, mode: "insensitive" } as const },
-      { lastName: { startsWith: query, mode: "insensitive" } as const },
-      { contactNumber: { startsWith: query } as const }
+      { firstName: { contains: query, mode: "insensitive" } as const },
+      { lastName: { contains: query, mode: "insensitive" } as const },
+      { contactNumber: { contains: query, mode: "insensitive" } as const },
+      { employeeId: { contains: query, mode: "insensitive" } as const },
+      { militaryId: { contains: query, mode: "insensitive" } as const },
+      { id: { contains: query, mode: "insensitive" } as const }
     ]
   } : undefined;
 
@@ -50,6 +53,9 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     }),
     prisma.patient.count({ where: whereClause })
   ]);
+
+  const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } });
+  const totalOpdRooms = parseInt(opdSetting?.value || "5", 10);
 
   const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
   const canManageUsers = userPermissions.includes(PERMISSIONS.USER_MANAGE) || role === "Admin" || role === "Manager";
@@ -69,7 +75,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               name="q"
               defaultValue={query}
               type="text" 
-              placeholder="Search by name or phone..." 
+              placeholder="Search by name, phone or employee ID..." 
               className="pl-9 pr-4 py-2 w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900"
             />
           </form>
@@ -102,11 +108,12 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Contact</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
               {patients.map(patient => (
-                <PatientRow key={patient.id} patient={patient} />
+                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} />
               ))}
               {patients.length === 0 && (
                 <tr>

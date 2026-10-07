@@ -3,6 +3,9 @@
 # update flag + DB backups (created at runtime, never committed)
 backups/
 run/
+logs/
+.git-new
+.git-old
 
 # dependencies
 /node_modules

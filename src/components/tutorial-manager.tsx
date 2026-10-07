@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -22,52 +22,51 @@ export function TutorialManager({ role }: { role: string }) {
       }
     };
     checkLocale();
-    // A primitive observer if the cookie changes via the toggle on the same page
     const interval = setInterval(checkLocale, 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Determine if there are tutorials for the current route and role
+  // Load steps for the current route -- NEVER auto-open
   useEffect(() => {
     const roleTutorials = TUTORIALS[role];
     if (!roleTutorials) {
+      setSteps([]);
       setIsOpen(false);
       return;
     }
 
     let pageSteps = roleTutorials[pathname];
-    let matchedKey = pathname;
 
-    // Support wildcard matching like "/patients/*"
     if (!pageSteps) {
-      const dynamicKey = Object.keys(roleTutorials).find(key => 
-        key.endsWith('/*') && pathname.startsWith(key.replace('/*', '/'))
+      const dynamicKey = Object.keys(roleTutorials).find(key =>
+        key.endsWith("/*") && pathname.startsWith(key.replace("/*", "/"))
       );
-      if (dynamicKey) {
-        pageSteps = roleTutorials[dynamicKey];
-        matchedKey = dynamicKey;
-      }
+      if (dynamicKey) pageSteps = roleTutorials[dynamicKey];
     }
 
-    if (pageSteps && pageSteps.length > 0) {
-      const storageKey = `tutorial_seen_${role}_${matchedKey}`;
-      const hasSeen = localStorage.getItem(storageKey);
-      
-      if (!hasSeen) {
-        setSteps(pageSteps);
-        setCurrentStepIndex(0);
-        setIsOpen(true);
-      } else {
-        setSteps(pageSteps); // Store steps anyway so 'open-tutorial' works
-        setIsOpen(false);
-      }
-    } else {
-      setSteps([]);
-      setIsOpen(false);
-    }
+    setSteps(pageSteps && pageSteps.length > 0 ? pageSteps : []);
+    setIsOpen(false); // Never auto-open
   }, [pathname, role]);
 
-  // Listen to external open events (from the sidebar toggle)
+  // Open/toggle on "?" key (skip when typing in inputs)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (
+        e.key === "?" &&
+        !(e.target instanceof HTMLInputElement) &&
+        !(e.target instanceof HTMLTextAreaElement)
+      ) {
+        if (steps.length > 0) {
+          setCurrentStepIndex(0);
+          setIsOpen(prev => !prev);
+        }
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [steps]);
+
+  // Listen to external open events (from the sidebar toggle button)
   useEffect(() => {
     const handleOpen = () => {
       setCurrentStepIndex(0);
@@ -85,27 +84,12 @@ export function TutorialManager({ role }: { role: string }) {
     if (currentStepIndex < steps.length - 1) {
       setCurrentStepIndex(prev => prev + 1);
     } else {
-      handleClose();
+      setIsOpen(false);
     }
   };
 
   const handlePrev = () => {
-    if (currentStepIndex > 0) {
-      setCurrentStepIndex(prev => prev - 1);
-    }
-  };
-
-  const handleClose = () => {
-    setIsOpen(false);
-    const roleTutorials = TUTORIALS[role];
-    let matchedKey = pathname;
-    if (roleTutorials && !roleTutorials[pathname]) {
-      const dynamicKey = Object.keys(roleTutorials).find(key => 
-        key.endsWith('/*') && pathname.startsWith(key.replace('/*', '/'))
-      );
-      if (dynamicKey) matchedKey = dynamicKey;
-    }
-    localStorage.setItem(`tutorial_seen_${role}_${matchedKey}`, "true");
+    if (currentStepIndex > 0) setCurrentStepIndex(prev => prev - 1);
   };
 
   return (
@@ -114,11 +98,17 @@ export function TutorialManager({ role }: { role: string }) {
         
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
-          <h3 className="font-semibold text-lg text-slate-900 dark:text-white">
-            {locale === "en" ? "Page Tutorial" : "የገጽ መመሪያ"}
-          </h3>
-          <button 
-            onClick={handleClose}
+          <div>
+            <h3 className="font-semibold text-lg text-slate-900 dark:text-white flex items-center gap-2">
+              <HelpCircle className="w-4 h-4 text-blue-500" />
+              {locale === "en" ? "Page Tutorial" : "የገጽ መመሪያ"}
+            </h3>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {locale === "en" ? "Press ? anytime to reopen" : "? ን ጠቅ ያድርጉ እንደገና ለመክፈት"}
+            </p>
+          </div>
+          <button
+            onClick={() => setIsOpen(false)}
             className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -140,7 +130,6 @@ export function TutorialManager({ role }: { role: string }) {
           <div className="text-sm font-medium text-slate-500">
             {currentStepIndex + 1} / {steps.length}
           </div>
-          
           <div className="flex gap-2">
             <button
               onClick={handlePrev}
@@ -154,15 +143,9 @@ export function TutorialManager({ role }: { role: string }) {
               className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-medium transition-colors"
             >
               {currentStepIndex === steps.length - 1 ? (
-                <>
-                  {locale === "en" ? "Finish" : "ጨርስ"}
-                  <Check className="w-4 h-4" />
-                </>
+                <>{locale === "en" ? "Finish" : "ጨርስ"}<Check className="w-4 h-4" /></>
               ) : (
-                <>
-                  {locale === "en" ? "Next" : "ቀጣይ"}
-                  <ChevronRight className="w-4 h-4" />
-                </>
+                <>{locale === "en" ? "Next" : "ቀጣይ"}<ChevronRight className="w-4 h-4" /></>
               )}
             </button>
           </div>

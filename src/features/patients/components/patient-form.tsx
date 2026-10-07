@@ -42,6 +42,9 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
       permanentSince: formData.get("permanentSince") as string || undefined,
+      staffSearchStr: formData.get("staffSearchStr") as string || undefined,
+      relationship: formData.get("relationship") as string || undefined,
+      hasPaperwork: formData.get("hasPaperwork") === "on",
     });
 
     setLoading(false);
@@ -133,8 +136,8 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div>
             <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Staff Member Search (Phone or ID)</label>
-            <input required name="staffSearchStr" type="text" placeholder="Enter staff phone or ID" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">Look up primary staff member to inherit benefits.</p>
+            <input name="staffSearchStr" type="text" placeholder="Enter staff phone or ID (or leave blank if unlinked)" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">Look up primary staff member to inherit benefits. Leave blank to skip linking.</p>
           </div>
           <div>
             <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Relationship to Staff</label>
@@ -154,11 +157,19 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
           <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
           <input name="permanentSince" type="date" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-          <p className="text-[10px] text-slate-500 mt-1">Leave empty to flag as missing (NaN) for Receptionists to fix.</p>
+          <p className="text-[10px] text-amber-600 dark:text-amber-400 mt-1">⚠ If left empty, the patient will be flagged for a receptionist to provide this date later. It determines the discount tier.</p>
         </div>
       )}
 
-
+      {userRole === "Reception" && ["Soldier", "Civilian Staff", "Civilian Family"].includes(patientType) && (
+        <div className="flex items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
+          <input type="checkbox" id="hasPaperwork" name="hasPaperwork" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+          <label htmlFor="hasPaperwork" className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+            I have received physical paperwork verifying this staff/family member.
+            <span className="block text-xs font-normal opacity-80">This will mark the registration as PENDING until approved by a Manager/Admin.</span>
+          </label>
+        </div>
+      )}
 
       <button
         type="submit"

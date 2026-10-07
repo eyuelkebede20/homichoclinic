@@ -4,9 +4,88 @@ import { createSafeAction } from "@/lib/safe-action";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { z } from "zod";
+import { revalidatePath } from "next/cache";
+
+export const approveInvoiceSchema = z.object({
+  invoiceId: z.string().min(1, "Invoice ID is required"),
+});
+
+export const disapproveInvoiceSchema = z.object({
+  invoiceId: z.string().min(1, "Invoice ID is required"),
+});
+
+export const approveInvoice = createSafeAction({
+  schema: approveInvoiceSchema,
+  requiredPermission: PERMISSIONS.INVOICE_READ, // Or a new permission like DATA_ENCODER
+  handler: async (data, ctx) => {
+    const invoice = await prisma.$transaction(async (tx) => {
+      const inv = await tx.invoice.findUnique({
+        where: { id: data.invoiceId },
+      });
+
+      if (!inv) throw new Error("Invoice not found");
+      if (inv.status !== "pending") throw new Error("Invoice is not pending");
+
+      const updated = await tx.invoice.update({
+        where: { id: inv.id },
+        data: { status: "approved" },
+      });
+
+      // Close visits if approved
+      await tx.visit.updateMany({
+        where: { invoiceId: inv.id, status: { not: "completed" } },
+        data: { status: "completed" },
+      });
+
+      return updated;
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "invoice:approve",
+      resourceId: invoice.id,
+      newValue: { status: invoice.status },
+    });
+
+    revalidatePath("/dataencoder");
+    return invoice;
+  },
+});
+
+export const disapproveInvoice = createSafeAction({
+  schema: disapproveInvoiceSchema,
+  requiredPermission: PERMISSIONS.INVOICE_READ, // Or a new permission
+  handler: async (data, ctx) => {
+    const invoice = await prisma.$transaction(async (tx) => {
+      const inv = await tx.invoice.findUnique({
+        where: { id: data.invoiceId },
+      });
+
+      if (!inv) throw new Error("Invoice not found");
+      if (inv.status !== "pending") throw new Error("Invoice is not pending");
+
+      const updated = await tx.invoice.update({
+        where: { id: inv.id },
+        data: { status: "disapproved" },
+      });
+
+      return updated;
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "invoice:disapprove",
+      resourceId: invoice.id,
+      newValue: { status: invoice.status },
+    });
+
+    revalidatePath("/dataencoder");
+    return invoice;
+  },
+});
 import { createInvoiceSchema, recordPaymentSchema } from "./schemas";
 import { getDiscountableTotal, getNonDiscountableTotal } from "./utils";
-import { revalidatePath } from "next/cache";
 
 export const createInvoice = createSafeAction({
   schema: createInvoiceSchema,
@@ -62,7 +141,7 @@ export const createInvoice = createSafeAction({
       newValue: { total: invoice.total, discountApplied: invoice.discountPercentApplied },
     });
 
-    revalidatePath("/billing");
+    revalidatePath("/dataencoder");
     return invoice;
   },
 });
@@ -77,7 +156,7 @@ export const recordPayment = createSafeAction({
       });
 
       if (!invoice) throw new Error("Invoice not found");
-      if (invoice.status === "paid") throw new Error("Invoice is already paid");
+      if (invoice.status === "approved" || invoice.status === "paid") throw new Error("Invoice is already paid or approved");
 
       // Record full payment
       const newPayment = await tx.payment.create({
@@ -112,7 +191,7 @@ export const recordPayment = createSafeAction({
       newValue: { amount: payment.amount, method: payment.method },
     });
 
-    revalidatePath("/billing");
+    revalidatePath("/dataencoder");
     return payment;
   },
 });

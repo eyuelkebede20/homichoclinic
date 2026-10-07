@@ -79,7 +79,7 @@ export function PatientSearchSelect({
           <input
             type="text"
             className="w-full bg-transparent border-none p-0 focus:ring-0 text-sm dark:text-slate-100"
-            placeholder={selectedId && displayName ? displayName : "Search by name or phone..."}
+            placeholder={selectedId && displayName ? displayName : "Search by name, phone or employee ID..."}
             value={open ? search : (selectedId ? displayName : "")}
             onChange={(e) => {
               setSearch(e.target.value);

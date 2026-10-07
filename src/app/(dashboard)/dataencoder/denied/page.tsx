@@ -26,7 +26,7 @@ export default async function DeniedRecordsPage() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-slate-900 dark:text-white">Denied Records</h1>
-        <p className="text-slate-500 mt-2">Manage records that were denied during the billing review.</p>
+        <p className="text-slate-500 mt-2">Manage records that were denied during the data encoder review.</p>
       </div>
       <DeniedDashboard visits={deniedVisits} />
     </div>

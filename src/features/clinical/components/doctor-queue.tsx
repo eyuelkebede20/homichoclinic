@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, FlaskConical, Stethoscope, User, FileText, Pill } from "lucide-react";
+import { Search, ChevronLeft, ChevronRight, CheckCircle, Clock, Stethoscope, User, AlertTriangle } from "lucide-react";
 import { VisitStatusActions } from "./visit-status-actions";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 
 type QueueVisit = {
   id: string;
@@ -22,6 +22,14 @@ type QueueVisit = {
     labRequests: unknown[];
   };
 };
+
+const AVATAR_COLORS = [
+  "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300",
+  "bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300",
+  "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300",
+  "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300",
+  "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+];
 
 export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
   const [searchTerm, setSearchTerm] = useState("");
@@ -80,7 +88,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                 {/* Patient Info */}
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 shadow-sm border border-blue-200/50 dark:border-blue-800/50">
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center shrink-0 shadow-sm border border-white/30 ${AVATAR_COLORS[idx % AVATAR_COLORS.length]}`}>
                       <User className="h-5 w-5" />
                     </div>
                     <div className="flex flex-col">
@@ -90,7 +98,7 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                       <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mt-1 gap-2">
                         <span className="capitalize">{visit.patient.gender || "Unknown"}</span>
                         <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-                        <span>{calculateECAge(visit.patient.yob)}</span>
+                        <span>{calculateAge(visit.patient.yob)}</span>
                         {(visit.patient.militaryId || visit.patient.employeeId) && (
                           <>
                             <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -122,14 +130,38 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
 
                 {/* Flags / Lab Results */}
                 <td className="px-6 py-4 whitespace-nowrap">
-                  {visit.patient.labRequests.length > 0 ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 shadow-sm">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                      {visit.patient.labRequests.length} Result{visit.patient.labRequests.length > 1 ? 's' : ''} Ready
-                    </span>
-                  ) : (
-                    <span className="text-xs text-slate-400 dark:text-slate-600 italic">No alerts</span>
-                  )}
+                  {(() => {
+                    const labReqs = (visit.patient.labRequests as any[]) || [];
+                    const urgentReqs = labReqs.filter((r) => r.status === "urgent");
+                    const completedReqs = labReqs.filter((r) => r.status === "completed");
+
+                    if (urgentReqs.length > 0) {
+                      return (
+                        <div className="flex flex-col gap-1 items-start">
+                          <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-100 dark:bg-red-950/70 border border-red-300 dark:border-red-700 px-2.5 py-1 text-xs font-extrabold text-red-700 dark:text-red-300 shadow-sm animate-pulse">
+                            <AlertTriangle className="w-3.5 h-3.5 text-red-600" />
+                            ⚡ STAT / URGENT LAB ({urgentReqs.length})
+                          </span>
+                          {completedReqs.length > 0 && (
+                            <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold ml-1">
+                              +{completedReqs.length} Result Ready
+                            </span>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    if (completedReqs.length > 0) {
+                      return (
+                        <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1.5 text-xs font-medium text-emerald-700 dark:text-emerald-400 shadow-sm">
+                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          {completedReqs.length} Result{completedReqs.length > 1 ? "s" : ""} Ready
+                        </span>
+                      );
+                    }
+
+                    return <span className="text-xs text-slate-400 dark:text-slate-600 italic">No alerts</span>;
+                  })()}
                 </td>
 
                 {/* Quick Actions */}
@@ -139,23 +171,23 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                     <Link 
                       href={`/patients/${visit.patientId}#medical-history`}
                       title="View Medical History"
-                      className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg transition-all"
+                      className="p-2 text-xl hover:scale-110 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all"
                     >
-                      <FileText className="w-4 h-4" />
+                      📋
                     </Link>
                     <Link 
                       href={`/patients/${visit.patientId}#prescription`}
                       title="Prescribe Medication"
-                      className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 dark:hover:text-indigo-400 rounded-lg transition-all"
+                      className="p-2 text-xl hover:scale-110 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-all"
                     >
-                      <Pill className="w-4 h-4" />
+                      💊
                     </Link>
                     <Link 
                       href={`/patients/${visit.patientId}#lab-request`}
                       title="Order Lab Tests"
-                      className="p-2 text-slate-400 hover:text-fuchsia-600 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 dark:hover:text-fuchsia-400 rounded-lg transition-all"
+                      className="p-2 text-xl hover:scale-110 hover:bg-fuchsia-50 dark:hover:bg-fuchsia-900/20 rounded-lg transition-all"
                     >
-                      <FlaskConical className="w-4 h-4" />
+                      🧪
                     </Link>
 
                     {/* Divider */}

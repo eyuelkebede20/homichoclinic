@@ -62,9 +62,9 @@ export async function getNotifications() {
   } 
   
   else if (role === "Laboratory") {
-    count = await prisma.labRequest.count({ where: { status: "requested" } });
+    count = await prisma.labRequest.count({ where: { status: { in: ["requested", "urgent"] } } });
     const pending = await prisma.labRequest.findMany({
-      where: { status: "requested" },
+      where: { status: { in: ["requested", "urgent"] } },
       include: { patient: true, test: true },
       orderBy: { createdAt: "desc" },
       take: 5

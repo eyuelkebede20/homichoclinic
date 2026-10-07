@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Activity, PlusCircle } from "lucide-react";
+import { Loader2, Activity } from "lucide-react";
 import { addClinicalNote, toggleAdmissionStatus } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -33,15 +33,15 @@ export function ClinicalDashboard({
     const fd = new FormData(e.currentTarget);
     const data = {
       patientId,
-      bp: fd.get("bp") as string || undefined,
-      heartRate: fd.get("hr") ? Number(fd.get("hr")) : undefined,
-      temp: fd.get("temp") ? Number(fd.get("temp")) : undefined,
-      weight: fd.get("weight") ? Number(fd.get("weight")) : undefined,
-      subjective: fd.get("subjective") as string || undefined,
-      objective: fd.get("objective") as string || undefined,
-      assessment: fd.get("assessment") as string || undefined,
-      plan: fd.get("plan") as string || undefined,
-      content: fd.get("content") as string || "SOAP Entry"
+      bp: (fd.get("bp") as string)?.trim() || undefined,
+      heartRate: fd.get("hr") && !isNaN(parseFloat(fd.get("hr") as string)) ? parseFloat(fd.get("hr") as string) : undefined,
+      temp: fd.get("temp") && !isNaN(parseFloat(fd.get("temp") as string)) ? parseFloat(fd.get("temp") as string) : undefined,
+      weight: fd.get("weight") && !isNaN(parseFloat(fd.get("weight") as string)) ? parseFloat(fd.get("weight") as string) : undefined,
+      subjective: (fd.get("subjective") as string)?.trim() || undefined,
+      objective: (fd.get("objective") as string)?.trim() || undefined,
+      assessment: (fd.get("assessment") as string)?.trim() || undefined,
+      plan: (fd.get("plan") as string)?.trim() || undefined,
+      content: (fd.get("content") as string)?.trim() || "SOAP Entry"
     };
 
     const res = await addClinicalNote(data);
@@ -63,7 +63,7 @@ export function ClinicalDashboard({
           Clinical Dashboard
         </h2>
         <div className="flex items-center gap-3">
-          <span className={"px-3 py-1 rounded-full text-xs font-semibold " + (admissionStatus === "Inpatient" ? "bg-amber-100 text-amber-800 border border-amber-200" : "bg-emerald-100 text-emerald-800 border border-emerald-200")}>
+          <span className={"px-3 py-1 rounded-full text-xs font-semibold " + (admissionStatus === "Inpatient" ? "bg-red-100 text-red-800 border border-red-200" : "bg-yellow-100 text-yellow-800 border border-yellow-200")}>
             {admissionStatus}
           </span>
           <button
@@ -130,7 +130,7 @@ export function ClinicalDashboard({
             disabled={loading}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium disabled:opacity-50 transition-colors"
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <PlusCircle className="w-4 h-4" />}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <img src="/icon.png" alt="Add" className="w-4 h-4" />}
             Save Clinical Record
           </button>
         </div>

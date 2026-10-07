@@ -3,13 +3,19 @@
 import { useState } from "react";
 import { updatePatient } from "../actions";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2, Link2, Unlink } from "lucide-react";
 
 export function PatientEditForm({ patient }: { 
-  patient: { id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; permanentSince?: string | null; } 
+  patient: { 
+    id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; permanentSince?: string | null; 
+    patientType: string;
+    primaryPatient?: { id: string; firstName: string; lastName: string; contactNumber: string | null; employeeId: string | null; militaryId: string | null; } | null;
+    relationship?: string | null;
+  } 
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isChangingLink, setIsChangingLink] = useState(!patient.primaryPatient && patient.patientType === "Civilian Family");
   const router = useRouter();
 
   let initialAge = "";
@@ -39,6 +45,16 @@ export function PatientEditForm({ patient }: {
       }
     }
 
+    let staffSearchStr: string | undefined = undefined;
+    let relationship: string | undefined = undefined;
+
+    if (patient.patientType === "Civilian Family") {
+      if (isChangingLink) {
+        staffSearchStr = (formData.get("staffSearchStr") as string) || "UNLINK";
+        relationship = (formData.get("relationship") as string) || undefined;
+      }
+    }
+
     const result = await updatePatient({
       patientId: patient.id,
       firstName: formData.get("firstName") as string,
@@ -47,6 +63,8 @@ export function PatientEditForm({ patient }: {
       gender: formData.get("gender") as string,
       contactNumber: formData.get("contactNumber") as string,
       permanentSince: formData.get("permanentSince") as string || undefined,
+      staffSearchStr,
+      relationship,
     });
 
     setLoading(false);
@@ -112,6 +130,85 @@ export function PatientEditForm({ patient }: {
           <input defaultValue={patient.permanentSince || ""} name="permanentSince" type="date" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
       </div>
+
+      {patient.patientType === "Civilian Family" && (
+        <div className="mt-6 border-t border-slate-200 dark:border-slate-800 pt-6">
+          <h3 className="text-lg font-medium mb-4 flex items-center text-slate-800 dark:text-slate-200">
+            <Link2 className="w-5 h-5 mr-2 text-blue-500" />
+            Family Linking
+          </h3>
+          
+          {!isChangingLink && patient.primaryPatient ? (
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md border border-slate-200 dark:border-slate-700">
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">Currently linked to:</p>
+                  <p className="font-medium">{patient.primaryPatient.firstName} {patient.primaryPatient.lastName}</p>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    {patient.primaryPatient.contactNumber || patient.primaryPatient.militaryId || patient.primaryPatient.employeeId}
+                  </p>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Relationship: {patient.relationship || "Not specified"}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsChangingLink(true)}
+                  className="text-sm flex items-center text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/40 px-3 py-1.5 rounded transition-colors"
+                >
+                  <Unlink className="w-4 h-4 mr-1.5" />
+                  Unlink / Change
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-md border border-slate-200 dark:border-slate-700">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Link to Staff Member
+                </label>
+                <input 
+                  name="staffSearchStr" 
+                  type="text" 
+                  placeholder="Enter Phone Number, Military ID, or Employee ID"
+                  className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
+                />
+                <p className="text-xs text-slate-500 mt-1.5">Leave blank to keep unlinked.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                  Relationship to Staff
+                </label>
+                <select 
+                  name="relationship" 
+                  defaultValue={patient.relationship || ""}
+                  className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="">Select...</option>
+                  <option value="Wife">Wife</option>
+                  <option value="Husband">Husband</option>
+                  <option value="Son">Son</option>
+                  <option value="Daughter">Daughter</option>
+                  <option value="Mother">Mother</option>
+                  <option value="Father">Father</option>
+                  <option value="Brother">Brother</option>
+                  <option value="Sister">Sister</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              {patient.primaryPatient && (
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangingLink(false)}
+                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Cancel Change
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex justify-between items-center mt-6">
         <button

@@ -5,10 +5,10 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
-import { getECYearsOfService } from "@/lib/ethiopian-calendar";
+import { getYearsOfService } from "@/lib/date-utils";
 
 function calculateDiscount(permanentSinceStr: string | null): number {
-  const yearsOfService = getECYearsOfService(permanentSinceStr);
+  const yearsOfService = getYearsOfService(permanentSinceStr);
   
   if (yearsOfService >= 20) return 100;
   if (yearsOfService >= 15) return 75;
@@ -37,16 +37,17 @@ export const importPatientsCSV = createSafeAction({
     
     // Validate that we found at least some expected headers
     const hasKnownHeader = headers.some(h => 
-      ['firstname', 'first name', 'first_name', 'name', 'fullname', 'full name', 'phone', 'contact', 'salutation', 'department', 'since', 'permanent', 'c_m', 'emergencycontact', 'emergencymobile', 'emergency contact', 'emergency mobile', 'primarymobile', 'gov_id', 'yob'].includes(h)
+      ['employe_id', 'employeeid', 'employee_id', 'employee id', 'govid', 'gov_id', 'gender', 'yob', 'dob', 'dateofbirth', 'permanentsince', 'since', 'permanent', 'status', 'fullname', 'full name', 'name', 'firstname', 'first name', 'first_name', 'salutation', 'title', 'emergencycontact', 'emergency contact', 'emergencyphone', 'emergencymobile', 'emergency mobile', 'c_m', 'cm', 'c/m', 'department', 'dept', 'employmenttype', 'employment type', 'patienttype', 'designation', 'rank', 'mobile', 'phone', 'contact', 'primarymobile', 'primaryphone', 'familyphone'].includes(h)
     );
     if (!hasKnownHeader) {
-      throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the sample file format.`);
+      throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the expected file format.`);
     }
     
     // Map of phone numbers to Primary Patient IDs (so we can link dependents instantly)
     const phoneToPatientId = new Map<string, string>();
     
     let createdCount = 0;
+    let updatedCount = 0;
     const errors: string[] = [];
 
     // First pass: We want to insert all Primary Staff Members first
@@ -74,20 +75,25 @@ export const importPatientsCSV = createSafeAction({
 
     // Function to process a single row
     async function processRow(row: Record<string, string>, isDependent: boolean) {
-      let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["name"] || row["fullname"] || row["full name"];
+      let firstName = row["firstname"] || row["first name"] || row["first_name"] || row["fullname"] || row["full name"] || row["name"];
       let lastName = row["lastname"] || row["last name"] || row["last_name"];
-      const phone = row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
+      const phone = row["mobile"] || row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
       const finalPhone = phone || "-";
-      const dobStr = row["dob"] || row["dateofbirth"] || row["yob"];
+      const dobStr = row["yob"] || row["dob"] || row["dateofbirth"];
       const gender = row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
-      const relationship = row["relationship"] || row["role"];
+      
+      const employmentType = row["employmenttype"] || row["employment type"] || row["patienttype"] || row["relationship"] || row["role"];
+      const relationship = employmentType; // Defaulting to the same for relationship mapping
+      
       const primaryPhone = row["primaryphone"] || row["familyphone"] || row["primarymobile"];
       const promoCode = row["promocode"] || row["promo_code"];
-      const employeeId = row["employeeid"] || row["employee id"] || row["employee_id"] || row["gov_id"] || row["govid"];
+      const employeeId = row["employe_id"] || row["employeeid"] || row["employee id"] || row["employee_id"] || row["gov_id"] || row["govid"];
       
       const salutation = row["salutation"] || row["title"] || "-";
       const department = row["department"] || row["dept"] || "-";
+      const designation = row["designation"] || row["rank"] || null;
+      const status = row["status"] || "APPROVED";
       
       let permanentSince = row["permanentsince"] || row["since"] || row["permanent"];
       if (!permanentSince || permanentSince.trim() === "") {
@@ -96,7 +102,7 @@ export const importPatientsCSV = createSafeAction({
       
       const c_m = row["c_m"] || row["c/m"] || row["cm"] || "-";
       const emergencyContact = row["emergencycontact"] || row["emergency contact"] || "-";
-      const emergencyMobile = row["emergencymobile"] || row["emergency mobile"] || "-";
+      const emergencyMobile = row["emergencyphone"] || row["emergencymobile"] || row["emergency mobile"] || "-";
 
       if (firstName && !lastName && firstName.includes(' ')) {
         const parts = firstName.split(' ');
@@ -143,11 +149,43 @@ export const importPatientsCSV = createSafeAction({
         computedDiscount = calculateDiscount(permanentSince); 
       }
 
-      const existing = await prisma.patient.findFirst({
-        where: { firstName, lastName, contactNumber: finalPhone }
-      });
+      let existing = null;
+      if (employeeId) {
+        existing = await prisma.patient.findFirst({
+          where: { employeeId: employeeId }
+        });
+      }
 
-      if (!existing) {
+      if (existing) {
+        const updatedPat = await prisma.patient.update({
+          where: { id: existing.id },
+          data: {
+            firstName,
+            lastName,
+            contactNumber: finalPhone,
+            gender: gender,
+            yob: yob,
+            discountPercent: computedDiscount,
+            relationship: relationship || (isDependent ? "Dependent" : "Staff"),
+            patientType: employmentType || (isDependent ? "Civilian Family" : "Civilian Staff"),
+            primaryPatientId: primaryPatientId !== null ? primaryPatientId : existing.primaryPatientId,
+            promoCode: promoCode || "-",
+            employeeId: employeeId || existing.employeeId,
+            salutation: salutation,
+            department: department,
+            rank: designation,
+            status: status,
+            permanentSince: permanentSince,
+            c_m: c_m,
+            emergencyContact: emergencyContact,
+            emergencyMobile: emergencyMobile
+          }
+        });
+        updatedCount++;
+        if (finalPhone !== "-") {
+          phoneToPatientId.set(finalPhone, updatedPat.id);
+        }
+      } else {
         const newPat = await prisma.patient.create({
           data: {
             firstName,
@@ -157,11 +195,14 @@ export const importPatientsCSV = createSafeAction({
             yob: yob,
             discountPercent: computedDiscount,
             relationship: relationship || (isDependent ? "Dependent" : "Staff"),
+            patientType: employmentType || (isDependent ? "Civilian Family" : "Civilian Staff"),
             primaryPatientId: primaryPatientId,
             promoCode: promoCode || "-",
             employeeId: employeeId || null,
             salutation: salutation,
             department: department,
+            rank: designation,
+            status: status,
             permanentSince: permanentSince,
             c_m: c_m,
             emergencyContact: emergencyContact,
@@ -173,8 +214,6 @@ export const importPatientsCSV = createSafeAction({
         if (finalPhone !== "-") {
           phoneToPatientId.set(finalPhone, newPat.id);
         }
-      } else {
-        errors.push(`Skipped duplicate patient: ${firstName} ${lastName} (Phone: ${finalPhone})`);
       }
     }
 
@@ -191,6 +230,6 @@ export const importPatientsCSV = createSafeAction({
     revalidatePath("/patients");
     revalidatePath("/admin");
 
-    return { created: createdCount, errors };
+    return { created: createdCount, updated: updatedCount, errors };
   }
 });

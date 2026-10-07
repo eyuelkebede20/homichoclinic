@@ -38,7 +38,7 @@ export async function POST(request: Request) {
     if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     if (visits.length === 0 && labRequests.length === 0 && prescriptions.length === 0) {
       // Nothing to bill
-      return NextResponse.redirect(new URL("/billing", request.url), 303);
+      return NextResponse.redirect(new URL("/dataencoder", request.url), 303);
     }
 
     // 2. Map them to Invoice Items
@@ -137,7 +137,7 @@ export async function POST(request: Request) {
     });
 
     // Redirect to the newly cleared ledger receipt to print
-    return NextResponse.redirect(new URL(`/billing/${newInvoiceId}?print=true`, request.url), 303);
+    return NextResponse.redirect(new URL(`/dataencoder/${newInvoiceId}?print=true`, request.url), 303);
 
   } catch (err: any) {
     console.error("Auto invoice generation error:", err);

@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { calculateECAge } from "@/lib/ethiopian-calendar";
+import { calculateAge } from "@/lib/date-utils";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
 import { PaperImportForm } from "@/features/clinical/components/paper-import-form";
 import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
@@ -14,6 +14,8 @@ import { PrintHeader } from "@/components/print-header";
 import { ClinicalDashboard } from "@/features/clinical/components/clinical-dashboard";
 import { MedicalRecordItem } from "@/features/patients/components/medical-record-item";
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
+import { StructuredLabResultView } from "@/features/clinical/components/structured-lab-result-view";
+import { PendingApprovalBanner } from "@/features/patients/components/pending-approval-banner";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -64,6 +66,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
 
   const canUpdateDiscount = userPermissions.includes(PERMISSIONS.DISCOUNT_UPDATE);
   const canWriteHistory = userPermissions.includes(PERMISSIONS.HISTORY_WRITE);
+  const canReadHistory = userPermissions.includes(PERMISSIONS.HISTORY_READ);
   const canPrescribe = userPermissions.includes(PERMISSIONS.PRESCRIPTION_CREATE);
   const canRequestLab = userPermissions.includes(PERMISSIONS.LAB_REQUEST);
 
@@ -71,6 +74,29 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   let drugs: { id: string; name: string }[] = [];
 
   if (canPrescribe || canRequestLab) {
+    // Ensure 3 core tests always exist
+    const defaultCoreTests = [
+      { name: "Stool Examination", price: 5000, description: "Macroscopic, chemical occult & microscopic parasite examination" },
+      { name: "Urine Examination", price: 5000, description: "Routine physical, chemical (dipstick) & microscopic sediment analysis" },
+      { name: "Hematology", price: 10000, description: "Complete blood count (CBC), differential, indices, ESR & morphology" },
+    ];
+
+    for (const core of defaultCoreTests) {
+      const exists = await prisma.labTest.findFirst({
+        where: { name: { equals: core.name, mode: "insensitive" } }
+      });
+      if (!exists) {
+        await prisma.labTest.create({
+          data: {
+            name: core.name,
+            price: core.price,
+            description: core.description,
+            isOperational: true,
+          }
+        });
+      }
+    }
+
     [labTests, drugs] = await Promise.all([
       prisma.labTest.findMany({ where: { isOperational: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.drug.findMany({
@@ -80,6 +106,15 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
       }),
     ]);
   }
+
+  let referralDestinations: string[] = [];
+  if (canWriteHistory) {
+    const setting = await prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } });
+    if (setting) {
+      try { referralDestinations = JSON.parse(setting.value); } catch(e) {}
+    }
+  }
+
 
   let doctorsList: { id: string; name: string }[] = [];
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
@@ -102,8 +137,12 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         <Link href="/patients" className="text-blue-600 hover:underline">
           &larr; Back to Patients
         </Link>
-        <PrintButton label="Print Medical History" />
+        {canReadHistory && <PrintButton label="Print Medical History" />}
       </div>
+
+      {patient.status === "PENDING" && (
+        <PendingApprovalBanner patientId={patient.id} canApprove={role === "Admin" || role === "Manager"} />
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">
         {/* Patient Info Card */}
@@ -120,7 +159,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                   </span>
                 )}
               </h2>
-              {(role === "Admin" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
+              {(role === "Admin" || role === "Manager" || (role === "Reception" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link
                   href={`/patients/${patient.id}/edit`}
                   className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors"
@@ -139,7 +178,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Age</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateECAge(patient.yob)}</dd>
+                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateAge(patient.yob)}</dd>
               </div>
               <div>
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</dt>
@@ -180,21 +219,24 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} />}
+            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} />}
 
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
 
-          <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
-            <div className="space-y-4">
-              {patient.medicalRecords.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
-              ) : (
-                patient.medicalRecords.map((record) => <MedicalRecordItem key={record.id} record={record} />)
-              )}
-            </div>
-          </div>
+{canReadHistory && (
+  <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
+    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
+    <div className="space-y-4">
+      {patient.medicalRecords.length === 0 ? (
+        <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
+      ) : (
+        patient.medicalRecords.map((record) => <MedicalRecordItem key={record.id} record={record} />)
+      )}
+    </div>
+  </div>
+)}
+{canReadHistory && (
           <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
             <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Laboratory Results</h2>
             <div className="space-y-4">
@@ -223,14 +265,22 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                               </span>
                             ) : req.status === "cancelled" ? (
                               <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">Cancelled</span>
+                            ) : req.status === "urgent" ? (
+                              <span className="inline-flex items-center rounded-full bg-red-600 text-white px-2.5 py-0.5 text-xs font-extrabold shadow-sm animate-pulse">
+                                ⚡ URGENT
+                              </span>
                             ) : (
                               <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
                                 Pending
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap max-w-xs">
-                            {req.result ? <div>{req.result.findings}</div> : <span className="text-slate-400 italic">Awaiting lab</span>}
+                          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 min-w-[300px]">
+                            {req.result ? (
+                              <StructuredLabResultView findings={req.result.findings} />
+                            ) : (
+                              <span className="text-slate-400 italic">Awaiting laboratory analysis...</span>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -240,6 +290,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               )}
             </div>
           </div>
+)}
         </div>
 
         {/* Sidebar / Manager Actions */}

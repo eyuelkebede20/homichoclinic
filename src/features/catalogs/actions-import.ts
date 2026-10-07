@@ -66,28 +66,43 @@ export const importCatalogCSV = createSafeAction({
       const priceEtb = parseFloat(row["price"] || "0");
       const priceCents = isNaN(priceEtb) ? 0 : Math.round(priceEtb * 100);
       const category = row["category"] || null;
-      const tat = row["tat"];
       const rawDescription = row["description"];
       
-      let description: string | null = null;
-      if (rawDescription) {
-        description = rawDescription;
-        if (tat) description += ` (TAT: ${tat})`;
-      } else if (tat) {
-        description = `TAT: ${tat}`;
-      }
+      const amountInStockStr = row["amountinstock"];
+      const amountInStock = amountInStockStr ? parseInt(amountInStockStr, 10) : null;
+      const parsedAmountInStock = amountInStock !== null && !isNaN(amountInStock) ? amountInStock : null;
+
+      const batchNumber = row["batchnumber"] || row["batch_number"] || row["batch"] || null;
+      const expiryDateStr = row["expirydate"] || row["expiry_date"] || row["expiry"] || null;
+      const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date("2099-12-31");
+      const validExpiry = isNaN(expiryDate.getTime()) ? new Date("2099-12-31") : expiryDate;
+
+      const description: string | null = rawDescription || null;
 
       if (data.type === "DRUG") {
         if (canApprove) {
+          let drug;
           if (id) {
-            await prisma.drug.upsert({
+            drug = await prisma.drug.upsert({
               where: { id },
-              update: { name, price: priceCents, category, description },
-              create: { id, name, price: priceCents, category, description }
+              update: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock },
+              create: { id, name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
             });
           } else {
-            await prisma.drug.create({
-              data: { name, price: priceCents, category, description }
+            drug = await prisma.drug.create({
+              data: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
+            });
+          }
+
+          if (parsedAmountInStock !== null) {
+            await prisma.stockBatch.create({
+              data: {
+                drugId: drug.id,
+                batchNumber: batchNumber || `import-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+                expiryDate: validExpiry,
+                quantity: parsedAmountInStock,
+                cost: 0,
+              }
             });
           }
           processedCount++;
@@ -97,7 +112,7 @@ export const importCatalogCSV = createSafeAction({
               type: "DRUG",
               action: id ? "UPDATE" : "CREATE",
               targetId: id || null,
-              requestedData: JSON.stringify({ name, price: priceCents, category, description }),
+              requestedData: JSON.stringify({ name, price: priceCents, category, description, amountInStock: parsedAmountInStock }),
               requestedById: ctx.userId,
             }
           });

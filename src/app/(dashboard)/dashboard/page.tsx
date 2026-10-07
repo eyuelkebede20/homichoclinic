@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatCurrency } from "@/features/billing/utils";
+import { formatCurrency } from "@/features/dataencoder/utils";
 import { getStartOfDayLocal } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
@@ -94,7 +94,19 @@ export default async function DashboardPage() {
           status: { in: ["scheduled", "in_progress"] },
           visitDate: { gte: today },
         },
-        include: { patient: { include: { labRequests: { where: { status: "completed", createdAt: { gte: today } } } } } },
+        include: {
+          patient: {
+            include: {
+              labRequests: {
+                where: {
+                  status: { in: ["urgent", "requested", "completed"] },
+                  createdAt: { gte: today },
+                },
+                include: { test: true },
+              },
+            },
+          },
+        },
         orderBy: { updatedAt: "desc" }
       }),
       prisma.labResult.findMany({
@@ -152,7 +164,7 @@ export default async function DashboardPage() {
   // 4. Lab Dashboard
   if (role === "Lab Technician") {
     const requests = await prisma.labRequest.findMany({
-      where: { status: { in: ["requested", "in_progress"] } },
+      where: { status: { in: ["requested", "in_progress", "urgent"] } },
       include: { patient: { select: { firstName: true, lastName: true } }, test: { select: { name: true } } },
       orderBy: { createdAt: "asc" }
     });

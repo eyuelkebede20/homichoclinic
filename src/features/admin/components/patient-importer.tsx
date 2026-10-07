@@ -9,7 +9,35 @@ import { toast } from "sonner";
 export function PatientImporter() {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ created: number; errors: string[] } | null>(null);
+  const [result, setResult] = useState<{ created: number; updated: number; errors: string[] } | null>(null);
+
+  const handleDownloadTemplate = () => {
+    const headers = [
+      "employe_id",
+      "gender",
+      "yob",
+      "permanentSince",
+      "Status",
+      "fullName",
+      "salutation",
+      "emergencyContact",
+      "emergencyPhone",
+      "c_m",
+      "department",
+      "employmentType",
+      "designation",
+      "mobile"
+    ];
+    const csvContent = headers.join(",") + "\n";
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", "patient_template.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -63,19 +91,19 @@ export function PatientImporter() {
             Upload an Excel (.xlsx) or CSV file containing staff members and their dependents.
           </p>
         </div>
-        <a href="/sample.csv" download className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
+        <button onClick={handleDownloadTemplate} className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline">
           Download Sample File
-        </a>
+        </button>
       </div>
 
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
         <p className="font-medium mb-1">Supported Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
-          gov_id, fullName, gender, dob, permanentSince, c_m, Salutation, Department, primaryMobile, emergencyContact, emergencyMobile
+          employe_id, gender, yob, permanentSince, Status, fullName, salutation, emergencyContact, emergencyPhone, c_m, department, employmentType, designation, mobile
         </code>
         
         <p className="mt-3 text-xs opacity-90">
-          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">primaryMobile</code>. Then for their spouse/child, set <code className="px-1">Relationship</code> (e.g. &quot;Child&quot;) and put the staff member&apos;s phone number in <code className="px-1">primaryMobile</code>.
+          <strong>Tip:</strong> If importing families, set the staff member&apos;s <code className="px-1">mobile</code>. Then for their spouse/child, set <code className="px-1">employmentType</code> (e.g. &quot;Dependent&quot;) and put the staff member&apos;s phone number in <code className="px-1">mobile</code>.
           <br /><br />
           If you provide a <code className="px-1">permanentSince</code> exact date, the system will automatically compute the staff discount! If missing, it is flagged as NaN for Receptionists to fix.
         </p>
@@ -112,7 +140,7 @@ export function PatientImporter() {
             Import Complete
           </h4>
           <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-            Successfully imported <strong>{result.created}</strong> new patients.
+            Successfully imported <strong>{result.created}</strong> new patients and updated <strong>{result.updated}</strong> existing patients.
           </p>
           
           {result.errors.length > 0 && (

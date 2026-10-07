@@ -59,6 +59,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.DISCOUNT_UPDATE,
     PERMISSIONS.DISCOUNT_READ,
     PERMISSIONS.PATIENT_READ,
+    PERMISSIONS.PATIENT_UPDATE,
     PERMISSIONS.INVENTORY_READ,
     PERMISSIONS.INVOICE_READ,
     PERMISSIONS.CATALOG_APPROVE,
@@ -71,7 +72,6 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.VISIT_CREATE,
     PERMISSIONS.VISIT_READ,
     PERMISSIONS.VISIT_UPDATE,
-    PERMISSIONS.HISTORY_READ,
   ],
   Dataencoder: [
     PERMISSIONS.INVOICE_CREATE,
@@ -108,3 +108,20 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.CATALOG_REQUEST,
   ],
 };
+
+export function getUserPermissions(roleStr: string | null | undefined): PermissionString[] {
+  if (!roleStr) return [];
+  // Normalize role string (e.g., 'receptionist' -> 'Reception', 'DataEncoder' -> 'Dataencoder')
+  const r = roleStr.toLowerCase();
+  let mappedRole = roleStr;
+  
+  if (r.includes("admin")) mappedRole = "Admin";
+  else if (r.includes("manager")) mappedRole = "Manager";
+  else if (r.includes("reception")) mappedRole = "Reception";
+  else if (r.includes("dataencoder") || r.includes("data encoder")) mappedRole = "Dataencoder";
+  else if (r.includes("doctor")) mappedRole = "Doctor";
+  else if (r.includes("lab")) mappedRole = "Laboratory";
+  else if (r.includes("pharmacy") || r.includes("pharmacist")) mappedRole = "Pharmacy";
+  
+  return ROLE_PERMISSIONS[mappedRole] || ROLE_PERMISSIONS[roleStr.charAt(0).toUpperCase() + roleStr.slice(1).toLowerCase()] || [];
+}

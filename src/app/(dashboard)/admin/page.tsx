@@ -41,11 +41,12 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
     prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
@@ -53,6 +54,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
   const isLowPower = lowPowerSetting?.value !== "false";
   const isHeavyDuty = heavyDutySetting?.value === "true";
   const clinicName = clinicNameSetting?.value || "Clinic System";
+  const clinicNameAmharic = clinicNameAmharicSetting?.value || "";
   const clinicLogo = clinicLogoSetting?.value || "";
   const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
 
@@ -150,7 +152,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
       )}
 
       {tab === "clinic" && (
-        <ClinicProfileSettings initialName={clinicName} initialLogo={clinicLogo} />
+        <ClinicProfileSettings initialName={clinicName} initialAmharicName={clinicNameAmharic} initialLogo={clinicLogo} />
       )}
     </div>
   );

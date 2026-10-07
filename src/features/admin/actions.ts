@@ -139,6 +139,11 @@ export const saveClinicProfile = createSafeAction({
         create: { key: "clinicName", value: data.clinicName }
       }),
       prisma.systemSetting.upsert({
+        where: { key: "clinicNameAmharic" },
+        update: { value: data.clinicNameAmharic || "" },
+        create: { key: "clinicNameAmharic", value: data.clinicNameAmharic || "" }
+      }),
+      prisma.systemSetting.upsert({
         where: { key: "clinicLogo" },
         update: { value: data.clinicLogo },
         create: { key: "clinicLogo", value: data.clinicLogo }

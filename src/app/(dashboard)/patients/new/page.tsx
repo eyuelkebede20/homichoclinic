@@ -2,7 +2,7 @@ import { PatientForm } from "@/features/patients/components/patient-form";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, getUserPermissions } from "@/lib/permissions";
 
 export default async function NewPatientPage() {
   const session = await auth.api.getSession({
@@ -13,8 +13,8 @@ export default async function NewPatientPage() {
     redirect("/login");
   }
 
-  const role = session.user.role || "User";
-  const userPermissions = ROLE_PERMISSIONS[role] || [];
+  const role = session.user.role as string;
+  const userPermissions = getUserPermissions(role);
   
   if (!userPermissions.includes(PERMISSIONS.PATIENT_CREATE)) {
     return (

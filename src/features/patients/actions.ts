@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { patientCreateSchema, patientUpdateSchema, discountUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
-import { getECYearsOfService } from "@/lib/ethiopian-calendar";
+import { getYearsOfService } from "@/lib/date-utils";
 
 export const createPatient = createSafeAction({
   schema: patientCreateSchema,
@@ -96,7 +96,7 @@ export const createPatient = createSafeAction({
       if (!permanentSince || permanentSince.trim() === "") {
         permanentSince = "NaN";
       }
-      const yearsOfService = getECYearsOfService(permanentSince);
+      const yearsOfService = getYearsOfService(permanentSince);
 
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
@@ -107,6 +107,16 @@ export const createPatient = createSafeAction({
 
     if (!permanentSince || permanentSince.trim() === "") {
       permanentSince = "NaN";
+    }
+
+    let status = "APPROVED";
+    // If reception creates a staff/soldier/family patient with paperwork, it goes to PENDING
+    if (
+      ctx.role === "Reception" && 
+      data.hasPaperwork && 
+      ["Soldier", "Civilian Staff", "Civilian Family"].includes(data.patientType || "")
+    ) {
+      status = "PENDING";
     }
 
     const newPatient = await prisma.patient.create({
@@ -127,6 +137,8 @@ export const createPatient = createSafeAction({
         salutation,
         department,
         c_m,
+        status,
+        hasPaperwork: data.hasPaperwork || false,
       },
     });
 
@@ -151,11 +163,11 @@ export const updatePatient = createSafeAction({
     if (!existingPatient) throw new Error("Patient not found.");
 
     if (ctx.role !== "Admin") {
-      if (ctx.role === "Receptionist") {
+      if (ctx.role === "Reception") {
         const isTimeExpired = new Date().getTime() - existingPatient.createdAt.getTime() >= 86400000;
         const isNanSince = !existingPatient.permanentSince || existingPatient.permanentSince === "NaN";
         if (isTimeExpired && !isNanSince) {
-          throw new Error("Access Denied: Receptionists can only modify patient data within 24 hours of creation unless 'Since' is invalid.");
+          throw new Error("Access Denied: Reception can only modify patient data within 24 hours of creation unless 'Since' is invalid.");
         }
       } else {
         throw new Error("Access Denied: You do not have permission to modify patient demographics.");
@@ -170,12 +182,46 @@ export const updatePatient = createSafeAction({
     
     // Recalculate discount based on patient type and new hire date
     let discountPercent = existingPatient.discountPercent;
+    let resolvedPrimaryId = existingPatient.primaryPatientId;
+    let newRelationship = existingPatient.relationship;
+
     if (existingPatient.patientType === "Soldier") {
       discountPercent = 100;
     } else if (existingPatient.patientType === "Civilian Family") {
-      discountPercent = 95;
+      if (data.staffSearchStr != null) {
+        const searchStr = data.staffSearchStr.trim();
+        if (searchStr === "" || searchStr === "UNLINK") {
+          resolvedPrimaryId = null;
+          newRelationship = null;
+          discountPercent = 95; // default fallback when unlinked
+        } else {
+          const primary = await prisma.patient.findFirst({
+            where: {
+              OR: [
+                { contactNumber: searchStr },
+                { militaryId: searchStr },
+                { employeeId: searchStr }
+              ]
+            }
+          });
+          if (!primary) {
+            throw new Error("Could not find a staff member with that Phone Number or ID. Please verify.");
+          }
+          resolvedPrimaryId = primary.id;
+          newRelationship = data.relationship || "Other";
+          discountPercent = primary.discountPercent;
+        }
+      } else {
+        // Just retain existing link, inherit discount again just in case primary changed
+        if (resolvedPrimaryId) {
+          const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
+          discountPercent = primary ? primary.discountPercent : 95;
+        } else {
+          discountPercent = 95;
+        }
+      }
     } else {
-      const yearsOfService = getECYearsOfService(permanentSince);
+      const yearsOfService = getYearsOfService(permanentSince);
 
       if (yearsOfService >= 20) discountPercent = 100;
       else if (yearsOfService >= 15) discountPercent = 75;
@@ -194,6 +240,8 @@ export const updatePatient = createSafeAction({
         contactNumber: data.contactNumber,
         permanentSince: permanentSince,
         discountPercent: discountPercent,
+        primaryPatientId: resolvedPrimaryId,
+        relationship: newRelationship,
       },
     });
 
@@ -272,9 +320,12 @@ export const searchPatientsFast = createSafeAction({
     return await prisma.patient.findMany({
       where: {
         OR: [
-          { firstName: { startsWith: term, mode: "insensitive" } },
-          { lastName: { startsWith: term, mode: "insensitive" } },
-          { contactNumber: { startsWith: term } }
+          { firstName: { contains: term, mode: "insensitive" } },
+          { lastName: { contains: term, mode: "insensitive" } },
+          { contactNumber: { contains: term, mode: "insensitive" } },
+          { employeeId: { contains: term, mode: "insensitive" } },
+          { militaryId: { contains: term, mode: "insensitive" } },
+          { id: { contains: term, mode: "insensitive" } }
         ]
       },
       take: 8,
@@ -286,5 +337,32 @@ export const searchPatientsFast = createSafeAction({
         yob: true
       }
     });
+  }
+});
+
+export const approvePatient = createSafeAction({
+  schema: z.object({ patientId: z.string() }),
+  requiredPermission: PERMISSIONS.PATIENT_CREATE, 
+  handler: async (data, ctx) => {
+    if (ctx.role !== "Admin" && ctx.role !== "Manager") {
+      throw new Error("Only Managers and Admins can approve patient registrations.");
+    }
+
+    const patient = await prisma.patient.update({
+      where: { id: data.patientId },
+      data: { status: "APPROVED" }
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "PATIENT_APPROVE",
+      resourceId: patient.id,
+      newValue: { status: "APPROVED" }
+    });
+
+    revalidatePath("/patients");
+    revalidatePath(`/patients/${patient.id}`);
+    
+    return patient;
   }
 });

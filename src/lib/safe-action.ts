@@ -56,9 +56,11 @@ export function createSafeAction<TInput, TOutput>({
       // 3. Validate
       const validationResult = schema.safeParse(input);
       if (!validationResult.success) {
+        const fieldErrors = validationResult.error.flatten().fieldErrors as Record<string, string[]>;
+        const errorMessages = Object.values(fieldErrors).flat().join(", ");
         return {
-          error: "Invalid input.",
-          fieldErrors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
+          error: errorMessages || "Invalid input.",
+          fieldErrors,
         };
       }
 
