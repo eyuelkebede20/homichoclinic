@@ -95,8 +95,8 @@ export default async function DashboardLayout({
       
       {/* Sidebar */}
       <div className="w-64 bg-slate-950 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800/50 print:hidden">
-        <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-          <div className="flex items-center gap-2 overflow-hidden">
+        <div className="min-h-16 py-3 flex items-center justify-between px-6 border-b border-slate-800">
+          <div className="flex items-center gap-2 overflow-hidden py-1">
             {clinicLogo ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={clinicLogo} alt="Logo" className="h-8 w-8 object-contain rounded bg-white p-0.5 shrink-0" />
@@ -105,7 +105,7 @@ export default async function DashboardLayout({
                 +
               </div>
             )}
-            <span className="font-bold text-lg tracking-wide truncate" title={clinicName}>{clinicName}</span>
+            <span className="font-bold text-lg tracking-wide whitespace-normal break-words leading-tight" title={clinicName}>{clinicName}</span>
           </div>
           <LanguageToggle />
         </div>
@@ -128,7 +128,7 @@ export default async function DashboardLayout({
                 className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 transition-colors group"
               >
                 <Icon className="mr-3 flex-shrink-0 h-5 w-5 text-slate-400 group-hover:text-blue-200 transition-colors" />
-                {item.name}
+                <span className="whitespace-normal break-words leading-tight">{item.name}</span>
               </Link>
             );
           })}
@@ -137,9 +137,9 @@ export default async function DashboardLayout({
         <div className="p-4 border-t border-slate-800 bg-slate-950">
           <div className="flex flex-col w-full">
             <div className="flex items-center w-full mb-3">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{session.user.name}</p>
-                <p className="text-xs font-medium text-slate-400 capitalize truncate">{session.user.role || "User"}</p>
+              <div className="flex-1 min-w-0 pr-1">
+                <p className="text-sm font-medium text-white whitespace-normal break-words leading-tight">{session.user.name}</p>
+                <p className="text-xs font-medium text-slate-400 capitalize whitespace-normal break-words leading-tight">{session.user.role || "User"}</p>
               </div>
               <SidebarTutorialToggle role={role} />
               <Link 

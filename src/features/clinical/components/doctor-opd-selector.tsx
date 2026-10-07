@@ -71,8 +71,8 @@ export function DoctorOpdSelector({
         className="w-full flex items-center justify-between text-sm font-semibold bg-slate-950/50 hover:bg-slate-900 text-white border border-slate-700/50 hover:border-blue-500/50 rounded-xl py-2.5 px-3 outline-none transition-all duration-200 cursor-pointer disabled:opacity-50 shadow-inner focus:ring-2 focus:ring-blue-500/30"
       >
         <div className="flex items-center gap-2">
-          <Stethoscope className="h-4 w-4 text-blue-400" />
-          <span className="truncate">{currentLabel}</span>
+          <Stethoscope className="h-4 w-4 text-blue-400 shrink-0" />
+          <span className="whitespace-normal break-words leading-tight text-left">{currentLabel}</span>
         </div>
         {loading ? (
           <Loader2 className="h-4 w-4 text-blue-400 animate-spin flex-shrink-0" />
