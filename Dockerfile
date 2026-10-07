@@ -15,7 +15,9 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate prisma client then build Next.js in standalone mode
-RUN pnpm exec prisma generate && \
+# We use a cache mount for .next/cache so rebuilds are incredibly fast
+RUN --mount=type=cache,target=/app/.next/cache \
+    pnpm exec prisma generate && \
     pnpm exec next build
 
 # ---- runtime ----
