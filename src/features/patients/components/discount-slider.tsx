@@ -18,7 +18,7 @@ export function DiscountSlider({ patientId, initialDiscount }: DiscountSliderPro
   const router = useRouter();
 
   // 5% increments as per claude.md
-  const quickPicks = [0, 5, 10, 15, 20, 25, 50, 75, 95];
+  const quickPicks = [0, 5, 10, 15, 20, 25, 50, 75, 95, 100];
 
   const handleSave = async () => {
     setSaving(true);
@@ -59,7 +59,7 @@ export function DiscountSlider({ patientId, initialDiscount }: DiscountSliderPro
             id="discount-slider"
             type="range"
             min="0"
-            max="99"
+            max="100"
             step="1"
             value={discount}
             onChange={(e) => setDiscount(Number(e.target.value))}
