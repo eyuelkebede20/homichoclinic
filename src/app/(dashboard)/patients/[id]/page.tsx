@@ -145,7 +145,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                   </span>
                 )}
               </h2>
-              {(role === "Admin" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
+              {(role === "Admin" || role === "Manager" || (role === "Receptionist" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
                 <Link
                   href={`/patients/${patient.id}/edit`}
                   className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors"
