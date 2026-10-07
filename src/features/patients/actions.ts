@@ -109,6 +109,16 @@ export const createPatient = createSafeAction({
       permanentSince = "NaN";
     }
 
+    let status = "APPROVED";
+    // If reception creates a staff/soldier/family patient with paperwork, it goes to PENDING
+    if (
+      ctx.role === "Receptionist" && 
+      data.hasPaperwork && 
+      ["Soldier", "Civilian Staff", "Civilian Family"].includes(data.patientType || "")
+    ) {
+      status = "PENDING";
+    }
+
     const newPatient = await prisma.patient.create({
       data: {
         firstName: data.firstName,
@@ -127,6 +137,8 @@ export const createPatient = createSafeAction({
         salutation,
         department,
         c_m,
+        status,
+        hasPaperwork: data.hasPaperwork || false,
       },
     });
 
@@ -170,10 +182,44 @@ export const updatePatient = createSafeAction({
     
     // Recalculate discount based on patient type and new hire date
     let discountPercent = existingPatient.discountPercent;
+    let resolvedPrimaryId = existingPatient.primaryPatientId;
+    let newRelationship = existingPatient.relationship;
+
     if (existingPatient.patientType === "Soldier") {
       discountPercent = 100;
     } else if (existingPatient.patientType === "Civilian Family") {
-      discountPercent = 95;
+      if (data.staffSearchStr != null) {
+        const searchStr = data.staffSearchStr.trim();
+        if (searchStr === "" || searchStr === "UNLINK") {
+          resolvedPrimaryId = null;
+          newRelationship = null;
+          discountPercent = 95; // default fallback when unlinked
+        } else {
+          const primary = await prisma.patient.findFirst({
+            where: {
+              OR: [
+                { contactNumber: searchStr },
+                { militaryId: searchStr },
+                { employeeId: searchStr }
+              ]
+            }
+          });
+          if (!primary) {
+            throw new Error("Could not find a staff member with that Phone Number or ID. Please verify.");
+          }
+          resolvedPrimaryId = primary.id;
+          newRelationship = data.relationship || "Other";
+          discountPercent = primary.discountPercent;
+        }
+      } else {
+        // Just retain existing link, inherit discount again just in case primary changed
+        if (resolvedPrimaryId) {
+          const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
+          discountPercent = primary ? primary.discountPercent : 95;
+        } else {
+          discountPercent = 95;
+        }
+      }
     } else {
       const yearsOfService = getECYearsOfService(permanentSince);
 
@@ -194,6 +240,8 @@ export const updatePatient = createSafeAction({
         contactNumber: data.contactNumber,
         permanentSince: permanentSince,
         discountPercent: discountPercent,
+        primaryPatientId: resolvedPrimaryId,
+        relationship: newRelationship,
       },
     });
 

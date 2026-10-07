@@ -54,6 +54,9 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     prisma.patient.count({ where: whereClause })
   ]);
 
+  const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } });
+  const totalOpdRooms = parseInt(opdSetting?.value || "5", 10);
+
   const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
   const canManageUsers = userPermissions.includes(PERMISSIONS.USER_MANAGE) || role === "Admin" || role === "Manager";
 
@@ -105,11 +108,12 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Contact</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
+                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
               </tr>
             </thead>
             <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
               {patients.map(patient => (
-                <PatientRow key={patient.id} patient={patient} />
+                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} />
               ))}
               {patients.length === 0 && (
                 <tr>

@@ -68,7 +68,7 @@ export function DiscountSlider({ patientId, initialDiscount }: DiscountSliderPro
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mt-2">
             <span>0%</span>
             <span>50%</span>
-            <span>99%</span>
+            <span>100%</span>
           </div>
         </div>
 

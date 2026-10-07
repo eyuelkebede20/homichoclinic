@@ -127,7 +127,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         <Link href="/patients" className="text-blue-600 hover:underline">
           &larr; Back to Patients
         </Link>
-        <PrintButton label="Print Medical History" />
+        {canReadHistory && <PrintButton label="Print Medical History" />}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">

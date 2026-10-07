@@ -42,6 +42,8 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
       permanentSince: formData.get("permanentSince") as string || undefined,
+      staffSearchStr: formData.get("staffSearchStr") as string || undefined,
+      relationship: formData.get("relationship") as string || undefined,
     });
 
     setLoading(false);

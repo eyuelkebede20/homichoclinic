@@ -91,7 +91,7 @@ model Permission {
 // Clinical Core
 // ==========================================
 
-model Patient {
+  model Patient {
   id              String    @id @default(cuid())
   firstName       String
   lastName        String
@@ -115,6 +115,9 @@ model Patient {
   c_m               String?
   emergencyContact  String?
   emergencyMobile   String?
+
+  status            String    @default("APPROVED") // "PENDING", "APPROVED", "REJECTED"
+  hasPaperwork      Boolean   @default(false)
 
   // Guest specifics
   promoCode       String?

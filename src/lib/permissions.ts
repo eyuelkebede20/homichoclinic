@@ -65,7 +65,7 @@ export const ROLE_PERMISSIONS: Record<string, PermissionString[]> = {
     PERMISSIONS.CATALOG_APPROVE,
     PERMISSIONS.CATALOG_REQUEST,
   ],
-  Reception: [
+  Receptionist: [
     PERMISSIONS.PATIENT_CREATE,
     PERMISSIONS.PATIENT_READ,
     PERMISSIONS.PATIENT_UPDATE,

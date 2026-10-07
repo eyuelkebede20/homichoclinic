@@ -30,7 +30,19 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
   }
 
   const patient = await prisma.patient.findUnique({
-    where: { id: resolvedParams.id }
+    where: { id: resolvedParams.id },
+    include: {
+      primaryPatient: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          contactNumber: true,
+          employeeId: true,
+          militaryId: true,
+        }
+      }
+    }
   });
 
   if (!patient) {
