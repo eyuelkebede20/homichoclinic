@@ -98,7 +98,7 @@ if ! $COMPOSE_CMD version >/dev/null 2>&1; then
     COMPOSE_CMD="sudo docker-compose"
 fi
 
-$COMPOSE_CMD up -d --build > logs/compose.log 2>&1
+$COMPOSE_CMD up -d > logs/compose.log 2>&1
 if [ $? -ne 0 ]; then
     echo "  [!] docker compose failed. Last lines of output:"
     tail -n 25 logs/compose.log
