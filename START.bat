@@ -252,9 +252,9 @@ call :stephdr 5 "Starting the clinic system"
 echo         First run takes 2-4 minutes. Later starts about 30 seconds.
 echo.
 
-REM Detect the primary IPv4 address to configure the auth system for LAN access
+REM Detect the true outbound IPv4 address (ignores Docker/WSL virtual adapters)
 set "LAN_IP=localhost"
-for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /c:"IPv4"') do for /f %%J in ("%%I") do set "LAN_IP=%%J"
+for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { ((Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias (Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -ExpandProperty InterfaceAlias -First 1) -ErrorAction Stop).IPAddress)[0] } catch { 'localhost' }"`) do set "LAN_IP=%%I"
 echo   [..] Configuring system for network access on IP: %LAN_IP%
 
 if exist "logs\compose.done" del "logs\compose.done"
@@ -346,7 +346,7 @@ set "APP_PORT=3000"
 for /f "tokens=1,* delims==" %%A in ('findstr /b /c:"APP_PORT=" ".env"') do set "APP_PORT=%%B"
 echo.
 echo   From any clinic PC on the same network, open:
-for /f "tokens=2 delims=:" %%I in ('ipconfig ^| findstr /c:"IPv4"') do for /f %%J in ("%%I") do echo         %C%http://%%J:%APP_PORT%%Z%
+echo         %C%http://%LAN_IP%:%APP_PORT%%Z%
 echo.
 echo   On this PC you can also use:  %C%http://localhost:%APP_PORT%%Z%
 
