@@ -251,6 +251,7 @@ model Drug {
   description   String?
   category      String?
   price         Int       // Minor units
+  amountInStock Int?      // Current total quantity (optional; set via import)
   isOperational Boolean   @default(true)
 
   batches       StockBatch[]
