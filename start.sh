@@ -342,17 +342,8 @@ echo
 LAN_IP=$(lan_ip)
 info "Network address of this PC: $LAN_IP"
 
-if ! docker image inspect clinic-app:latest >/dev/null 2>&1; then
-  NEEDS_BUILD=1
-fi
-
-if [ "$NEEDS_BUILD" = 1 ]; then
   dc up -d --build > logs/compose.log 2>&1 &
-  msg="Building and starting containers"
-else
-  dc up -d > logs/compose.log 2>&1 &
-  msg="Starting containers"
-fi
+  msg="Starting containers (building if code changed)"
 
 if spin_pid $! "$msg"; then
   ok "Containers started in $(fmt_el)."

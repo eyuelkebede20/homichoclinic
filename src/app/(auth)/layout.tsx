@@ -6,10 +6,16 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const [clinicNameSetting, clinicLogoSetting] = await Promise.all([
-    prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
-    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
-  ]);
+  let clinicNameSetting = null;
+  let clinicLogoSetting = null;
+  try {
+    [clinicNameSetting, clinicLogoSetting] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
+    ]);
+  } catch (e) {
+    // Ignore db errors during static build
+  }
   const clinicName = clinicNameSetting?.value || "Clinic ERP";
   let clinicLogo = clinicLogoSetting?.value || "";
 
