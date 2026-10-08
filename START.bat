@@ -261,7 +261,7 @@ echo.
 
 REM Detect the true outbound IPv4 address (ignores Docker/WSL virtual adapters)
 set "LAN_IP=localhost"
-for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { ((Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias (Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -ExpandProperty InterfaceAlias -First 1) -ErrorAction Stop).IPAddress)[0] } catch { 'localhost' }"`) do set "LAN_IP=%%I"
+for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { @((Get-NetIPAddress -AddressFamily IPv4 -InterfaceAlias (Get-NetRoute -DestinationPrefix '0.0.0.0/0' | Sort-Object RouteMetric | Select-Object -ExpandProperty InterfaceAlias -First 1) -ErrorAction Stop).IPAddress)[0] } catch { 'localhost' }"`) do set "LAN_IP=%%I"
 echo   [..] Configuring system for network access on IP: %LAN_IP%
 
 echo   [..] Starting containers ^(building if code changed^)...

@@ -17,7 +17,8 @@ async function main() {
     { role: "Laboratory", name: "Girma Kaba", email: "girma@clinic.com" },
     { role: "Reception", name: "Marta Kumsa", email: "marta@clinic.com" },
     { role: "Dataencoder", name: "Aynalem", email: "aynalem@clinic.com" },
-    { role: "Admin", name: "System Admin", email: "admin@clinic.com" } // Keeping an admin just in case
+    { role: "Manager", name: "Fiseha", email: "fiseha@clinic.com" },
+    { role: "Admin", name: "Zenebe", email: "zenebe@clinic.com" }
   ];
 
   for (const staff of staffToCreate) {

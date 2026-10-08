@@ -33,6 +33,8 @@ COPY --from=build --chown=node:node /app/.next/static ./.next/static
 COPY --from=build --chown=node:node /app/public ./public
 # Copy prisma schema for migrations that run at startup
 COPY --from=build --chown=node:node /app/prisma ./prisma
+# Copy src for seed scripts that rely on local typescript modules (e.g., auth)
+COPY --from=build --chown=node:node /app/src ./src
 # Copy the entire node_modules from deps to ensure Prisma CLI and Client are perfectly intact (needed for pnpm symlinks)
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 
