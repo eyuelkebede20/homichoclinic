@@ -252,18 +252,49 @@ export const triggerSystemUpdate = createSafeAction({
   schema: z.object({}),
   requiredPermission: PERMISSIONS.USER_MANAGE,
   handler: async (_data, ctx) => {
-    const flagPath = "/run/updater/update.request";
+    const isWindows = process.platform === "win32";
 
-    try {
-      // Ensure the directory exists (should already be mounted by compose)
-      fs.mkdirSync(path.dirname(flagPath), { recursive: true });
-      // Writing an empty file is the signal; systemd detects its creation
-      fs.writeFileSync(flagPath, "");
-    } catch (error: any) {
-      throw new Error(
-        `Could not write update flag: ${error.message}. ` +
-        `Make sure the compose volume ./run:/run/updater is mounted and writable by uid 1000.`
-      );
+    if (isWindows) {
+      try {
+        const localRunDir = path.join(process.cwd(), "run");
+        const statusFile = path.join(localRunDir, "update.status");
+        fs.mkdirSync(localRunDir, { recursive: true });
+        fs.writeFileSync(statusFile, "=== Update started ===\n");
+        
+        const { spawn } = await import("child_process");
+        const proc = spawn("cmd.exe", ["/c", "UPDATE.bat"], { 
+          cwd: process.cwd(),
+          detached: true,
+          windowsHide: true,
+        });
+        
+        proc.stdout.on("data", (data) => fs.appendFileSync(statusFile, data));
+        proc.stderr.on("data", (data) => fs.appendFileSync(statusFile, data));
+        proc.on("close", (code) => {
+          fs.appendFileSync(statusFile, `\nProcess exited with code ${code}\n`);
+          if (code === 0) {
+            fs.appendFileSync(statusFile, "✓. Update complete\n");
+          } else {
+            fs.appendFileSync(statusFile, "!! Rollback complete\n");
+          }
+        });
+        proc.unref();
+      } catch (error: any) {
+        throw new Error(`Failed to start local update script: ${error.message}`);
+      }
+    } else {
+      const flagPath = "/run/updater/update.request";
+      try {
+        // Ensure the directory exists (should already be mounted by compose)
+        fs.mkdirSync(path.dirname(flagPath), { recursive: true });
+        // Writing an empty file is the signal; systemd detects its creation
+        fs.writeFileSync(flagPath, "");
+      } catch (error: any) {
+        throw new Error(
+          `Could not write update flag: ${error.message}. ` +
+          `Make sure the compose volume ./run:/run/updater is mounted and writable by uid 1000.`
+        );
+      }
     }
 
     await logAudit({

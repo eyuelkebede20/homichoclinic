@@ -2,19 +2,14 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import fs from "fs";
+import path from "path";
 
 const STATUS_FILE = "/run/updater/update.status";
 
 /**
  * GET /api/update-status
  *
- * Returns the live contents of run/update.status written by update.sh.
- * The file is mounted into the container via the compose volume ./run:/run/updater.
- *
- * The UI polls this every 2s while in the "updating" phase to show
- * real-time progress (backup, git pull, build, health wait, done/rollback).
- *
- * Auth: Admin or Manager only — same gate as the backup route.
+ * Returns the live contents of run/update.status written by update.sh or UPDATE.bat.
  */
 export async function GET() {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -25,18 +20,21 @@ export async function GET() {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  // File doesn't exist yet (no update ever triggered, or first boot)
-  if (!fs.existsSync(STATUS_FILE)) {
+  let fileToRead = STATUS_FILE;
+  const localStatusFile = path.join(process.cwd(), "run", "update.status");
+  
+  if (fs.existsSync(localStatusFile)) {
+    fileToRead = localStatusFile;
+  } else if (!fs.existsSync(STATUS_FILE)) {
     return NextResponse.json({ lines: [], done: false });
   }
 
   try {
-    const raw = fs.readFileSync(STATUS_FILE, "utf-8");
+    const raw = fs.readFileSync(fileToRead, "utf-8");
     const lines = raw.split("\n").filter(Boolean);
 
-    // "done" or "rollback" markers written by update.sh on exit
     const done =
-      lines.some((l) => l.includes("✅ Update complete")) ||
+      lines.some((l) => l.includes("Update complete") || l.includes("UPDATE COMPLETE SUCCESSFULLY!")) ||
       lines.some((l) => l.includes("Rollback complete"));
 
     const failed = lines.some((l) => l.includes("Rollback complete"));

@@ -18,7 +18,6 @@ echo [2/5] Pulling latest code from GitHub...
 call git pull origin main
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to pull the latest changes. Please check your git connection.
-    pause
     exit /b %errorlevel%
 )
 echo.
@@ -30,7 +29,7 @@ if %errorlevel% neq 0 (
     call npm install
     if errorlevel 1 (
         echo [ERROR] Failed to install dependencies with both pnpm and npm.
-        pause
+        
         exit /b 1
     )
 )
@@ -40,7 +39,7 @@ echo [4/5] Generating Prisma Client...
 call npx prisma generate
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to generate Prisma Client.
-    pause
+    
     exit /b %errorlevel%
 )
 echo.
@@ -50,7 +49,7 @@ echo (Note: Using db push --accept-data-loss to ensure schema matches perfectly)
 call npx prisma db push --accept-data-loss
 if %errorlevel% neq 0 (
     echo [ERROR] Failed to sync database schema. Make sure your database is running.
-    pause
+    
     exit /b %errorlevel%
 )
 echo.
@@ -67,4 +66,4 @@ echo    http://localhost:3000/api/seed-db
 echo    (This will create the default admin user and roles)
 echo.
 echo ==========================================================
-pause
+
