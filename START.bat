@@ -18,15 +18,23 @@ REM  before git pull can change the file on disk.
         echo.
         fc .git-old .git-new >nul 2>&1
         if errorlevel 1 (
-            cmd /k ""%~f0" child --updated"
+            cmd /k ""%~f0" child --updated %*"
         ) else (
-            cmd /k ""%~f0" child"
+            cmd /k ""%~f0" child %*"
         )
         exit /b
     )
 )
 
 :main
+
+set "QUICK="
+:argloop
+if "%~1"=="" goto :argdone
+if /i "%~1"=="--quick" set "QUICK=1"
+shift
+goto :argloop
+:argdone
 
 REM ============================================================
 REM  START.bat  -  Double-click this to start the clinic system
@@ -98,6 +106,17 @@ set "BLANK=%B12%%B12%%B12%%B12%%B12%%B12%"
 set "F=0"
 
 call :header
+
+if defined QUICK (
+    echo.
+    echo   [..] Quick update requested. Redirecting to background updater...
+    echo.
+    call deploy\update.bat
+    echo.
+    echo   Press any key to close...
+    pause >nul
+    exit /b
+)
 
 REM ------------------------------------------------------------
 REM  1. Docker check
@@ -369,7 +388,11 @@ REM ============================================================
 :header
 echo.
 echo  %C%=====================================================%Z%
-echo  %C%  Bure Clinic Management System  -  Startup%Z%
+if defined QUICK (
+    echo  %C%  Bure Clinic Management System  -  Quick Update%Z%
+) else (
+    echo  %C%  Bure Clinic Management System  -  Startup%Z%
+)
 echo  %C%=====================================================%Z%
 goto :eof
 
