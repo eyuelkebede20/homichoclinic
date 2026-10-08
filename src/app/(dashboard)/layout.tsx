@@ -51,10 +51,18 @@ export default async function DashboardLayout({
   }
 
   let gitHash = "unknown";
+  let appVersion = "0.0.0";
   try {
     const fs = await import("fs");
     const path = await import("path");
     
+    // Read package.json version
+    const packageJsonPath = path.join(process.cwd(), "package.json");
+    if (fs.existsSync(packageJsonPath)) {
+      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+      if (pkg.version) appVersion = pkg.version;
+    }
+
     // First try reading version.txt (injected by START scripts)
     const versionPath = path.join(process.cwd(), "version.txt");
     if (fs.existsSync(versionPath)) {
@@ -173,7 +181,7 @@ export default async function DashboardLayout({
             </div>
             
             <div className="text-[10px] text-slate-600 text-center border-t border-slate-800/50 pt-2 mt-1">
-              Version: {gitHash !== "unknown" ? gitHash : "Local"}
+              v{appVersion} {gitHash !== "unknown" ? `(${gitHash})` : "(Local)"}
             </div>
           </div>
         </div>
