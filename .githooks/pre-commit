@@ -1,0 +1,14 @@
+#!/bin/sh
+
+# Bumps version on every commit unless package.json is already staged
+if git diff --cached --name-only | grep -q "package.json"; then
+    echo "package.json is already staged, skipping auto-version bump."
+    exit 0
+fi
+
+echo "Auto-bumping patch version..."
+# Bump the version without creating a git tag or commit
+pnpm version patch --no-git-tag-version
+
+# Add the modified package.json to the index
+git add package.json
