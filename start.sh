@@ -276,7 +276,7 @@ quick_update() {
 
   qstep 4 "Switching to the new version"
   mark
-  if dc up -d --no-deps --no-build app && wait_healthy "$QUICK_TIMEOUT"; then
+  if dc up -d --no-deps --no-build --force-recreate app && wait_healthy "$QUICK_TIMEOUT"; then
     "${DOCKER[@]}" image prune -f >/dev/null 2>&1 || true
     ok "New version is healthy. Total switch time: $(fmt_el)."
     log "OK: quick update healthy"
