@@ -19,9 +19,14 @@ set "LOG=run\watcher.log"
 
 if not exist "run" mkdir run
 
-if exist "%FLAG%" (
-    echo [%DATE% %TIME%] Update request detected. >> "%LOG%"
-    del /f /q "%FLAG%" >nul 2>&1
-    call deploy\update.bat >> "%LOG%" 2>&1
-    echo [%DATE% %TIME%] update.bat finished (exit !ERRORLEVEL!^). >> "%LOG%"
+:: Loop for ~55 seconds to catch updates almost instantly
+:: (Task Scheduler will relaunch this script every 1 minute)
+for /L %%I in (1,1,11) do (
+    if exist "%FLAG%" (
+        echo [%DATE% %TIME%] Update request detected. >> "%LOG%"
+        del /f /q "%FLAG%" >nul 2>&1
+        call deploy\update.bat >> "%LOG%" 2>&1
+        echo [%DATE% %TIME%] update.bat finished (exit !ERRORLEVEL!^). >> "%LOG%"
+    )
+    timeout /t 5 /nobreak >nul
 )
