@@ -265,34 +265,23 @@ for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { @((Get
 echo   [..] Configuring system for network access on IP: %LAN_IP%
 
 echo   [..] Starting containers ^(building if code changed^)...
-if exist "logs\compose.done" del /f /q "logs\compose.done"
-if exist "logs\compose.log" del /f /q "logs\compose.log"
-start "" /b cmd /c "docker compose up -d --build >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
+echo.
+docker compose up -d --build
+if errorlevel 1 goto :compose_fail
 
-call :mark
-
-:compose_wait
-call :frame "Building and starting containers"
-call :sleep
-if not exist "logs\compose.done" goto :compose_wait
-
-call :clearline
-set /p RC=<"logs\compose.done"
-set "RC=%RC: =%"
-if not "%RC%"=="0" goto :compose_fail
-echo   %G%[OK]%Z% Containers started in %EM%:%ES%.
+echo.
+echo   %G%[OK]%Z% Containers started.
 goto :compose_ok
 
 :compose_fail
-echo   %R%[!] docker compose failed. Last lines of its output:%Z%
 echo.
-powershell -NoProfile -Command "Get-Content 'logs\compose.log' -Tail 25"
+echo   %R%[!] docker compose failed.%Z%
 echo.
 echo       Current container state:
 docker compose ps
 echo.
 echo       Common causes: port 3000 already in use, a typo in .env,
-echo       or no internet on the first build. Full output: logs\compose.log
+echo       or no internet on the first build.
 echo %date% %time% - FAILED: docker compose up>> "logs\startup-history.log"
 echo.
 pause
