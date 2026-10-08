@@ -77,7 +77,7 @@ export function SystemUpdater() {
         setPhase("failed");
         return;
       }
-      appendLog("✓ Update request sent — systemd will now run update.sh");
+      appendLog("✓ Update request sent — Task Scheduler will now run update.bat");
     } catch (err: any) {
       appendLog("✗ " + err.message);
       setPhase("failed");
@@ -142,7 +142,7 @@ export function SystemUpdater() {
     }
 
     if (!scriptDone) {
-      appendLog("✗ Timed out waiting for update.sh to finish (5 min). Check server logs.");
+      appendLog("✗ Timed out waiting for update.bat to finish (5 min). Check server logs.");
     } else {
       appendLog("✗ App did not come back online in time. Check: docker compose logs app");
     }
@@ -156,7 +156,7 @@ export function SystemUpdater() {
   const phaseLabel: Record<Phase, string> = {
     idle:       "Pull Latest Updates",
     requesting: "Sending request...",
-    running:    "Running update.sh...",
+    running:    "Running update.bat...",
     restarting: "Restarting container...",
     done:       "Pull Latest Updates",
     failed:     "Retry Update",
@@ -192,7 +192,7 @@ export function SystemUpdater() {
         <div className="mb-4 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-950 overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700 text-xs text-slate-400">
             <Terminal className="w-3.5 h-3.5" />
-            <span>update.sh — live output</span>
+            <span>update.bat — live output</span>
             {isRunning && <RefreshCw className="w-3 h-3 animate-spin ml-auto" />}
           </div>
           <div
