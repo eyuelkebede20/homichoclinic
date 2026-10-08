@@ -266,6 +266,7 @@ echo   [..] Configuring system for network access on IP: %LAN_IP%
 
 echo   [..] Starting containers ^(building if code changed^)...
 echo.
+git rev-parse --short HEAD > version.txt 2>nul
 docker compose up -d --build
 if errorlevel 1 goto :compose_fail
 

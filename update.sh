@@ -61,6 +61,7 @@ status "   [OK] Code updated to $NEW_HEAD"
 
 # 3. Build
 status "[3/5] Building new image... (takes 2-4 min)"
+git rev-parse --short HEAD > version.txt 2>/dev/null || true
 if ! docker compose build app >> "$STATUS_FILE" 2>&1; then
     status "   [!] Build failed - rolling back to $PREV"
     git reset --hard "$PREV" >/dev/null 2>&1

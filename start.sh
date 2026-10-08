@@ -1,35 +1,45 @@
 #!/usr/bin/env bash
 # ============================================================
-#  start.sh  -  Start the Bure Clinic system on Linux
+#  start.sh  -  Start / update the Bure Clinic system on Linux
 #  Place: repo root (same folder as docker-compose.yml)
 #  Run:   ./start.sh        (first time: chmod +x start.sh)
 #
 #  Uses Docker Engine (docker-ce) and the compose plugin.
 #  It does NOT need Docker Desktop.
 #
-#  What it does, in order:
+#  FULL START (default), in order:
 #    0. Pulls the latest code from GitHub (never blocks startup
 #       if the clinic is offline) and restarts itself
 #    1. Checks Docker Engine, the compose plugin and the daemon
-#       (starts the daemon with systemd if it is stopped)
 #    2. Creates run, backups and logs folders, checks project files
 #    3. Makes sure .env exists and has real passwords
 #    4. Installs the update watcher once (systemd path unit)
-#       so the admin Update button works
-#    5. Starts the database and the app with docker compose
+#    5. Starts the database and the app (live build output)
 #    6. Waits until the app reports healthy
 #    7. Shows the address to open from the clinic PCs
 #
-#  While it works you see a spinner, a moving bar and a timer.
+#  QUICK UPDATE:  ./start.sh --quick
+#    Fast app-only update after a code change (about 10-30 s):
+#    pulls the code, backs up the database, builds the new app
+#    image WHILE THE OLD ONE KEEPS RUNNING, swaps it, waits until
+#    healthy, and ROLLS BACK automatically if it is not. The
+#    database is never restarted. If the build fails, the running
+#    system is not touched at all.
 #
 #  Options:
-#    --no-update   skip the git pull
-#    --no-color    plain output
-#    --pause       wait for a key at the end (desktop launchers)
-#    --help        show this text
+#    --quick        fast app-only update with automatic rollback
+#    --no-backup    with --quick: skip the database backup
+#    --rebuild      clean rebuild of the image (no cache)
+#    --update       require the git pull to succeed
+#    --no-update    skip the git pull
+#    --quiet        spinner instead of live build output
+#    --no-color     plain output
+#    --pause        wait for a key at the end (desktop launchers)
+#    --help         show this text
 #
 #  Settings (environment variables):
 #    REQUIRE_UPDATE=1   stop if the git pull fails (default 0)
+#    QUICK_TIMEOUT=90   seconds to wait for health in --quick
 #
 #  To STOP the system:   docker compose down
 #  WARNING: never add -v to that command. It deletes the
@@ -48,15 +58,24 @@ cd "$ROOT" || exit 1
 mkdir -p logs
 
 USE_COLOR=1; NO_UPDATE=0; PAUSE=0; CHILD=0; NEEDS_BUILD=0
+QUICK=0; NO_BACKUP=0; REBUILD=0; QUIET=0
 REQUIRE_UPDATE="${REQUIRE_UPDATE:-0}"
+QUICK_TIMEOUT="${QUICK_TIMEOUT:-90}"
 for a in "$@"; do
   case "$a" in
-    --child)     CHILD=1 ;;
-    --updated)   NEEDS_BUILD=1 ;;
-    --no-update) NO_UPDATE=1 ;;
-    --no-color)  USE_COLOR=0 ;;
-    --pause)     PAUSE=1 ;;
-    -h|--help)   sed -n '2,38p' "$SELF" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --child)      CHILD=1 ;;
+    --updated)    NEEDS_BUILD=1 ;;      # internal: set after a pull brought new code
+    --quick)      QUICK=1 ;;
+    --no-backup)  NO_BACKUP=1 ;;
+    --rebuild)    REBUILD=1 ;;
+    --update)     REQUIRE_UPDATE=1 ;;
+    --no-update)  NO_UPDATE=1 ;;
+    --quiet)      QUIET=1 ;;
+    -v|--verbose) : ;;                  # live output is already the default
+    --no-color)   USE_COLOR=0 ;;
+    --pause)      PAUSE=1 ;;
+    -h|--help)    awk 'NR>1 && /^#/ {sub(/^# ?/,""); print; next} NR>1 {exit}' "$SELF"; exit 0 ;;
+    *)            echo "Unknown option: $a   (try --help)"; exit 2 ;;
   esac
 done
 
@@ -78,15 +97,11 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
   {
     echo
     echo "  ${Y}[..]${Z} Checking for system updates from GitHub..."
-    git rev-parse HEAD > .git-old 2>/dev/null || true
-    if timeout 30 git pull --ff-only; then
+    OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo none)
+    if GIT_TERMINAL_PROMPT=0 timeout 30 git pull --ff-only; then
       log "git pull OK"
-      git rev-parse HEAD > .git-new 2>/dev/null || true
-      if ! cmp -s .git-old .git-new; then
-        UPDATED_ARG="--updated"
-      else
-        UPDATED_ARG=""
-      fi
+      NEW_HEAD=$(git rev-parse HEAD 2>/dev/null || echo none)
+      if [ "$OLD_HEAD" != "$NEW_HEAD" ]; then UPDATED_ARG="--updated"; else UPDATED_ARG=""; fi
     else
       log "git pull failed"
       if [ "$REQUIRE_UPDATE" = 1 ]; then
@@ -94,6 +109,9 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
         exit 1
       fi
       echo "  ${Y}[!] Could not reach GitHub or the pull failed.${Z}"
+      if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
+        echo "      This PC has local edits to tracked files, which can block a pull."
+      fi
       echo "      Continuing with the version already on this PC."
       UPDATED_ARG=""
     fi
@@ -101,7 +119,7 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
   }
 fi
 
-log "START requested"
+log "START requested ($([ "$QUICK" = 1 ] && echo quick || echo full))"
 
 # ------------------------------------------------------------
 #  Helpers
@@ -125,10 +143,15 @@ frame() {   # frame "message"  -> draws ONE animation frame on the same line
   local pos=$F; [ "$pos" -gt 10 ] && pos=$(( 20 - pos ))
   printf '\r   %s%s%s %s  [%s] %s    \e[K' "$C" "${SPIN:$((F % 4)):1}" "$Z" "$1" "${PAT:$pos:12}" "$(fmt_el)"
 }
-step() {    # step N "text"  -> overall progress bar
+step() {    # step N "text"  -> overall progress bar (full start)
   local n=$1
   echo; echo "  ${C}[${FULLS:0:n}${EMPTYS:n}]${Z} Step $n of 7 - $2"
   log "step $n: $2"
+}
+qstep() {   # qstep N "text"  -> progress for --quick (4 stages)
+  local n=$1
+  echo; echo "  ${C}[${FULLS:0:n}${EMPTYS:0:$((4-n))}]${Z} Quick update $n of 4 - $2"
+  log "quick $n: $2"
 }
 ok()   { echo "  ${G}[OK]${Z} $*"; }
 warn() { echo "  ${Y}[!]${Z} $*"; }
@@ -149,6 +172,7 @@ spin_pid() { # spin_pid PID "message" -> animates while PID runs, returns its ex
 }
 
 DOCKER=(docker)
+PROG=()
 dc() { "${DOCKER[@]}" compose "$@"; }
 docker_up() { "${DOCKER[@]}" info >/dev/null 2>&1; }
 svc_status() {  # svc_status db|app -> starting | healthy | unhealthy | running
@@ -157,6 +181,43 @@ svc_status() {  # svc_status db|app -> starting | healthy | unhealthy | running
   [ -z "$cid" ] && { echo starting; return; }
   "${DOCKER[@]}" inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$cid" 2>/dev/null || echo starting
 }
+wait_healthy() { # wait_healthy SECONDS -> 0 healthy, 1 timed out. Sets DBS and APS.
+  local limit=$1 n=0; DBS=starting; APS=starting; mark
+  while :; do
+    if [ $(( n % 20 )) -eq 0 ]; then DBS=$(svc_status db); APS=$(svc_status app); fi
+    if [ "$APS" = healthy ]; then clearline; return 0; fi
+    if [ $(( SECONDS - T0 )) -ge "$limit" ]; then clearline; return 1; fi
+    frame "Database: $DBS  App: $APS"
+    sleep 0.25; n=$(( n + 1 ))
+  done
+}
+run_logged() { # run_logged "spinner message" command...  -> live output (default) or spinner (--quiet)
+  local msg=$1; shift
+  : > logs/compose.log
+  if [ "$QUIET" = 1 ]; then
+    "$@" > logs/compose.log 2>&1 &
+    spin_pid $! "$msg"; return $?
+  fi
+  echo "  ------------------------------------------------------------"
+  mark
+  "$@" 2>&1 | tee logs/compose.log
+  local rc=${PIPESTATUS[0]}
+  echo "  ------------------------------------------------------------"
+  return "$rc"
+}
+show_failure() { # show_failure EXITCODE
+  echo "  ${R}[!] docker compose failed (exit code $1).${Z}"
+  echo
+  echo "      Lines that mention an error:"
+  grep -iE 'error|failed|cannot|not found|denied|no such|unable' logs/compose.log | tail -n 10 | sed 's/^/        /'
+  if [ "$QUIET" = 1 ]; then
+    echo; echo "      Last 40 lines of the output:"; echo
+    tail -n 40 logs/compose.log | sed 's/^/        /'
+  fi
+  echo
+  echo "      Full output:  logs/compose.log"
+  echo "      Clean build:  ./start.sh --rebuild"
+}
 lan_ip() {
   local addr
   addr=$(ip -4 route get 1.1.1.1 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="src"){print $(i+1); exit}}')
@@ -164,15 +225,97 @@ lan_ip() {
   echo "${addr:-localhost}"
 }
 
+# ------------------------------------------------------------
+#  --quick : app-only update with automatic rollback
+# ------------------------------------------------------------
+quick_update() {
+  [ -f .env ] || die ".env was not found." "Run ./start.sh once for the first full start."
+  local cid old_id app_ref repo bfile rc
+
+  qstep 2 "Saving the current version and the database"
+  cid=$(dc ps -q app 2>/dev/null | head -n1)
+  [ -n "$cid" ] || die "The clinic system is not running." "Use ./start.sh for a full start first."
+  old_id=$("${DOCKER[@]}" inspect -f '{{.Image}}' "$cid")
+  app_ref=$("${DOCKER[@]}" inspect -f '{{.Config.Image}}' "$cid")
+  repo=${app_ref%%:*}
+  "${DOCKER[@]}" tag "$old_id" "${repo}:previous" 2>/dev/null || true
+  ok "Current version kept as ${repo}:previous"
+
+  bfile=""
+  if [ "$NO_BACKUP" = 1 ]; then
+    warn "Database backup skipped (--no-backup)."
+  else
+    mkdir -p backups
+    bfile="backups/pre-quick-$(date +%F_%H%M%S).sql.gz"
+    dc exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' 2>logs/backup.err | gzip > "$bfile"
+    rc=${PIPESTATUS[0]}
+    if [ "$rc" -eq 0 ] && [ "$(stat -c %s "$bfile")" -gt 100 ]; then
+      ok "Database backed up to $bfile"
+      # keep only the 10 newest quick backups
+      ls -1t backups/pre-quick-*.sql.gz 2>/dev/null | tail -n +11 | xargs -r rm -f
+    else
+      rm -f "$bfile"
+      die "The database backup failed, so the update was cancelled." \
+        "Nothing was changed. See logs/backup.err" \
+        "To update anyway:  ./start.sh --quick --no-backup"
+    fi
+  fi
+
+  qstep 3 "Building the new version (the clinic keeps running meanwhile)"
+  git rev-parse --short HEAD > version.txt 2>/dev/null || true
+  local bargs=(build); [ "$REBUILD" = 1 ] && bargs+=(--no-cache)
+  run_logged "Building the new app image" dc ${PROG[@]+"${PROG[@]}"} "${bargs[@]}" app; rc=$?
+  if [ "$rc" -ne 0 ]; then
+    show_failure "$rc"
+    echo
+    echo "      ${G}The running system was NOT touched. Users are unaffected.${Z}"
+    log "FAILED: quick build (exit $rc)"
+    echo; pause_if; exit 1
+  fi
+  ok "New version built in $(fmt_el)."
+
+  qstep 4 "Switching to the new version"
+  mark
+  if dc up -d --no-deps --no-build app && wait_healthy "$QUICK_TIMEOUT"; then
+    "${DOCKER[@]}" image prune -f >/dev/null 2>&1 || true
+    ok "New version is healthy. Total switch time: $(fmt_el)."
+    log "OK: quick update healthy"
+    echo
+    echo " ${G}=====================================================${Z}"
+    echo " ${G}   UPDATE COMPLETE${Z}"
+    echo " ${G}=====================================================${Z}"
+    echo "  Tip: press Ctrl+F5 in the browser so it loads the new files."
+    echo; pause_if; exit 0
+  fi
+
+  # ---- the new version failed: roll back ----
+  clearline
+  echo "  ${R}[!] The new version did not become healthy.${Z}"
+  echo "      Last lines of the app log (saved to logs/quick-failed-app.log):"; echo
+  dc logs --tail 40 app 2>&1 | tee logs/quick-failed-app.log | sed 's/^/        /'
+  echo
+  warn "Rolling back to the previous version..."
+  "${DOCKER[@]}" tag "$old_id" "$app_ref"
+  if dc up -d --no-deps --no-build --force-recreate app && wait_healthy 90; then
+    ok "Rolled back. The previous version is running again."
+    log "ROLLED BACK: new version unhealthy"
+  else
+    echo "  ${R}[!] The rollback ALSO failed. Check: docker compose logs app${Z}"
+    log "FAILED: rollback unhealthy"
+  fi
+  [ -n "$bfile" ] && echo "      If the new version changed the database, restore from: $bfile"
+  echo; pause_if; exit 1
+}
+
 echo
 echo " ${C}=====================================================${Z}"
-echo " ${C}  Bure Clinic Management System  -  Startup${Z}"
+echo " ${C}  Bure Clinic Management System  -  $([ "$QUICK" = 1 ] && echo 'Quick Update' || echo Startup)${Z}"
 echo " ${C}=====================================================${Z}"
 
 # ------------------------------------------------------------
 #  1. Docker Engine check
 # ------------------------------------------------------------
-step 1 "Checking Docker"
+if [ "$QUICK" = 1 ]; then qstep 1 "Checking Docker"; else step 1 "Checking Docker"; fi
 
 command -v docker >/dev/null 2>&1 || die "Docker Engine is not installed on this computer." \
   "Install it from https://docs.docker.com/engine/install/ and run this again."
@@ -196,6 +339,9 @@ if ! docker_up; then
   command -v systemctl >/dev/null 2>&1 || die "Docker is not running and systemctl is not available." \
     "Start the Docker daemon manually, then run this again."
   info "Docker is not running - starting it now."
+  # ask for the sudo password HERE, in the foreground. A background sudo
+  # cannot prompt and would hang silently.
+  sudo -v || die "sudo is needed to start the Docker service." "Run:  sudo systemctl start docker"
   echo
   sudo systemctl start docker >/dev/null 2>&1 &
   spin_pid $! "Starting the Docker service" || true
@@ -213,6 +359,11 @@ if command -v systemctl >/dev/null 2>&1 && ! systemctl is-enabled --quiet docker
   warn "Docker is not set to start at boot. After a power cut the clinic would stay down."
   echo "      Fix:  sudo systemctl enable docker"
 fi
+
+# plain progress = every build step and error printed in full
+dc --progress=plain version >/dev/null 2>&1 && PROG=(--progress=plain)
+
+if [ "$QUICK" = 1 ]; then quick_update; fi
 
 # ------------------------------------------------------------
 #  2. Folders and project files
@@ -330,34 +481,44 @@ fi
 
 # ------------------------------------------------------------
 #  5. Start the stack
-#     docker compose runs in the background so the screen can
-#     keep animating. Output goes to logs/compose.log.
+#     Live build output by default (also saved to
+#     logs/compose.log). Use --quiet for a spinner instead.
 #     --build is cheap when nothing changed and makes sure a
 #     freshly pulled version is really what runs.
 # ------------------------------------------------------------
 step 5 "Starting the clinic system"
-echo "        First run takes 2-4 minutes. Later starts about 30 seconds."
+if [ "$NEEDS_BUILD" = 1 ]; then
+  info "New code was downloaded - the app image will be rebuilt."
+else
+  echo "        First run takes 2-4 minutes. Later starts about 30 seconds."
+fi
 echo
 
 LAN_IP=$(lan_ip)
 info "Network address of this PC: $LAN_IP"
 
-  mark
-  echo
-  if dc up -d --build; then
-    echo
-    ok "Containers started in $(fmt_el)."
-  else
-    echo
-    echo "  ${R}[!] docker compose failed.${Z}"
-    echo
-    echo "      Current container state:"; dc ps 2>/dev/null
-    echo
-    echo "      Common causes: port 3000 already in use, a typo in .env,"
-    echo "      or no internet on the first build."
-    log "FAILED: docker compose up"
-    echo; pause_if; exit 1
+compose_job() {
+  git rev-parse --short HEAD > version.txt 2>/dev/null || true
+  if [ "$REBUILD" = 1 ]; then
+    echo ">>> docker compose build --no-cache"
+    dc ${PROG[@]+"${PROG[@]}"} build --no-cache || return $?
   fi
+  echo ">>> docker compose up -d --build"
+  dc ${PROG[@]+"${PROG[@]}"} up -d --build
+}
+
+run_logged "Building and starting containers" compose_job; rc=$?
+if [ "$rc" -eq 0 ]; then
+  ok "Containers started in $(fmt_el)."
+else
+  show_failure "$rc"
+  echo "      Common causes: no package-lock.json for npm ci, a build error in the"
+  echo "      app, port 3000 already in use, a typo in .env, or no internet."
+  echo
+  echo "      Container state:"; dc ps 2>/dev/null | sed 's/^/        /'
+  log "FAILED: docker compose up (exit $rc)"
+  echo; pause_if; exit 1
+fi
 
 # ------------------------------------------------------------
 #  6. Wait for healthy (up to 150 seconds)
@@ -366,27 +527,19 @@ info "Network address of this PC: $LAN_IP"
 step 6 "Waiting for the app to become healthy"
 echo
 
-DBS=starting; APS=starting; n=0; mark
-while :; do
-  if [ $(( n % 20 )) -eq 0 ]; then DBS=$(svc_status db); APS=$(svc_status app); fi
-  [ "$APS" = healthy ] && break
-  if [ $(( SECONDS - T0 )) -ge 150 ]; then
-    clearline
-    echo "  ${R}[!] The app did not become healthy within 2.5 minutes.${Z}"
-    echo "      Last lines of the app log:"; echo
-    dc logs --tail 30 app
-    echo
-    echo "      Full log:  docker compose logs app"
-    echo "      Database:  docker compose logs db"
-    log "FAILED: app not healthy"
-    echo; pause_if; exit 1
-  fi
-  frame "Database: $DBS  App: $APS"
-  sleep 0.25; n=$(( n + 1 ))
-done
-clearline
-ok "Database and app are healthy after $(fmt_el)."
-log "OK: app healthy"
+if wait_healthy 150; then
+  ok "Database and app are healthy after $(fmt_el)."
+  log "OK: app healthy"
+else
+  echo "  ${R}[!] The app did not become healthy within 2.5 minutes.${Z}"
+  echo "      Last lines of the app log:"; echo
+  dc logs --tail 30 app
+  echo
+  echo "      Full log:  docker compose logs app"
+  echo "      Database:  docker compose logs db"
+  log "FAILED: app not healthy"
+  echo; pause_if; exit 1
+fi
 
 # ------------------------------------------------------------
 #  7. Show the address for the clinic PCs

@@ -84,6 +84,7 @@ call :status "   [OK] Code updated to !NEW_HEAD!"
 
 :: ── [3/5] Build ─────────────────────────────────────────────
 call :status "[3/5] Building new image... (takes 2-4 min)"
+git rev-parse --short HEAD > version.txt 2>nul
 docker compose build app >> "%STATUS_FILE%" 2>&1
 if errorlevel 1 (
     call :status "   [!] Build failed - rolling back to !PREV!"
