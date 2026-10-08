@@ -97,13 +97,13 @@ call :status "   [OK] Build complete."
 
 :: ── [4/5] Restart ───────────────────────────────────────────
 call :status "[4/5] Restarting container..."
-docker compose up -d --remove-orphans >> "%STATUS_FILE%" 2>&1
+docker compose up -d --force-recreate --remove-orphans >> "%STATUS_FILE%" 2>&1
 call :status "   [OK] Container restarted - waiting for health check..."
 
 :: ── [5/5] Health wait ────────────────────────────────────────
 set "TRIES=0"
 :health_loop
-timeout /t 5 /nobreak >nul
+ping 127.0.0.1 -n 6 >nul
 set /a TRIES+=1
 for /f "delims=" %%C in ('docker compose ps -q app 2^>nul') do (
     for /f "tokens=*" %%S in ('docker inspect -f "{{.State.Health.Status}}" %%C 2^>nul') do (

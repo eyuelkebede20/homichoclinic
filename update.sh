@@ -72,7 +72,7 @@ status "   [OK] Build complete."
 
 # 4. Restart
 status "[4/5] Restarting container..."
-docker compose up -d --remove-orphans >> "$STATUS_FILE" 2>&1
+docker compose up -d --force-recreate --remove-orphans >> "$STATUS_FILE" 2>&1
 status "   [OK] Container restarted - waiting for health check..."
 
 # 5. Health wait
