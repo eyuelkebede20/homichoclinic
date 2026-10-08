@@ -265,6 +265,8 @@ for /f "usebackq tokens=*" %%I in (`powershell -NoProfile -Command "try { @((Get
 echo   [..] Configuring system for network access on IP: %LAN_IP%
 
 echo   [..] Starting containers ^(building if code changed^)...
+if exist "logs\compose.done" del /f /q "logs\compose.done"
+if exist "logs\compose.log" del /f /q "logs\compose.log"
 start "" /b cmd /c "docker compose up -d --build >logs\compose.log 2>&1 && echo 0 >logs\compose.done || echo 1 >logs\compose.done"
 
 call :mark
