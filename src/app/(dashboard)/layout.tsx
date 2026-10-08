@@ -50,8 +50,20 @@ export default async function DashboardLayout({
     }
   }
 
+  let appVersion = "unknown";
   let gitHash = "unknown";
   try {
+    const fs = await import("fs");
+    const path = await import("path");
+    
+    // Read package.json version
+    const pkgPath = path.join(process.cwd(), "package.json");
+    if (fs.existsSync(pkgPath)) {
+      const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
+      appVersion = pkg.version || "unknown";
+    }
+
+    // Try to get git hash (will fail in Docker if .git is not copied)
     const { execSync } = require("child_process");
     gitHash = execSync("git rev-parse --short HEAD").toString().trim();
   } catch (e) {
@@ -163,7 +175,7 @@ export default async function DashboardLayout({
             </div>
             
             <div className="text-[10px] text-slate-600 text-center border-t border-slate-800/50 pt-2 mt-1">
-              Version: {gitHash}
+              v{appVersion} {gitHash !== "unknown" ? `(${gitHash})` : ""}
             </div>
           </div>
         </div>
