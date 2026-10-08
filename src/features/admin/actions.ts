@@ -262,7 +262,7 @@ export const triggerSystemUpdate = createSafeAction({
         fs.writeFileSync(statusFile, "=== Update started ===\n");
         
         const { spawn } = await import("child_process");
-        const proc = spawn("cmd.exe", ["/c", "UPDATE.bat"], { 
+        const proc = spawn("cmd.exe", ["/c", "deploy\\update.bat"], { 
           cwd: process.cwd(),
           detached: true,
           windowsHide: true,
