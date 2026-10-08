@@ -16,10 +16,12 @@ const geistMono = Geist_Mono({
 export async function generateMetadata(): Promise<Metadata> {
   const { prisma } = await import("@/lib/prisma");
   let clinicName = "Clinic ERP";
-  try {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: "clinicName" } });
-    if (setting) clinicName = setting.value;
-  } catch (e) {}
+  if (process.env.DATABASE_URL) {
+    try {
+      const setting = await prisma.systemSetting.findUnique({ where: { key: "clinicName" } });
+      if (setting) clinicName = setting.value;
+    } catch (e) {}
+  }
 
   return {
     title: clinicName,
@@ -46,11 +48,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Gracefully handle db errors during initial build or if db is unreachable
   let isLowPower = true; // Default to true for OptiPlex machines
-  try {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } });
-    if (setting?.value === "false") isLowPower = false;
-  } catch (e) {
-    console.error("Could not fetch lowPowerMode setting", e);
+  if (process.env.DATABASE_URL) {
+    try {
+      const setting = await prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } });
+      if (setting?.value === "false") isLowPower = false;
+    } catch (e) {
+      console.error("Could not fetch lowPowerMode setting", e);
+    }
   }
 
   return (

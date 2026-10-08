@@ -16,6 +16,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 # Generate prisma client then build Next.js in standalone mode
 # We use a cache mount for .next/cache so rebuilds are incredibly fast
+ENV BETTER_AUTH_SECRET="build-dummy-secret"
 RUN --mount=type=cache,target=/app/.next/cache \
     pnpm exec prisma generate && \
     pnpm exec next build
