@@ -342,21 +342,22 @@ echo
 LAN_IP=$(lan_ip)
 info "Network address of this PC: $LAN_IP"
 
-  dc up -d --build > logs/compose.log 2>&1 &
-  msg="Starting containers (building if code changed)"
-
-if spin_pid $! "$msg"; then
-  ok "Containers started in $(fmt_el)."
-else
-  echo "  ${R}[!] docker compose failed. Last lines of its output:${Z}"
-  echo; tail -n 25 logs/compose.log; echo
-  echo "      Current container state:"; dc ps 2>/dev/null
+  mark
   echo
-  echo "      Common causes: port 3000 already in use, a typo in .env,"
-  echo "      or no internet on the first build. Full output: logs/compose.log"
-  log "FAILED: docker compose up"
-  echo; pause_if; exit 1
-fi
+  if dc up -d --build; then
+    echo
+    ok "Containers started in $(fmt_el)."
+  else
+    echo
+    echo "  ${R}[!] docker compose failed.${Z}"
+    echo
+    echo "      Current container state:"; dc ps 2>/dev/null
+    echo
+    echo "      Common causes: port 3000 already in use, a typo in .env,"
+    echo "      or no internet on the first build."
+    log "FAILED: docker compose up"
+    echo; pause_if; exit 1
+  fi
 
 # ------------------------------------------------------------
 #  6. Wait for healthy (up to 150 seconds)
