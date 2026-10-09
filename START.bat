@@ -1,6 +1,18 @@
 @echo off
 title Bure Clinic - Startup
 
+REM Check for stop flag immediately
+set "DO_STOP="
+for %%a in (%*) do (
+    if /i "%%a"=="--stop" set "DO_STOP=1"
+)
+if defined DO_STOP (
+    echo   Stopping Bure Clinic system...
+    docker compose down
+    echo   System stopped successfully.
+    exit /b 0
+)
+
 REM  Self-update and relaunch block. Wrapped in ( ) so CMD reads it all at once
 REM  before git pull can change the file on disk.
 (

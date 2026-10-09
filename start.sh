@@ -33,6 +33,7 @@
 #    --update       require the git pull to succeed
 #    --no-update    skip the git pull
 #    --quiet        spinner instead of live build output
+#    --stop         stop the system (equivalent to docker compose down)
 #    --no-color     plain output
 #    --pause        wait for a key at the end (desktop launchers)
 #    --help         show this text
@@ -41,8 +42,8 @@
 #    REQUIRE_UPDATE=1   stop if the git pull fails (default 0)
 #    QUICK_TIMEOUT=90   seconds to wait for health in --quick
 #
-#  To STOP the system:   docker compose down
-#  WARNING: never add -v to that command. It deletes the
+#  To STOP the system:   ./start.sh --stop
+#  WARNING: never run `docker compose down -v`. It deletes the
 #  database volume, which means ALL patient data is lost.
 #
 #  Every start, success and failure is logged with a time stamp
@@ -58,6 +59,7 @@ cd "$ROOT" || exit 1
 mkdir -p logs
 
 USE_COLOR=1; NO_UPDATE=0; PAUSE=0; CHILD=0; NEEDS_BUILD=0
+STOP=0
 QUICK=0; NO_BACKUP=0; REBUILD=0; QUIET=0
 REQUIRE_UPDATE="${REQUIRE_UPDATE:-0}"
 QUICK_TIMEOUT="${QUICK_TIMEOUT:-90}"
@@ -71,6 +73,7 @@ for a in "$@"; do
     --update)     REQUIRE_UPDATE=1 ;;
     --no-update)  NO_UPDATE=1 ;;
     --quiet)      QUIET=1 ;;
+    --stop)       STOP=1 ;;
     -v|--verbose) : ;;                  # live output is already the default
     --no-color)   USE_COLOR=0 ;;
     --pause)      PAUSE=1 ;;
@@ -83,6 +86,13 @@ if [ "$USE_COLOR" = 1 ] && [ -t 1 ]; then
   G=$'\e[92m'; R=$'\e[91m'; Y=$'\e[93m'; C=$'\e[96m'; Z=$'\e[0m'
 else
   G=''; R=''; Y=''; C=''; Z=''
+fi
+
+if [ "$STOP" = 1 ]; then
+  echo "  ${C}Stopping Bure Clinic system...${Z}"
+  docker compose down
+  echo "  ${G}System stopped successfully.${Z}"
+  exit 0
 fi
 
 log() { printf '%s - %s\n' "$(date '+%F %T')" "$*" >> "$ROOT/logs/startup-history.log"; }
