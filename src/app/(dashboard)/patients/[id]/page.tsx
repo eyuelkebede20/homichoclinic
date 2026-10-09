@@ -144,7 +144,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     ...patient.prescriptions.map((p) => ({ type: "prescription" as const, date: p.createdAt, data: p }))
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
-  const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";
+  const isNanSince = patient.patientType === "Civilian Staff" && (!patient.permanentSince || patient.permanentSince === "NaN");
 
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none">
@@ -209,10 +209,12 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">ID / Gov ID</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.employeeId || patient.militaryId || "N/A"}</dd>
               </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || "N/A"}</dd>
-              </div>
+              {patient.patientType === "Civilian Staff" && (
+                <div>
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
+                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || "N/A"}</dd>
+                </div>
+              )}
               {patient.department && (
                 <div>
                   <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Department / Division</dt>

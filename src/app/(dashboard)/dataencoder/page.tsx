@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 
-export default async function DataEncoderPage() {
+export default async function DataEncoderPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const session = await auth.api.getSession({
     headers: await headers()
   });
@@ -21,7 +21,24 @@ export default async function DataEncoderPage() {
     redirect("/dashboard");
   }
 
+  const resolvedParams = await searchParams;
+  const fromDate = resolvedParams.from ? new Date(resolvedParams.from) : undefined;
+  const toDate = resolvedParams.to ? new Date(resolvedParams.to) : undefined;
+  
+  if (toDate) {
+    // Include the entire end day
+    toDate.setHours(23, 59, 59, 999);
+  }
+
+  const whereClause: any = {};
+  if (fromDate || toDate) {
+    whereClause.createdAt = {};
+    if (fromDate) whereClause.createdAt.gte = fromDate;
+    if (toDate) whereClause.createdAt.lte = toDate;
+  }
+
   const rawInvoices = await prisma.invoice.findMany({
+    where: whereClause,
     include: {
       patient: true,
       items: true,

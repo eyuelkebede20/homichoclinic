@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
 import { approveInvoice, disapproveInvoice } from "@/features/dataencoder/actions";
 import { toast } from "sonner";
@@ -29,6 +29,21 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
   const [searchQuery, setSearchQuery] = useState("");
 
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const fromDate = searchParams.get("from") || "";
+  const toDate = searchParams.get("to") || "";
+
+  const handleDateChange = (type: "from" | "to", value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(type, value);
+    } else {
+      params.delete(type);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -152,8 +167,25 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
           </button>
         </div>
         
-        <div className="flex items-center gap-2 pb-4 sm:pb-0 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-64">
+        <div className="flex flex-wrap items-center gap-2 pb-4 sm:pb-0 w-full sm:w-auto">
+          {activeTab !== "pending" && (
+            <div className="flex items-center gap-2 mr-2">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => handleDateChange("from", e.target.value)}
+                className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              />
+              <span className="text-sm text-slate-500">-</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => handleDateChange("to", e.target.value)}
+                className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+              />
+            </div>
+          )}
+          <div className="relative flex-1 sm:w-48">
             <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
             <input
               type="text"

@@ -12,7 +12,7 @@ export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApp
   const [selectedOpd, setSelectedOpd] = useState<string>("1");
   const [isExecuting, setIsExecuting] = useState(false);
 
-  const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";
+  const isNanSince = patient.patientType === "Civilian Staff" && (!patient.permanentSince || patient.permanentSince === "NaN");
   const isPending = patient.status === "PENDING";
 
   const handleAdmit = async (e: React.MouseEvent) => {
@@ -63,7 +63,7 @@ export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApp
       <td className="px-3 py-4 whitespace-nowrap text-sm">
         {isNanSince
           ? <span className="text-red-500 text-xs font-semibold">Missing ⚠</span>
-          : <span className="text-slate-500">{patient.permanentSince}</span>
+          : <span className="text-slate-500">{patient.permanentSince || "-"}</span>
         }
       </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>
