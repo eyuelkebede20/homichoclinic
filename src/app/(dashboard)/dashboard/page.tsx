@@ -11,7 +11,7 @@ import { ReceptionDashboard } from "@/features/clinical/components/reception-das
 import { NurseDashboard } from "@/features/clinical/components/nurse-dashboard";
 import { LabDashboard } from "@/features/clinical/components/lab-dashboard";
 import { PharmacyDashboard } from "@/features/clinical/components/pharmacy-dashboard";
-import { DataencoderDashboard } from "@/features/clinical/components/dataencoder-dashboard";
+
 import { VisitForm } from "@/features/clinical/components/visit-form";
 import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue";
 import { DoctorWeeklyAppointmentsCard } from "@/features/clinical/components/doctor-weekly-appointments-card";
@@ -173,24 +173,7 @@ export default async function DashboardPage() {
 
   // 6. Dataencoder Dashboard
   if (role === "Dataencoder") {
-    const [completedVisits, invoices] = await Promise.all([
-      prisma.visit.findMany({
-        where: { status: "completed", invoiceId: null },
-        include: { patient: true },
-        orderBy: { updatedAt: "desc" }
-      }),
-      prisma.invoice.findMany({
-        include: { 
-          patient: true,
-          labRequests: { include: { test: true } },
-          prescriptionItems: { include: { drug: true } }
-        },
-        orderBy: { createdAt: "desc" },
-        take: 100
-      })
-    ]);
-    
-    return <div className="p-8 max-w-7xl mx-auto"><DataencoderDashboard visits={completedVisits} invoices={invoices} /></div>;
+    redirect("/dataencoder");
   }
 
   // 5. Pharmacy Dashboard

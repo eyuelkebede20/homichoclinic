@@ -67,7 +67,7 @@ export const createPatient = createSafeAction({
           }
         }
       }
-    } else if (data.patientType === "Civilian Family") {
+    } else if (data.patientType === "Civilian Family" || data.patientType === "Soldier Family") {
       // Resolve staff by phone, militaryId, or employeeId
       if (data.staffSearchStr && !resolvedPrimaryId) {
         const primary = await prisma.patient.findFirst({
@@ -88,9 +88,9 @@ export const createPatient = createSafeAction({
       // If they are family, we can inherit the exact discount of the primary patient
       if (resolvedPrimaryId) {
         const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-        discountPercent = primary ? primary.discountPercent : 95; // fallback
+        discountPercent = data.patientType === "Soldier Family" ? 100 : (primary ? primary.discountPercent : 95); // fallback
       } else {
-        discountPercent = 95;
+        discountPercent = data.patientType === "Soldier Family" ? 100 : 95;
       }
     } else {
       if (!permanentSince || permanentSince.trim() === "") {
@@ -187,13 +187,13 @@ export const updatePatient = createSafeAction({
 
     if (existingPatient.patientType === "Soldier") {
       discountPercent = 100;
-    } else if (existingPatient.patientType === "Civilian Family") {
+    } else if (existingPatient.patientType === "Civilian Family" || existingPatient.patientType === "Soldier Family") {
       if (data.staffSearchStr != null) {
         const searchStr = data.staffSearchStr.trim();
         if (searchStr === "" || searchStr === "UNLINK") {
           resolvedPrimaryId = null;
           newRelationship = null;
-          discountPercent = 95; // default fallback when unlinked
+          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : 95; // default fallback when unlinked
         } else {
           const primary = await prisma.patient.findFirst({
             where: {
@@ -209,15 +209,15 @@ export const updatePatient = createSafeAction({
           }
           resolvedPrimaryId = primary.id;
           newRelationship = data.relationship || "Other";
-          discountPercent = primary.discountPercent;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : primary.discountPercent;
         }
       } else {
         // Just retain existing link, inherit discount again just in case primary changed
         if (resolvedPrimaryId) {
           const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-          discountPercent = primary ? primary.discountPercent : 95;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : (primary ? primary.discountPercent : 95);
         } else {
-          discountPercent = 95;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : 95;
         }
       }
     } else {

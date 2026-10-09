@@ -5,7 +5,7 @@ import { useState } from "react";
 import { approveInvoice, disapproveInvoice } from "@/features/dataencoder/actions";
 import { toast } from "sonner";
 
-import { Check, X, Printer, Download } from "lucide-react";
+import { Check, X, Printer, Download, Search } from "lucide-react";
 
 type InvoiceDisplay = {
   id: string;
@@ -22,6 +22,7 @@ type InvoiceDisplay = {
 
 export function DataEncoderClient({ initialInvoices }: { initialInvoices: InvoiceDisplay[] }) {
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "disapproved">("pending");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [executingApprove, setExecutingApprove] = useState(false);
   const [executingDisapprove, setExecutingDisapprove] = useState(false);
@@ -48,7 +49,13 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
     }
   };
 
-  const filtered = initialInvoices.filter(i => i.status === activeTab);
+  const filtered = initialInvoices.filter(i => {
+    const matchesTab = i.status === activeTab;
+    const matchesSearch = 
+      i.patientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      i.id.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesTab && matchesSearch;
+  });
 
   const handlePrint = () => {
     window.print();
@@ -82,11 +89,11 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
 
   return (
     <div className="bg-white dark:bg-slate-900 shadow rounded-xl border border-slate-200 dark:border-slate-800 flex flex-col min-h-[500px]">
-      <div className="border-b border-slate-200 dark:border-slate-800 flex justify-between items-center px-4">
-        <div className="flex gap-6">
+      <div className="border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:justify-between sm:items-center px-4 gap-4">
+        <div className="flex gap-6 w-full sm:w-auto overflow-x-auto">
           <button
             onClick={() => setActiveTab("pending")}
-            className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "pending"
                 ? "border-blue-600 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -96,7 +103,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
           </button>
           <button
             onClick={() => setActiveTab("approved")}
-            className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "approved"
                 ? "border-blue-600 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -106,7 +113,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
           </button>
           <button
             onClick={() => setActiveTab("disapproved")}
-            className={`py-4 text-sm font-medium border-b-2 transition-colors ${
+            className={`py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === "disapproved"
                 ? "border-blue-600 text-blue-600 dark:text-blue-400"
                 : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -116,22 +123,34 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
           </button>
         </div>
         
-        {activeTab !== "pending" && (
-          <div className="flex gap-2">
-            <button 
-              onClick={handleExport}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-md transition-colors"
-            >
-              <Download className="w-4 h-4" /> Export CSV
-            </button>
-            <button 
-              onClick={handlePrint}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-md transition-colors"
-            >
-              <Printer className="w-4 h-4" /> Print
-            </button>
+        <div className="flex items-center gap-2 pb-4 sm:pb-0 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search patient or ID..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
+            />
           </div>
-        )}
+          {activeTab !== "pending" && (
+            <>
+              <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-md transition-colors whitespace-nowrap"
+              >
+                <Download className="w-4 h-4" /> <span className="hidden sm:inline">Export</span>
+              </button>
+              <button 
+                onClick={handlePrint}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-md transition-colors whitespace-nowrap"
+              >
+                <Printer className="w-4 h-4" /> <span className="hidden sm:inline">Print</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="p-0 overflow-x-auto print:p-0">

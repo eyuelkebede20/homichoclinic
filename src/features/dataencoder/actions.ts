@@ -7,11 +7,11 @@ import { logAudit } from "@/lib/audit";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 
-export const approveInvoiceSchema = z.object({
+const approveInvoiceSchema = z.object({
   invoiceId: z.string().min(1, "Invoice ID is required"),
 });
 
-export const disapproveInvoiceSchema = z.object({
+const disapproveInvoiceSchema = z.object({
   invoiceId: z.string().min(1, "Invoice ID is required"),
 });
 

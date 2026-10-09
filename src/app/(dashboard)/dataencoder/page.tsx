@@ -24,6 +24,7 @@ export default async function DataEncoderPage() {
   const rawInvoices = await prisma.invoice.findMany({
     include: {
       patient: true,
+      items: true,
       labRequests: {
         include: { test: true }
       },
@@ -35,18 +36,37 @@ export default async function DataEncoderPage() {
   });
 
   // Map to the shape we need
-  const invoices = rawInvoices.map(inv => ({
-    id: inv.id,
-    createdAt: inv.createdAt.toISOString(),
-    patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
-    discountPercentApplied: inv.discountPercentApplied,
-    subtotal: inv.subtotal,
-    total: inv.total,
-    status: inv.status,
-    labUsed: inv.labRequests.map(lr => lr.test.name).join(", ") || "-",
-    pharmaUsed: inv.prescriptionItems.map(pi => pi.drug.name).join(", ") || "-",
-    discountAmount: Math.round((inv.subtotal * inv.discountPercentApplied) / 100)
-  }));
+  const invoices = rawInvoices.map(inv => {
+    let labCost = 0;
+    let pharmaCost = 0;
+
+    for (const item of inv.items) {
+      if (item.description.startsWith("Lab: ")) {
+        labCost += item.quantity * item.unitPrice;
+      } else if (item.description.startsWith("Drug: ")) {
+        pharmaCost += item.quantity * item.unitPrice;
+      }
+    }
+
+    const subtotal = labCost + pharmaCost;
+    const discountAmount = Math.round((subtotal * inv.discountPercentApplied) / 100);
+    const total = subtotal - discountAmount;
+
+    return {
+      id: inv.id,
+      createdAt: inv.createdAt.toISOString(),
+      patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
+      discountPercentApplied: inv.discountPercentApplied,
+      labCost,
+      pharmaCost,
+      subtotal,
+      total,
+      status: inv.status,
+      labUsed: inv.labRequests.map(lr => lr.test.name).join(", ") || "-",
+      pharmaUsed: inv.prescriptionItems.map(pi => pi.drug.name).join(", ") || "-",
+      discountAmount,
+    };
+  });
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">

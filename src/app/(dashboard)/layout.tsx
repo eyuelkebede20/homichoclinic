@@ -79,9 +79,10 @@ export default async function DashboardLayout({
   const { getDictionary } = await import("@/lib/i18n");
   const dict = await getDictionary();
 
-  const navItems = [
-    { name: dict["nav.dashboard"] || "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  ];
+  const navItems = [];
+  if (role !== "Dataencoder") {
+    navItems.push({ name: dict["nav.dashboard"] || "Dashboard", href: "/dashboard", icon: LayoutDashboard });
+  }
 
   if (userPermissions.includes(PERMISSIONS.VISIT_READ)) {
     navItems.push({ name: dict["nav.appointments"] || "Appointments", href: "/visits", icon: Calendar });

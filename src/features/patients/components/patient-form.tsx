@@ -108,6 +108,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Patient Type</label>
           <select value={patientType} onChange={(e) => setPatientType(e.target.value)} name="patientType" className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
             <option value="Soldier">Soldier</option>
+            <option value="Soldier Family">Soldier Family</option>
             <option value="Civilian Staff">Civilian Staff</option>
             <option value="Civilian Family">Civilian Family</option>
             <option value="Guest">Guest Attendee</option>
@@ -132,7 +133,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         </div>
       )}
 
-      {patientType === "Civilian Family" && (
+      {(patientType === "Civilian Family" || patientType === "Soldier Family") && (
         <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
           <div>
             <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Staff Member Search (Phone or ID)</label>
@@ -161,7 +162,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
         </div>
       )}
 
-      {userRole === "Reception" && ["Soldier", "Civilian Staff", "Civilian Family"].includes(patientType) && (
+      {userRole === "Reception" && ["Soldier", "Soldier Family", "Civilian Staff", "Civilian Family"].includes(patientType) && (
         <div className="flex items-center gap-2 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 dark:border-yellow-800">
           <input type="checkbox" id="hasPaperwork" name="hasPaperwork" className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
           <label htmlFor="hasPaperwork" className="text-sm font-medium text-yellow-800 dark:text-yellow-300">
