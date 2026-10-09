@@ -77,13 +77,31 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
           <CatalogForm type="labTest" />
         </div>
         
-        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden print:shadow-none print:border-none">
-          <ul className="divide-y divide-slate-200 dark:divide-slate-800 max-h-screen overflow-y-auto print:max-h-none print:overflow-visible">
-            {labTests.map(t => (
-              <EditableLabTestRow key={t.id} test={t} />
-            ))}
-            {labTests.length === 0 && <li className="p-4 text-sm text-slate-500">No tests found.</li>}
-          </ul>
+        <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-x-auto print:shadow-none print:border-none">
+          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800 text-sm text-left">
+            <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+              <tr>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium">Test Name</th>
+                <th className="px-4 py-3 font-medium">Description</th>
+                <th className="px-4 py-3 font-medium">Result Options</th>
+                <th className="px-4 py-3 font-medium">Price</th>
+                <th className="px-4 py-3 font-medium text-right print:hidden">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-200 dark:divide-slate-800 max-h-screen overflow-y-auto print:max-h-none print:overflow-visible">
+              {labTests.map(t => (
+                <EditableLabTestRow key={t.id} test={t} />
+              ))}
+              {labTests.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-sm text-slate-500">
+                    No tests found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
