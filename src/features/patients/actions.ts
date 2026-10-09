@@ -66,9 +66,11 @@ export const createPatient = createSafeAction({
         const primary = await prisma.patient.findFirst({
           where: {
             OR: [
-              { contactNumber: data.staffSearchStr.trim() },
-              { militaryId: data.staffSearchStr.trim() },
-              { employeeId: data.staffSearchStr.trim() }
+              { contactNumber: { contains: data.staffSearchStr.trim() } },
+              { militaryId: { contains: data.staffSearchStr.trim() } },
+              { employeeId: { contains: data.staffSearchStr.trim() } },
+              { id: { endsWith: data.staffSearchStr.trim() } },
+              { id: { startsWith: data.staffSearchStr.trim() } }
             ]
           }
         });
@@ -203,9 +205,11 @@ export const updatePatient = createSafeAction({
           const primary = await prisma.patient.findFirst({
             where: {
               OR: [
-                { contactNumber: searchStr },
-                { militaryId: searchStr },
-                { employeeId: searchStr }
+                { contactNumber: { contains: searchStr } },
+                { militaryId: { contains: searchStr } },
+                { employeeId: { contains: searchStr } },
+                { id: { endsWith: searchStr } },
+                { id: { startsWith: searchStr } }
               ]
             }
           });
