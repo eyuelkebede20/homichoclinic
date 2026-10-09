@@ -9,12 +9,15 @@ export async function POST(request: Request) {
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
-    // Only allow PNG
-    if (file.type !== 'image/png') {
-      return NextResponse.json({ error: 'Only PNG files are allowed' }, { status: 400 });
+    // Allow PNG and JPG
+    if (file.type !== 'image/png' && file.type !== 'image/jpeg' && file.type !== 'image/jpg') {
+      return NextResponse.json({ error: 'Only PNG and JPG files are allowed' }, { status: 400 });
     }
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
+    
+    // Save as icon.png (we keep the name icon.png for consistency, or we could save the actual extension)
+    // Next.js metadata uses /icon.png by default, so we overwrite it regardless of format.
     const destination = path.join(process.cwd(), 'public', 'icon.png');
     await fs.writeFile(destination, buffer);
     
@@ -26,10 +29,17 @@ export async function POST(request: Request) {
       create: { key: 'clinicLogo', value: '/icon.png' }
     });
 
-    // Redirect back to the admin page
-    return NextResponse.redirect(new URL('/admin?tab=clinic', request.url), 303);
+    // Fix the redirect URL (avoid 0.0.0.0 from request.url in Docker)
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const proto = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = host ? `${proto}://${host}` : request.url;
+
+    return NextResponse.redirect(new URL('/admin?tab=clinic', baseUrl), 303);
   } catch (error) {
     console.error('Upload error:', error);
-    return NextResponse.redirect(new URL('/admin?tab=clinic&error=1', request.url), 303);
+    const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
+    const proto = request.headers.get('x-forwarded-proto') || 'http';
+    const baseUrl = host ? `${proto}://${host}` : request.url;
+    return NextResponse.redirect(new URL('/admin?tab=clinic&error=1', baseUrl), 303);
   }
 }

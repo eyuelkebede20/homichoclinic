@@ -10,8 +10,12 @@ export async function POST(request: Request) {
       headers: await headers()
     });
 
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const proto = request.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = host ? `${proto}://${host}` : request.url;
+
     if (!session) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      return NextResponse.redirect(new URL("/login", baseUrl));
     }
 
     const role = session.user.role || "User";
@@ -38,7 +42,7 @@ export async function POST(request: Request) {
     if (!patient) return NextResponse.json({ error: "Patient not found" }, { status: 404 });
     if (visits.length === 0 && labRequests.length === 0 && prescriptions.length === 0) {
       // Nothing to bill
-      return NextResponse.redirect(new URL("/dataencoder", request.url), 303);
+      return NextResponse.redirect(new URL("/dataencoder", baseUrl), 303);
     }
 
     // 2. Map them to Invoice Items
@@ -136,8 +140,12 @@ export async function POST(request: Request) {
       }
     });
 
+    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
+    const proto = request.headers.get("x-forwarded-proto") || "http";
+    const baseUrl = host ? `${proto}://${host}` : request.url;
+
     // Redirect to the newly cleared ledger receipt to print
-    return NextResponse.redirect(new URL(`/dataencoder/${newInvoiceId}?print=true`, request.url), 303);
+    return NextResponse.redirect(new URL(`/dataencoder/${newInvoiceId}?print=true`, baseUrl), 303);
 
   } catch (err: any) {
     console.error("Auto invoice generation error:", err);

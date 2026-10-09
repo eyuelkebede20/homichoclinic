@@ -12,12 +12,12 @@ export default function AdminProfilePage() {
         encType="multipart/form-data"
         className="mt-4 flex flex-col gap-2"
       >
-        <input type="file" name="logo" accept="image/png" required />
+        <input type="file" name="logo" accept="image/png,image/jpeg" required />
         <button
           type="submit"
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
         >
-          Upload PNG Logo
+          Upload Logo (PNG/JPG)
         </button>
       </form>
     </div>

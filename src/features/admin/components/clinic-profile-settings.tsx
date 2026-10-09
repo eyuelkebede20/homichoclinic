@@ -114,10 +114,13 @@ export function ClinicProfileSettings({
             <input 
               type="file" 
               name="logo" 
-              accept="image/png" 
+              accept="image/png,image/jpeg" 
               required 
               className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer"
             />
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Supports PNG and JPG files.
+            </p>
             <button
               type="submit"
               className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition self-start"
