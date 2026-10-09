@@ -140,10 +140,6 @@ export async function POST(request: Request) {
       }
     });
 
-    const host = request.headers.get("x-forwarded-host") || request.headers.get("host");
-    const proto = request.headers.get("x-forwarded-proto") || "http";
-    const baseUrl = host ? `${proto}://${host}` : request.url;
-
     // Redirect to the newly cleared ledger receipt to print
     return NextResponse.redirect(new URL(`/dataencoder/${newInvoiceId}?print=true`, baseUrl), 303);
 

@@ -13,6 +13,7 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { ClinicalDashboard } from "@/features/clinical/components/clinical-dashboard";
 import { MedicalRecordItem } from "@/features/patients/components/medical-record-item";
+import { PrescriptionHistoryItem } from "@/features/patients/components/prescription-history-item";
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
 import { StructuredLabResultView } from "@/features/clinical/components/structured-lab-result-view";
 import { PendingApprovalBanner } from "@/features/patients/components/pending-approval-banner";
@@ -127,6 +128,11 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     });
   }
 
+  const timeline = [
+    ...patient.medicalRecords.map((r) => ({ type: "record" as const, date: r.originalDate || r.createdAt, data: r })),
+    ...patient.prescriptions.map((p) => ({ type: "prescription" as const, date: p.createdAt, data: p }))
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
   const isNanSince = !patient.permanentSince || patient.permanentSince === "NaN";
 
   return (
@@ -228,10 +234,14 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
     <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
     <div className="space-y-4">
-      {patient.medicalRecords.length === 0 ? (
+      {timeline.length === 0 ? (
         <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
       ) : (
-        patient.medicalRecords.map((record) => <MedicalRecordItem key={record.id} record={record} />)
+        timeline.map((item) => 
+          item.type === "record" 
+            ? <MedicalRecordItem key={item.data.id} record={item.data as any} />
+            : <PrescriptionHistoryItem key={item.data.id} prescription={item.data as any} />
+        )
       )}
     </div>
   </div>

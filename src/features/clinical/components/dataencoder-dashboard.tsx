@@ -5,7 +5,7 @@ import { Loader2, Receipt, FileText } from "lucide-react";
 import { generateCreditCharge } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { formatCurrency } from "../../dataencoder/utils";
+import { formatCurrency } from "@/lib/currency";
 
 export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[], invoices?: any[] }) {
   return (

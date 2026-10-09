@@ -2,7 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { formatCurrency } from "@/features/dataencoder/utils";
+import { formatCurrency } from "@/lib/currency";
 import { getStartOfDayLocal } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
