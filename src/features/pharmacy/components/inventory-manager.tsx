@@ -1,9 +1,7 @@
 "use client";
 
 import React, { Fragment, useState } from "react";
-import { receiveStock } from "../actions";
-import { Loader2, Plus, Search, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
-import { toast } from "sonner";
+import { Search, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
 
 export function InventoryManager({ drugs }: { 
   drugs: { 
@@ -14,52 +12,17 @@ export function InventoryManager({ drugs }: {
   }[] 
 }) {
   const [search, setSearch] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [selectedDrug, setSelectedDrug] = useState<string | null>(null);
   const [expandedDrug, setExpandedDrug] = useState<string | null>(null);
 
   const filteredDrugs = drugs.filter(d => 
     d.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  async function handleAddStock(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!selectedDrug) return;
-    
-    setLoading(true);
-    const formData = new FormData(e.currentTarget);
-    const costDollars = parseFloat(formData.get("cost") as string);
-    
-    const data = {
-      drugId: selectedDrug,
-      batchNumber: formData.get("batchNumber") as string,
-      expiryDate: formData.get("expiryDate") as string,
-      quantity: parseInt(formData.get("quantity") as string, 10),
-      cost: Math.round(costDollars * 100), // convert to minor units
-      dateAddedToStock: formData.get("dateAddedToStock") as string || undefined,
-      docNo: formData.get("docNo") as string || undefined,
-    };
-
-    const res = await receiveStock(data);
-    setLoading(false);
-    
-    if (res.error) {
-      toast.error(res.error);
-    } else {
-      toast.success("Stock added successfully!");
-      setSelectedDrug(null);
-    }
-  }
-
   function toggleExpand(drugId: string) {
     if (expandedDrug === drugId) {
       setExpandedDrug(null);
     } else {
       setExpandedDrug(drugId);
-      // Auto-close the add stock form if it was open for a different drug
-      if (selectedDrug && selectedDrug !== drugId) {
-        setSelectedDrug(null);
-      }
     }
   }
 
@@ -88,14 +51,12 @@ export function InventoryManager({ drugs }: {
             <tr>
               <th className="w-8 px-2 py-2"></th>
               <th className="text-left text-xs font-medium text-slate-500 uppercase py-2">Drug</th>
-              <th className="text-right text-xs font-medium text-slate-500 uppercase py-2">Total Stock</th>
-              <th className="text-right text-xs font-medium text-slate-500 uppercase py-2 print:hidden pr-2">Action</th>
+              <th className="text-right text-xs font-medium text-slate-500 uppercase py-2 pr-4">Total Stock</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredDrugs.map(drug => {
               const totalStock = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
-              const isAdding = selectedDrug === drug.id;
               const isExpanded = expandedDrug === drug.id;
 
               return (
@@ -115,7 +76,7 @@ export function InventoryManager({ drugs }: {
                       {drug.name}
                       {drug.description && <span className="text-xs text-slate-500 ml-2 font-normal truncate block sm:inline">{drug.description}</span>}
                     </td>
-                    <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400">
+                    <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400 pr-4">
                       {totalStock > 0 ? (
                         <span className="font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full text-xs">
                           {totalStock} in stock
@@ -124,32 +85,11 @@ export function InventoryManager({ drugs }: {
                         <span className="text-red-500 font-bold text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">Out of Stock</span>
                       )}
                     </td>
-                    <td className="py-3 text-sm text-right print:hidden pr-2">
-                      {isAdding ? (
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); setSelectedDrug(null); }} 
-                          className="text-slate-500 hover:text-slate-700 text-xs px-2 py-1 bg-slate-200 dark:bg-slate-800 rounded"
-                        >
-                          Cancel
-                        </button>
-                      ) : (
-                        <button 
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            setSelectedDrug(drug.id); 
-                            setExpandedDrug(drug.id); 
-                          }} 
-                          className="text-blue-600 hover:text-blue-800 text-xs font-medium flex items-center justify-end w-full"
-                        >
-                          <Plus className="w-3 h-3 mr-1" /> Add Stock
-                        </button>
-                      )}
-                    </td>
                   </tr>
 
                   {isExpanded && (
                     <tr className="bg-slate-50/50 dark:bg-slate-900/20">
-                      <td colSpan={4} className="p-0 border-b border-slate-200 dark:border-slate-800">
+                      <td colSpan={3} className="p-0 border-b border-slate-200 dark:border-slate-800">
                         <div className="px-10 py-4 space-y-4 shadow-inner">
                           <div>
                             <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-2 mb-3">
@@ -174,48 +114,6 @@ export function InventoryManager({ drugs }: {
                               <p className="text-sm text-slate-500 italic py-2">No active stock available.</p>
                             )}
                           </div>
-
-                          {isAdding && (
-                            <form onSubmit={handleAddStock} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-4 rounded-xl shadow-sm mt-4">
-                              <h4 className="text-sm font-bold mb-3 text-slate-800 dark:text-slate-200 border-b border-slate-100 dark:border-slate-700 pb-2">
-                                Receive New Stock
-                              </h4>
-                              <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Batch Number</label>
-                                  <input required name="batchNumber" type="text" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="e.g. BATCH-001" />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Expiry Date</label>
-                                  <input required name="expiryDate" type="date" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Quantity Added</label>
-                                  <input required name="quantity" type="number" min="1" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="100" />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Total Cost (ETB)</label>
-                                  <input required name="cost" type="number" step="0.01" min="0" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="50.00" />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Date Added (Optional)</label>
-                                  <input name="dateAddedToStock" type="date" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
-                                </div>
-                                <div>
-                                  <label className="block text-xs font-medium text-slate-500 mb-1">Doc/Receipt No (Optional)</label>
-                                  <input name="docNo" type="text" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="GRV-1234" />
-                                </div>
-                              </div>
-                              <div className="flex justify-end gap-2">
-                                <button type="button" onClick={() => setSelectedDrug(null)} className="px-4 py-1.5 text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 rounded-md font-medium">
-                                  Cancel
-                                </button>
-                                <button type="submit" disabled={loading} className="flex justify-center items-center py-1.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50">
-                                  {loading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : "Save Batch"}
-                                </button>
-                              </div>
-                            </form>
-                          )}
                         </div>
                       </td>
                     </tr>
