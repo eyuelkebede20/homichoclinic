@@ -5,6 +5,7 @@ import { useMemo } from "react";
 
 type DailyReport = {
   date: string;
+  employeeName: string;
   totalRevenue: number;
   totalDiscounts: number;
   cash: number;
@@ -19,9 +20,10 @@ export function ZReportsClient({ reports }: { reports: DailyReport[] }) {
   };
 
   const handleExport = () => {
-    const headers = ["Date", "Total Revenue", "Cash", "Card", "Transfer", "Discounts", "Invoices"];
+    const headers = ["Date", "Employee", "Total Revenue", "Cash", "Card", "Transfer", "Discounts", "Invoices"];
     const rows = reports.map(r => [
       r.date,
+      r.employeeName,
       (r.totalRevenue / 100).toFixed(2),
       (r.cash / 100).toFixed(2),
       (r.card / 100).toFixed(2),
@@ -140,6 +142,7 @@ export function ZReportsClient({ reports }: { reports: DailyReport[] }) {
             <thead>
               <tr className="bg-white dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-xs uppercase tracking-wider">
                 <th className="p-5 font-bold text-slate-500 dark:text-slate-400">Date</th>
+                <th className="p-5 font-bold text-slate-500 dark:text-slate-400">Employee</th>
                 <th className="p-5 font-bold text-slate-500 dark:text-slate-400 text-right">Revenue</th>
                 <th className="p-5 font-bold text-slate-500 dark:text-slate-400 text-right">Cash</th>
                 <th className="p-5 font-bold text-slate-500 dark:text-slate-400 text-right">Card</th>
@@ -151,7 +154,7 @@ export function ZReportsClient({ reports }: { reports: DailyReport[] }) {
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center">
+                  <td colSpan={8} className="p-12 text-center">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
                       <LayoutDashboard className="w-6 h-6 text-slate-400" />
                     </div>
@@ -160,8 +163,9 @@ export function ZReportsClient({ reports }: { reports: DailyReport[] }) {
                 </tr>
               ) : (
                 reports.map((item, idx) => (
-                  <tr key={item.date} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${idx % 2 === 0 ? "bg-white dark:bg-slate-900/20" : "bg-slate-50/30 dark:bg-slate-900/40"}`}>
+                  <tr key={`${item.date}-${item.employeeName}`} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${idx % 2 === 0 ? "bg-white dark:bg-slate-900/20" : "bg-slate-50/30 dark:bg-slate-900/40"}`}>
                     <td className="p-5 text-sm font-bold text-slate-900 dark:text-slate-100">{item.date}</td>
+                    <td className="p-5 text-sm font-medium text-slate-700 dark:text-slate-300">{item.employeeName}</td>
                     <td className="p-5 text-sm font-black text-blue-600 dark:text-blue-400 text-right tabular-nums">
                       {(item.totalRevenue / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>

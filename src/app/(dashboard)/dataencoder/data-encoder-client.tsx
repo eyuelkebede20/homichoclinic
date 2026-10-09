@@ -11,7 +11,10 @@ type InvoiceDisplay = {
   id: string;
   createdAt: string;
   patientName: string;
+  patientType: string;
   discountPercentApplied: number;
+  labCost: number;
+  pharmaCost: number;
   subtotal: number;
   total: number;
   status: string;
@@ -62,17 +65,42 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
   };
 
   const handleExport = () => {
-    const headers = ["Invoice Number", "Date", "Patient Name", "Discount %", "Lab Used", "Pharma Used", "Total", "Discount Amount"];
-    const rows = filtered.map(i => [
-      i.id,
-      new Date(i.createdAt).toLocaleString(),
-      i.patientName,
-      `${i.discountPercentApplied}%`,
-      i.labUsed,
-      i.pharmaUsed,
-      (i.total / 100).toFixed(2),
-      (i.discountAmount / 100).toFixed(2)
-    ]);
+    const headers = activeTab === "pending" 
+      ? ["Invoice Number", "Full Name", "Remark", "Discount %", "Laboratory Cost", "Pharmacy Cost", "Total", "Discount Amount", "After Discount", "Signature"]
+      : ["Date", "Invoice Number", "Full Name", "Contract or Permanent", "Remark", "Discount %", "Laboratory Cost", "Pharmacy Cost", "Total", "Discount Amount", "After Discount", "Signature"];
+
+    const rows = filtered.map(i => {
+      const remarks = [i.labUsed, i.pharmaUsed].filter(Boolean).join(" | ");
+      if (activeTab === "pending") {
+        return [
+          i.id,
+          i.patientName,
+          remarks,
+          `${i.discountPercentApplied}%`,
+          (i.labCost / 100).toFixed(2),
+          (i.pharmaCost / 100).toFixed(2),
+          (i.subtotal / 100).toFixed(2),
+          (i.discountAmount / 100).toFixed(2),
+          (i.total / 100).toFixed(2),
+          ""
+        ];
+      } else {
+        return [
+          new Date(i.createdAt).toLocaleString(),
+          i.id,
+          i.patientName,
+          i.patientType,
+          remarks,
+          `${i.discountPercentApplied}%`,
+          (i.labCost / 100).toFixed(2),
+          (i.pharmaCost / 100).toFixed(2),
+          (i.subtotal / 100).toFixed(2),
+          (i.discountAmount / 100).toFixed(2),
+          (i.total / 100).toFixed(2),
+          ""
+        ];
+      }
+    });
     
     const csvContent = "data:text/csv;charset=utf-8," 
       + headers.join(",") + "\n" 
@@ -154,43 +182,61 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
       </div>
 
       <div className="p-0 overflow-x-auto print:p-0">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
-            <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-sm">
+              <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-sm">
+              {activeTab !== "pending" && <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Date</th>}
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Invoice Number</th>
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Date</th>
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Patient Name</th>
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Full Name</th>
+              {activeTab !== "pending" && <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Contract or Permanent</th>}
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Remark</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Discount %</th>
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Lab Used</th>
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Pharma Used</th>
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Laboratory Cost</th>
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Pharmacy Cost</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Total</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Discount Amount</th>
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">After Discount</th>
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-center">Signature</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={9} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={13} className="p-8 text-center text-slate-500 dark:text-slate-400">
                   No records found.
                 </td>
               </tr>
             ) : (
               filtered.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                  {activeTab !== "pending" && (
+                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
+                      {new Date(item.createdAt).toLocaleString()}
+                    </td>
+                  )}
                   <td className="p-4 text-sm font-mono text-slate-600 dark:text-slate-400">{item.id.slice(-8)}</td>
-                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
-                    {new Date(item.createdAt).toLocaleString()}
-                  </td>
                   <td className="p-4 text-sm font-medium text-slate-900 dark:text-slate-100">{item.patientName}</td>
+                  {activeTab !== "pending" && (
+                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{item.patientType}</td>
+                  )}
+                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 max-w-[150px] truncate" title={[item.labUsed, item.pharmaUsed].filter(Boolean).join(" | ")}>
+                    {[item.labUsed, item.pharmaUsed].filter(Boolean).join(" | ") || "-"}
+                  </td>
                   <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{item.discountPercentApplied}%</td>
-                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 truncate max-w-[150px]" title={item.labUsed}>{item.labUsed}</td>
-                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 truncate max-w-[150px]" title={item.pharmaUsed}>{item.pharmaUsed}</td>
+                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-right">{(item.labCost / 100).toFixed(2)}</td>
+                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-right">{(item.pharmaCost / 100).toFixed(2)}</td>
                   <td className="p-4 text-sm font-medium text-slate-900 dark:text-slate-100 text-right">
-                    {(item.total / 100).toFixed(2)}
+                    {(item.subtotal / 100).toFixed(2)}
                   </td>
                   <td className="p-4 text-sm text-red-600 dark:text-red-400 text-right font-medium">
                     {(item.discountAmount / 100).toFixed(2)}
+                  </td>
+                  <td className="p-4 text-sm font-medium text-blue-600 dark:text-blue-400 text-right">
+                    {(item.total / 100).toFixed(2)}
+                  </td>
+                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-center">
+                    <div className="w-16 border-b border-slate-300 dark:border-slate-600 mx-auto print:border-black"></div>
                   </td>
                   <td className="p-4 text-right space-x-2">
                     {activeTab !== "approved" && (

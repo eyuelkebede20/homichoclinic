@@ -56,6 +56,7 @@ export default async function DataEncoderPage() {
       id: inv.id,
       createdAt: inv.createdAt.toISOString(),
       patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
+      patientType: inv.patient.patientType || "Unknown",
       discountPercentApplied: inv.discountPercentApplied,
       labCost,
       pharmaCost,
