@@ -686,8 +686,9 @@ select { background: none; }
               >
                 <option value="Standard Referral">Standard Referral</option>
                 <option value="Specialist Consultation">Specialist Consultation</option>
+                <option value="Infrastructure / X-ray & Ultrasound">Infrastructure / X-ray & Ultrasound</option>
+                <option value="Hospital (Transfer/Advanced Care)">Hospital (Transfer/Advanced Care)</option>
                 <option value="Emergency Transfer">Emergency Transfer</option>
-                <option value="Higher Facility Transfer">Higher Facility Transfer</option>
               </select>
             </div>
             

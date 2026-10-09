@@ -40,35 +40,28 @@ export const createPatient = createSafeAction({
 
     const yob = data.yob || null;
     
-    let permanentSince = data.permanentSince;
+    let permanentSince = data.patientType === "Civilian Staff" ? data.permanentSince : null;
     let discountPercent = 0;
     let resolvedPrimaryId = data.primaryPatientId || null;
     let salutation: string | null = null;
     let department: string | null = null;
     let c_m: string | null = null;
 
+    const discountSettings = await prisma.systemSetting.findMany({
+      where: { key: { startsWith: "discount:" } }
+    });
+    const rules = discountSettings.reduce((acc, curr) => {
+      acc[curr.key] = parseInt(curr.value, 10);
+      return acc;
+    }, {} as Record<string, number>);
+    const getDiscount = (key: string, fallback: number) => (rules[key] !== undefined && !isNaN(rules[key]) ? rules[key] : fallback);
+
     if (data.patientType === "Soldier") {
-      discountPercent = 100;
+      discountPercent = getDiscount("discount:Soldier", 100);
       salutation = data.rank || null;
       department = data.division || null;
       c_m = "M";
-
-      // Parse permanentSince from militaryId if possible
-      if (data.militaryId && data.militaryId.length >= 2) {
-        // Strip the last 2 digits
-        const lastPart = data.militaryId.slice(-2);
-        const yearVal = parseInt(lastPart, 10);
-        if (!isNaN(yearVal)) {
-          // If the date is <50 then 20**, if it is >50 then 19**
-          if (yearVal < 50) {
-            permanentSince = `20${lastPart}`;
-          } else {
-            permanentSince = `19${lastPart}`;
-          }
-        }
-      }
     } else if (data.patientType === "Civilian Family" || data.patientType === "Soldier Family") {
-      // Resolve staff by phone, militaryId, or employeeId
       if (data.staffSearchStr && !resolvedPrimaryId) {
         const primary = await prisma.patient.findFirst({
           where: {
@@ -85,28 +78,25 @@ export const createPatient = createSafeAction({
         resolvedPrimaryId = primary.id;
       }
 
-      // If they are family, we can inherit the exact discount of the primary patient
       if (resolvedPrimaryId) {
         const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-        discountPercent = data.patientType === "Soldier Family" ? 100 : (primary ? primary.discountPercent : 95); // fallback
+        discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : (primary ? primary.discountPercent : getDiscount("discount:Civilian Family", 5));
       } else {
-        discountPercent = data.patientType === "Soldier Family" ? 100 : 95;
+        discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
       }
+    } else if (data.patientType === "Guest") {
+      discountPercent = getDiscount("discount:Guest", 0);
     } else {
       if (!permanentSince || permanentSince.trim() === "") {
         permanentSince = "NaN";
       }
       const yearsOfService = getYearsOfService(permanentSince);
 
-      if (yearsOfService >= 20) discountPercent = 100;
-      else if (yearsOfService >= 15) discountPercent = 75;
-      else if (yearsOfService >= 10) discountPercent = 65;
-      else if (yearsOfService >= 6) discountPercent = 55;
-      else discountPercent = 50;
-    }
-
-    if (!permanentSince || permanentSince.trim() === "") {
-      permanentSince = "NaN";
+      if (yearsOfService >= 20) discountPercent = getDiscount("discount:Civilian Staff:20", 100);
+      else if (yearsOfService >= 15) discountPercent = getDiscount("discount:Civilian Staff:15", 75);
+      else if (yearsOfService >= 10) discountPercent = getDiscount("discount:Civilian Staff:10", 65);
+      else if (yearsOfService >= 6) discountPercent = getDiscount("discount:Civilian Staff:6", 55);
+      else discountPercent = getDiscount("discount:Civilian Staff:0", 50);
     }
 
     const autoPilotSetting = await prisma.systemSetting.findUnique({
@@ -181,8 +171,8 @@ export const updatePatient = createSafeAction({
     }
 
     const yob = data.yob || null;
-    let permanentSince = data.permanentSince;
-    if (!permanentSince || permanentSince.trim() === "") {
+    let permanentSince = existingPatient.patientType === "Civilian Staff" ? data.permanentSince : null;
+    if (existingPatient.patientType === "Civilian Staff" && (!permanentSince || permanentSince.trim() === "")) {
       permanentSince = "NaN";
     }
     
@@ -191,15 +181,24 @@ export const updatePatient = createSafeAction({
     let resolvedPrimaryId = existingPatient.primaryPatientId;
     let newRelationship = existingPatient.relationship;
 
+    const discountSettings = await prisma.systemSetting.findMany({
+      where: { key: { startsWith: "discount:" } }
+    });
+    const rules = discountSettings.reduce((acc, curr) => {
+      acc[curr.key] = parseInt(curr.value, 10);
+      return acc;
+    }, {} as Record<string, number>);
+    const getDiscount = (key: string, fallback: number) => (rules[key] !== undefined && !isNaN(rules[key]) ? rules[key] : fallback);
+
     if (existingPatient.patientType === "Soldier") {
-      discountPercent = 100;
+      discountPercent = getDiscount("discount:Soldier", 100);
     } else if (existingPatient.patientType === "Civilian Family" || existingPatient.patientType === "Soldier Family") {
       if (data.staffSearchStr != null) {
         const searchStr = data.staffSearchStr.trim();
         if (searchStr === "" || searchStr === "UNLINK") {
           resolvedPrimaryId = null;
           newRelationship = null;
-          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : 95; // default fallback when unlinked
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
         } else {
           const primary = await prisma.patient.findFirst({
             where: {
@@ -215,25 +214,27 @@ export const updatePatient = createSafeAction({
           }
           resolvedPrimaryId = primary.id;
           newRelationship = data.relationship || "Other";
-          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : primary.discountPercent;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : primary.discountPercent;
         }
       } else {
         // Just retain existing link, inherit discount again just in case primary changed
         if (resolvedPrimaryId) {
           const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : (primary ? primary.discountPercent : 95);
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : (primary ? primary.discountPercent : getDiscount("discount:Civilian Family", 5));
         } else {
-          discountPercent = existingPatient.patientType === "Soldier Family" ? 100 : 95;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
         }
       }
+    } else if (existingPatient.patientType === "Guest") {
+      discountPercent = getDiscount("discount:Guest", 0);
     } else {
-      const yearsOfService = getYearsOfService(permanentSince);
+      const yearsOfService = getYearsOfService(permanentSince || "NaN");
 
-      if (yearsOfService >= 20) discountPercent = 100;
-      else if (yearsOfService >= 15) discountPercent = 75;
-      else if (yearsOfService >= 10) discountPercent = 65;
-      else if (yearsOfService >= 6) discountPercent = 55;
-      else discountPercent = 50;
+      if (yearsOfService >= 20) discountPercent = getDiscount("discount:Civilian Staff:20", 100);
+      else if (yearsOfService >= 15) discountPercent = getDiscount("discount:Civilian Staff:15", 75);
+      else if (yearsOfService >= 10) discountPercent = getDiscount("discount:Civilian Staff:10", 65);
+      else if (yearsOfService >= 6) discountPercent = getDiscount("discount:Civilian Staff:6", 55);
+      else discountPercent = getDiscount("discount:Civilian Staff:0", 50);
     }
 
     const updatedPatient = await prisma.patient.update({

@@ -34,7 +34,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     );
   }
 
-  const baseWhereClause = tab === "pending" ? { status: "PENDING" } : { status: "APPROVED" };
+  const baseWhereClause = tab === "pending" ? { status: "PENDING" } : { status: { not: "PENDING" } };
 
   const whereClause = query ? {
     ...baseWhereClause,

@@ -162,13 +162,33 @@ export default async function DashboardPage() {
   }
 
   // 4. Lab Dashboard
-  if (role === "Lab Technician") {
-    const requests = await prisma.labRequest.findMany({
-      where: { status: { in: ["requested", "in_progress", "urgent"] } },
-      include: { patient: { select: { firstName: true, lastName: true } }, test: { select: { name: true } } },
-      orderBy: { createdAt: "asc" }
-    });
-    return <div className="p-8 max-w-7xl mx-auto"><LabDashboard requests={requests} /></div>;
+  if (role === "Lab Technician" || role === "Laboratory") {
+    const [requests, setting, nameSetting, amhSetting] = await Promise.all([
+      prisma.labRequest.findMany({
+        where: { status: { in: ["requested", "in_progress", "urgent"] } },
+        include: { patient: true, test: { select: { name: true } } },
+        orderBy: { createdAt: "asc" }
+      }),
+      prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinic_name" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinic_name_amharic" } })
+    ]);
+
+    let referralDestinations: string[] = [];
+    let clinicName = "DEFENCE ENGINEERING INDUSTRIES GROUP";
+    let clinicNameAmharic = "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ";
+    let clinicSubName = "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER";
+    let clinicSubNameAmharic = "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ";
+
+    if (setting) {
+      try { referralDestinations = JSON.parse(setting.value); } catch (e) {}
+    }
+    if (nameSetting) clinicSubName = nameSetting.value;
+    if (amhSetting) clinicSubNameAmharic = amhSetting.value;
+
+    const clinicNames = { clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic };
+
+    return <div className="p-8 max-w-7xl mx-auto"><LabDashboard requests={requests} referralDestinations={referralDestinations} clinicNames={clinicNames} /></div>;
   }
 
   // 6. Dataencoder Dashboard

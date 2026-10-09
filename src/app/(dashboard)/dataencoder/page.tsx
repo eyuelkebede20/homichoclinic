@@ -41,9 +41,9 @@ export default async function DataEncoderPage() {
     let pharmaCost = 0;
 
     for (const item of inv.items) {
-      if (item.description.startsWith("Lab: ")) {
+      if (item.description.startsWith("Lab Test: ") || item.description.startsWith("Lab: ")) {
         labCost += item.quantity * item.unitPrice;
-      } else if (item.description.startsWith("Drug: ")) {
+      } else if (item.description.startsWith("Pharmacy: ") || item.description.startsWith("Drug: ")) {
         pharmaCost += item.quantity * item.unitPrice;
       }
     }

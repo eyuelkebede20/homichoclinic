@@ -125,10 +125,12 @@ export function PatientEditForm({ patient }: {
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Contact Number</label>
           <input defaultValue={patient.contactNumber || ""} name="contactNumber" type="tel" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
-          <input defaultValue={patient.permanentSince || ""} name="permanentSince" type="date" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
-        </div>
+        {patient.patientType === "Civilian Staff" && (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
+            <input defaultValue={patient.permanentSince || ""} name="permanentSince" type="date" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+          </div>
+        )}
       </div>
 
       {patient.patientType === "Civilian Family" && (

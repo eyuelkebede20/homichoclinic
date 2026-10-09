@@ -15,9 +15,9 @@ const disapproveInvoiceSchema = z.object({
   invoiceId: z.string().min(1, "Invoice ID is required"),
 });
 
-export const approveInvoice = createSafeAction({
+const _approveInvoice = createSafeAction({
   schema: approveInvoiceSchema,
-  requiredPermission: PERMISSIONS.INVOICE_READ, // Or a new permission like DATA_ENCODER
+  requiredPermission: PERMISSIONS.INVOICE_READ,
   handler: async (data, ctx) => {
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.invoice.findUnique({
@@ -53,9 +53,11 @@ export const approveInvoice = createSafeAction({
   },
 });
 
-export const disapproveInvoice = createSafeAction({
+export const approveInvoice = async (data: z.infer<typeof approveInvoiceSchema>) => _approveInvoice(data);
+
+const _disapproveInvoice = createSafeAction({
   schema: disapproveInvoiceSchema,
-  requiredPermission: PERMISSIONS.INVOICE_READ, // Or a new permission
+  requiredPermission: PERMISSIONS.INVOICE_READ,
   handler: async (data, ctx) => {
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.invoice.findUnique({
@@ -84,6 +86,8 @@ export const disapproveInvoice = createSafeAction({
     return invoice;
   },
 });
+
+export const disapproveInvoice = async (data: z.infer<typeof disapproveInvoiceSchema>) => _disapproveInvoice(data);
 
 export async function autoBillUnbilledItems(patientId: string, actorId: string) {
   const patient = await prisma.patient.findUnique({ where: { id: patientId } });

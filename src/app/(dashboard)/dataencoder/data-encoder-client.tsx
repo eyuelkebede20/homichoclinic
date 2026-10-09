@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 import { approveInvoice, disapproveInvoice } from "@/features/dataencoder/actions";
 import { toast } from "sonner";
@@ -26,6 +27,15 @@ type InvoiceDisplay = {
 export function DataEncoderClient({ initialInvoices }: { initialInvoices: InvoiceDisplay[] }) {
   const [activeTab, setActiveTab] = useState<"pending" | "approved" | "disapproved">("pending");
   const [searchQuery, setSearchQuery] = useState("");
+
+  const router = useRouter();
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 15000); // 15 seconds
+    return () => clearInterval(interval);
+  }, [router]);
 
   const [executingApprove, setExecutingApprove] = useState(false);
   const [executingDisapprove, setExecutingDisapprove] = useState(false);
@@ -67,41 +77,30 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
   };
 
   const handleExport = () => {
-    const headers = activeTab === "pending" 
-      ? ["Invoice Number", "Full Name", "Remark", "Discount %", "Laboratory Cost", "Pharmacy Cost", "Total", "Discount Amount", "After Discount", "Signature"]
-      : ["Date", "Invoice Number", "Full Name", "Contract or Permanent", "Remark", "Discount %", "Laboratory Cost", "Pharmacy Cost", "Total", "Discount Amount", "After Discount", "Signature"];
+    const headers = [
+      "Invoice Number", 
+      "Full Name", 
+      "Discount %", 
+      "Laboratory Cost", 
+      "Pharmacy Cost", 
+      "Total", 
+      "Discount Amount", 
+      "After Discount", 
+      "Signature"
+    ];
 
     const rows = filtered.map(i => {
-      const remarks = [i.labUsed, i.pharmaUsed].filter(Boolean).join(" | ");
-      if (activeTab === "pending") {
-        return [
-          i.id,
-          i.patientName,
-          remarks,
-          `${i.discountPercentApplied}%`,
-          (i.labCost / 100).toFixed(2),
-          (i.pharmaCost / 100).toFixed(2),
-          (i.subtotal / 100).toFixed(2),
-          (i.discountAmount / 100).toFixed(2),
-          (i.total / 100).toFixed(2),
-          ""
-        ];
-      } else {
-        return [
-          new Date(i.createdAt).toLocaleString(),
-          i.id,
-          i.patientName,
-          i.patientType,
-          remarks,
-          `${i.discountPercentApplied}%`,
-          (i.labCost / 100).toFixed(2),
-          (i.pharmaCost / 100).toFixed(2),
-          (i.subtotal / 100).toFixed(2),
-          (i.discountAmount / 100).toFixed(2),
-          (i.total / 100).toFixed(2),
-          ""
-        ];
-      }
+      return [
+        i.id.slice(-8),
+        i.patientName,
+        `${i.discountPercentApplied}%`,
+        (i.labCost / 100).toFixed(2),
+        (i.pharmaCost / 100).toFixed(2),
+        (i.subtotal / 100).toFixed(2),
+        (i.discountAmount / 100).toFixed(2),
+        (i.total / 100).toFixed(2),
+        ""
+      ];
     });
     
     const csvContent = "data:text/csv;charset=utf-8," 
@@ -187,11 +186,8 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
         <table className="w-full text-left border-collapse min-w-[800px]">
           <thead>
               <tr className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-sm">
-              {activeTab !== "pending" && <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Date</th>}
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Invoice Number</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Full Name</th>
-              {activeTab !== "pending" && <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Contract or Permanent</th>}
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Remark</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Discount %</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Laboratory Cost</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Pharmacy Cost</th>
@@ -205,26 +201,15 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={13} className="p-8 text-center text-slate-500 dark:text-slate-400">
+                <td colSpan={10} className="p-8 text-center text-slate-500 dark:text-slate-400">
                   No records found.
                 </td>
               </tr>
             ) : (
               filtered.map(item => (
                 <tr key={item.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                  {activeTab !== "pending" && (
-                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">
-                      {new Date(item.createdAt).toLocaleString()}
-                    </td>
-                  )}
                   <td className="p-4 text-sm font-mono text-slate-600 dark:text-slate-400">{item.id.slice(-8)}</td>
                   <td className="p-4 text-sm font-medium text-slate-900 dark:text-slate-100">{item.patientName}</td>
-                  {activeTab !== "pending" && (
-                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{item.patientType}</td>
-                  )}
-                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 max-w-[150px] truncate" title={[item.labUsed, item.pharmaUsed].filter(Boolean).join(" | ")}>
-                    {[item.labUsed, item.pharmaUsed].filter(Boolean).join(" | ") || "-"}
-                  </td>
                   <td className="p-4 text-sm text-slate-700 dark:text-slate-300">{item.discountPercentApplied}%</td>
                   <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-right">{(item.labCost / 100).toFixed(2)}</td>
                   <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-right">{(item.pharmaCost / 100).toFixed(2)}</td>

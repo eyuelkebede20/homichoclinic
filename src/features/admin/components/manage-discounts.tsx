@@ -14,7 +14,7 @@ export function ManageDiscounts({ initialRules }: { initialRules: Record<string,
   const [rules, setRules] = useState({
     "discount:Soldier": initialRules["discount:Soldier"] ?? "100",
     "discount:Soldier Family": initialRules["discount:Soldier Family"] ?? "100",
-    "discount:Civilian Family": initialRules["discount:Civilian Family"] ?? "95", // Note: 95 means patient pays 5% or patient pays 95%? By user logic, 5 means company covers 5%.
+    "discount:Civilian Family": initialRules["discount:Civilian Family"] ?? "5", // Company covers 5%, patient pays 95%
     "discount:Civilian Staff:20": initialRules["discount:Civilian Staff:20"] ?? "100",
     "discount:Civilian Staff:15": initialRules["discount:Civilian Staff:15"] ?? "75",
     "discount:Civilian Staff:10": initialRules["discount:Civilian Staff:10"] ?? "65",

@@ -22,27 +22,23 @@ export function ZReportsClient({ reports }: { reports: InvoiceReport[] }) {
 
   const handleExportExcel = () => {
     const headers = [
-      "Invoice Number",
       "Full Name",
       "Discount %",
       "Laboratory Cost",
       "Pharmacy Cost",
       "Total",
       "Discount Amount",
-      "After Discount",
-      "Signature"
+      "After Discount"
     ];
 
     const data = reports.map(r => [
-      r.invoiceNumber.slice(-6).toUpperCase(), // Shortened invoice number for brevity
       r.patientName,
       `${r.discountPercent}%`,
       (r.laboratoryCost / 100).toFixed(2),
       (r.pharmacyCost / 100).toFixed(2),
       (r.total / 100).toFixed(2),
       (r.discountAmount / 100).toFixed(2),
-      (r.afterDiscount / 100).toFixed(2),
-      "" // Empty signature column
+      (r.afterDiscount / 100).toFixed(2)
     ]);
 
     const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
@@ -136,7 +132,6 @@ export function ZReportsClient({ reports }: { reports: InvoiceReport[] }) {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-xs uppercase tracking-wider">
-                <th className="p-4 font-bold text-slate-500 dark:text-slate-400">Invoice Number</th>
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400">Full Name</th>
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400 text-right">Discount %</th>
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400 text-right">Lab Cost</th>
@@ -144,13 +139,12 @@ export function ZReportsClient({ reports }: { reports: InvoiceReport[] }) {
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400 text-right">Total</th>
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400 text-right">Discount Amt</th>
                 <th className="p-4 font-bold text-slate-500 dark:text-slate-400 text-right">After Discount</th>
-                <th className="p-4 font-bold text-slate-500 dark:text-slate-400">Signature</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center">
+                  <td colSpan={7} className="p-12 text-center">
                     <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
                       <LayoutDashboard className="w-6 h-6 text-slate-400" />
                     </div>
@@ -160,7 +154,6 @@ export function ZReportsClient({ reports }: { reports: InvoiceReport[] }) {
               ) : (
                 reports.map((item, idx) => (
                   <tr key={item.invoiceNumber} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${idx % 2 === 0 ? "bg-white dark:bg-slate-900/20" : "bg-slate-50/30 dark:bg-slate-900/40"}`}>
-                    <td className="p-4 text-sm font-medium text-slate-900 dark:text-slate-100">{item.invoiceNumber.slice(-6).toUpperCase()}</td>
                     <td className="p-4 text-sm font-medium text-slate-700 dark:text-slate-300">{item.patientName}</td>
                     <td className="p-4 text-sm font-medium text-slate-700 dark:text-slate-300 text-right">{item.discountPercent}%</td>
                     <td className="p-4 text-sm font-medium text-slate-700 dark:text-slate-300 text-right tabular-nums">
@@ -177,9 +170,6 @@ export function ZReportsClient({ reports }: { reports: InvoiceReport[] }) {
                     </td>
                     <td className="p-4 text-sm font-black text-blue-600 dark:text-blue-400 text-right tabular-nums">
                       {(item.afterDiscount / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="p-4 text-sm text-slate-300 dark:text-slate-700">
-                      .......................
                     </td>
                   </tr>
                 ))

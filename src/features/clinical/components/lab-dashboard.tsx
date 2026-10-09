@@ -10,8 +10,17 @@ import { getLabPanelType } from "../types/lab-panels";
 import { StoolResultForm } from "./stool-result-form";
 import { UrineResultForm } from "./urine-result-form";
 import { HematologyResultForm } from "./hematology-result-form";
+import { ReferralButton } from "./referral-button";
 
-export function LabDashboard({ requests }: { requests: any[] }) {
+export function LabDashboard({ 
+  requests,
+  referralDestinations = [],
+  clinicNames
+}: { 
+  requests: any[];
+  referralDestinations?: string[];
+  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string };
+}) {
   const urgentCount = requests.filter(r => r.status === "urgent").length;
 
   return (
@@ -48,7 +57,7 @@ export function LabDashboard({ requests }: { requests: any[] }) {
               <p className="text-xs text-slate-400 mt-0.5">All patient diagnostic orders have been completed.</p>
             </div>
           ) : (
-            requests.map(req => <LabRequestRow key={req.id} request={req} />)
+            requests.map(req => <LabRequestRow key={req.id} request={req} referralDestinations={referralDestinations} clinicNames={clinicNames} />)
           )}
         </div>
       </div>
@@ -56,7 +65,15 @@ export function LabDashboard({ requests }: { requests: any[] }) {
   );
 }
 
-function LabRequestRow({ request }: { request: any }) {
+function LabRequestRow({ 
+  request,
+  referralDestinations,
+  clinicNames
+}: { 
+  request: any;
+  referralDestinations?: string[];
+  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string };
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [genericFindings, setGenericFindings] = useState("");
   const [saving, setSaving] = useState(false);
@@ -139,7 +156,13 @@ function LabRequestRow({ request }: { request: any }) {
         </div>
 
         {/* Action Toggle */}
-        <div>
+        <div className="flex items-center gap-2">
+          <ReferralButton 
+            patient={request.patient}
+            referralDestinations={referralDestinations}
+            clinicNames={clinicNames}
+            defaultReason={`Referred for ${request.test.name} evaluation.`}
+          />
           {!isExpanded ? (
             <button
               onClick={() => setIsExpanded(true)}
