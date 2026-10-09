@@ -13,8 +13,13 @@ export function CreateUserModal() {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+    
+    const rawName = formData.get("name") as string;
+    const title = formData.get("title") as string;
+    const fullName = title ? `${title} ${rawName}` : rawName;
+
     const res = await createUser({
-      name: formData.get("name") as string,
+      name: fullName,
       email: formData.get("email") as string,
       password: formData.get("password") as string,
       role: formData.get("role") as string,
@@ -45,9 +50,25 @@ export function CreateUserModal() {
         <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">Create New User</h3>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Name</label>
-            <input required name="name" type="text" className="w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2" />
+          <div className="flex gap-4">
+            <div className="w-1/3">
+              <label className="block text-sm font-medium mb-1">Title</label>
+              <select name="title" className="w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2">
+                <option value="">None</option>
+                <option value="Mr.">Mr.</option>
+                <option value="Ms.">Ms.</option>
+                <option value="Mrs.">Mrs.</option>
+                <option value="Dr.">Dr.</option>
+                <option value="H.O">H.O</option>
+                <option value="Nurse">Nurse</option>
+                <option value="Pharmacist">Pharmacist</option>
+                <option value="Lab Tech">Lab Tech</option>
+              </select>
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-medium mb-1">Name</label>
+              <input required name="name" type="text" className="w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2" />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Email</label>

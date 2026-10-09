@@ -109,13 +109,24 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   }
 
   let referralDestinations: string[] = [];
+  let clinicName = "DEFENCE ENGINEERING INDUSTRIES GROUP";
+  let clinicNameAmharic = "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ";
+  let clinicSubName = "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER";
+  let clinicSubNameAmharic = "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ";
+
   if (canWriteHistory) {
-    const setting = await prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } });
+    const [setting, nameSetting, amhSetting] = await Promise.all([
+      prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinic_name" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinic_name_amharic" } })
+    ]);
+    
     if (setting) {
       try { referralDestinations = JSON.parse(setting.value); } catch(e) {}
     }
+    if (nameSetting) clinicSubName = nameSetting.value;
+    if (amhSetting) clinicSubNameAmharic = amhSetting.value;
   }
-
 
   let doctorsList: { id: string; name: string }[] = [];
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
@@ -225,7 +236,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patientId={patient.id} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} />}
+            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic }} />}
 
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
