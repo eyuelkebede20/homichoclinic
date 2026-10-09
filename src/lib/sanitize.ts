@@ -8,7 +8,7 @@ const xssOptions = {
   stripIgnoreTagBody: ['script']
 };
 
-export const sanitizeString = (str: string) => {
+const sanitizeString = (str: string) => {
   return xss(str, xssOptions).trim();
 };
 

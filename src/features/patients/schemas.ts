@@ -28,5 +28,3 @@ export const discountUpdateSchema = z.object({
   reason: zSafeString().optional(),
 });
 
-export type PatientCreateInput = z.infer<typeof patientCreateSchema>;
-export type DiscountUpdateInput = z.infer<typeof discountUpdateSchema>;

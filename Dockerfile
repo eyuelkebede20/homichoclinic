@@ -27,6 +27,9 @@ ENV NODE_ENV=production
 ENV HOSTNAME="0.0.0.0"
 WORKDIR /app
 
+# Install postgresql-client for pg_dump and psql backups
+RUN apk add --no-cache postgresql-client
+
 # Copy the standalone output (includes its own node_modules subset)
 COPY --from=build --chown=node:node /app/.next/standalone ./
 # Copy the static assets that standalone doesn't include itself

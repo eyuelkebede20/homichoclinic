@@ -63,7 +63,4 @@ export async function getDictionary() {
   return dictionaries[locale] || dictionaries.en;
 }
 
-// For client components
-export function getClientDictionary(locale: string) {
-  return dictionaries[locale] || dictionaries.en;
-}
+
