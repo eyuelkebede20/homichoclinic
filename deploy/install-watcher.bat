@@ -35,7 +35,7 @@ set "WATCHER=%ROOT%\deploy\clinic-watcher.bat"
 echo   [..] Installing ClinicUpdater scheduled task...
 
 schtasks /delete /tn "ClinicUpdater" /f >nul 2>&1
-schtasks /create /tn "ClinicUpdater" /tr "cmd /c \"%WATCHER%\"" /sc minute /mo 1 /f >nul 2>&1
+schtasks /create /tn "ClinicUpdater" /tr "cmd /c \"%WATCHER%\"" /sc minute /mo 1 /f /it >nul 2>&1
 
 if errorlevel 1 (
     echo   [!] Could not install task. Try running as Administrator.

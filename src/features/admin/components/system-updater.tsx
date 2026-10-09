@@ -143,6 +143,7 @@ export function SystemUpdater() {
 
     if (!scriptDone) {
       appendLog("✗ Timed out waiting for update script to finish (10 min). Check server logs.");
+      appendLog("  (On Windows, try running deploy\\update.bat manually if Docker permissions block the background task)");
     } else {
       appendLog("✗ App did not come back online in time. Check: docker compose logs app");
     }
