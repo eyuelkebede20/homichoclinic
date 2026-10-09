@@ -35,7 +35,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       firstName: formData.get("firstName") as string,
       lastName: formData.get("lastName") as string,
       yob: yob,
-      gender: formData.get("gender") as string,
+      gender: formData.get("sex") as string,
       contactNumber: formData.get("contactNumber") as string,
       patientType: patientType,
       militaryId: formData.get("militaryId") as string || undefined,
@@ -89,8 +89,8 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
           />
         </div>
         <div className="flex flex-col justify-end">
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Gender</label>
-          <select name="gender" className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sex</label>
+          <select name="sex" className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500">
             <option value="">Select...</option>
             <option value="male">Male</option>
             <option value="female">Female</option>

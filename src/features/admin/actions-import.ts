@@ -37,7 +37,7 @@ export const importPatientsCSV = createSafeAction({
     
     // Validate that we found at least some expected headers
     const hasKnownHeader = headers.some(h => 
-      ['employe_id', 'employeeid', 'employee_id', 'employee id', 'govid', 'gov_id', 'gender', 'yob', 'dob', 'dateofbirth', 'permanentsince', 'since', 'permanent', 'status', 'fullname', 'full name', 'name', 'firstname', 'first name', 'first_name', 'salutation', 'title', 'emergencycontact', 'emergency contact', 'emergencyphone', 'emergencymobile', 'emergency mobile', 'c_m', 'cm', 'c/m', 'department', 'dept', 'employmenttype', 'employment type', 'patienttype', 'designation', 'rank', 'mobile', 'phone', 'contact', 'primarymobile', 'primaryphone', 'familyphone'].includes(h)
+      ['employe_id', 'employeeid', 'employee_id', 'employee id', 'govid', 'gov_id', 'gender', 'sex', 'yob', 'dob', 'dateofbirth', 'permanentsince', 'since', 'permanent', 'status', 'fullname', 'full name', 'name', 'firstname', 'first name', 'first_name', 'salutation', 'title', 'emergencycontact', 'emergency contact', 'emergencyphone', 'emergencymobile', 'emergency mobile', 'c_m', 'cm', 'c/m', 'department', 'dept', 'employmenttype', 'employment type', 'patienttype', 'designation', 'rank', 'mobile', 'phone', 'contact', 'primarymobile', 'primaryphone', 'familyphone'].includes(h)
     );
     if (!hasKnownHeader) {
       throw new Error(`Could not recognize columns in the file. Found headers: ${headers.slice(0, 3).join(', ')}... Please use the expected file format.`);
@@ -80,7 +80,7 @@ export const importPatientsCSV = createSafeAction({
       const phone = row["mobile"] || row["phone"] || row["contact"] || row["contactnumber"] || row["primaryphone"] || row["primarymobile"];
       const finalPhone = phone || "-";
       const dobStr = row["yob"] || row["dob"] || row["dateofbirth"];
-      const gender = row["gender"] || "-";
+      const gender = row["sex"] || row["gender"] || "-";
       const rawDiscount = parseInt(row["discount"] || "0", 10);
       
       const employmentType = row["employmenttype"] || row["employment type"] || row["patienttype"] || row["relationship"] || row["role"];

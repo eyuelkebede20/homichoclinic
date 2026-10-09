@@ -14,7 +14,7 @@ export function PatientImporter() {
   const handleDownloadTemplate = () => {
     const headers = [
       "employe_id",
-      "gender",
+      "sex",
       "yob",
       "permanentSince",
       "Status",
@@ -99,7 +99,7 @@ export function PatientImporter() {
       <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded text-sm text-indigo-800 dark:text-indigo-300 mb-6">
         <p className="font-medium mb-1">Supported Columns (All Optional):</p>
         <code className="bg-white/50 dark:bg-black/20 px-2 py-1 rounded text-xs leading-loose">
-          employe_id, gender, yob, permanentSince, Status, fullName, salutation, emergencyContact, emergencyPhone, c_m, department, employmentType, designation, mobile
+          employe_id, sex, yob, permanentSince, Status, fullName, salutation, emergencyContact, emergencyPhone, c_m, department, employmentType, designation, mobile
         </code>
         
         <p className="mt-3 text-xs opacity-90">

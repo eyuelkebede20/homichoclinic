@@ -100,8 +100,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
       "Pharmacy Cost", 
       "Total", 
       "Discount Amount", 
-      "After Discount", 
-      "Signature"
+      "After Discount"
     ];
 
     const rows = filtered.map(i => {
@@ -113,8 +112,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
         (i.pharmaCost / 100).toFixed(2),
         (i.subtotal / 100).toFixed(2),
         (i.discountAmount / 100).toFixed(2),
-        (i.total / 100).toFixed(2),
-        ""
+        (i.total / 100).toFixed(2)
       ];
     });
     
@@ -226,7 +224,9 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Total</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Discount Amount</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">After Discount</th>
-              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-center">Signature</th>
+              {activeTab === "pending" && (
+                <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-center">Signature</th>
+              )}
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Action</th>
             </tr>
           </thead>
@@ -254,9 +254,11 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
                   <td className="p-4 text-sm font-medium text-blue-600 dark:text-blue-400 text-right">
                     {(item.total / 100).toFixed(2)}
                   </td>
-                  <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-center">
-                    <div className="w-16 border-b border-slate-300 dark:border-slate-600 mx-auto print:border-black"></div>
-                  </td>
+                  {activeTab === "pending" && (
+                    <td className="p-4 text-sm text-slate-700 dark:text-slate-300 text-center">
+                      <div className="w-16 border-b border-slate-300 dark:border-slate-600 mx-auto print:border-black"></div>
+                    </td>
+                  )}
                   <td className="p-4 text-right space-x-2">
                     {activeTab !== "approved" && (
                       <button

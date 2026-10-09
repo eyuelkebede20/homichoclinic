@@ -8,6 +8,7 @@ import { EditableDrugRow } from "@/features/catalogs/components/editable-drug-ro
 import { CatalogImporter } from "@/features/catalogs/components/catalog-importer";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
+import { CatalogSearch } from "@/features/catalogs/components/catalog-search";
 
 export default async function PharmacyCatalogPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolvedParams = await searchParams;
@@ -61,20 +62,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
 
       <div className="max-w-6xl w-full mx-auto space-y-4 print:w-full print:break-inside-avoid">
         <div className="print:hidden">
-          <form className="relative w-full max-w-md">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <input
-              name="q"
-              defaultValue={query}
-              type="text"
-              placeholder="Search medications by name..."
-              className="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-            />
-          </form>
+          <CatalogSearch defaultValue={query} />
         </div>
 
         <div className="print:hidden space-y-4">
