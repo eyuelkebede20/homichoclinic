@@ -1,19 +1,17 @@
 "use client";
 
-import { Printer } from "lucide-react";
+import { Eye } from "lucide-react";
+import Link from "next/link";
 
 export function PrintReceiptButton({ prescriptionId }: { prescriptionId: string }) {
-  const handlePrint = () => {
-    window.open(`/pharmacy/receipt/${prescriptionId}`, "_blank", "width=800,height=600");
-  };
-
   return (
-    <button
-      onClick={handlePrint}
-      className="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700"
+    <Link
+      href={`/pharmacy/receipt/${prescriptionId}`}
+      target="_blank"
+      className="inline-flex items-center px-3 py-1.5 border border-slate-300 dark:border-slate-600 rounded text-xs font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
     >
-      <Printer className="w-3.5 h-3.5 mr-1.5" />
-      Print Receipt
-    </button>
+      <Eye className="w-3.5 h-3.5 mr-1.5" />
+      View Medicines
+    </Link>
   );
 }

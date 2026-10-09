@@ -109,6 +109,7 @@ export default async function DashboardLayout({
   }
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
     navItems.push({ name: dict["nav.dataEncoder"] || "Data Encoder", href: "/dataencoder", icon: Receipt });
+    navItems.push({ name: dict["nav.zReports"] || "Z-Reports", href: "/dataencoder/z-reports", icon: Activity });
   }
 
   if (userPermissions.includes(PERMISSIONS.AUDIT_READ)) {

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { requestLabTest, createPrescription, saveReferral } from "../actions";
-import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send } from "lucide-react";
+import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send, X } from "lucide-react";
 import { toast } from "sonner";
 import { isStoolTest, isUrineTest, isHematologyTest } from "../types/lab-panels";
 
@@ -381,7 +381,6 @@ export function DoctorOrders({
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Search Drug</label>
                 <input 
                   type="text"
-                  required
                   placeholder="Type to search..."
                   value={item.search || ""}
                   onChange={e => {
@@ -406,7 +405,7 @@ export function DoctorOrders({
               <div className="w-24">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Qty</label>
                 <input 
-                  type="number" min="1" required
+                  type="number" min="1"
                   value={item.quantity}
                   onChange={e => {
                     const newItems = [...rxItems];
@@ -418,17 +417,33 @@ export function DoctorOrders({
               </div>
               <div className="flex-1">
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Instructions (Dosage)</label>
-                <input 
-                  type="text" required
-                  placeholder="e.g. Take 1 pill twice a day"
-                  value={item.instructions}
-                  onChange={e => {
-                    const newItems = [...rxItems];
-                    newItems[index].instructions = e.target.value;
-                    setRxItems(newItems);
-                  }}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
-                />
+                <div className="flex gap-2">
+                  <input 
+                    type="text"
+                    placeholder="e.g. Take 1 pill twice a day"
+                    value={item.instructions}
+                    onChange={e => {
+                      const newItems = [...rxItems];
+                      newItems[index].instructions = e.target.value;
+                      setRxItems(newItems);
+                    }}
+                    className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
+                  />
+                  {rxItems.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newItems = [...rxItems];
+                        newItems.splice(index, 1);
+                        setRxItems(newItems);
+                      }}
+                      className="mt-1 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+                      title="Remove drug"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}

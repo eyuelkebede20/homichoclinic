@@ -46,7 +46,7 @@ export default async function PharmacyDashboardPage({
   const canDispense = userPermissions.includes(PERMISSIONS.PRESCRIPTION_DISPENSE);
 
   const drugs = await prisma.drug.findMany({
-    include: { batches: { where: { quantity: { gt: 0 } } } },
+    include: { batches: { orderBy: { createdAt: "desc" } } },
   });
 
   const oneWeekAgo = new Date();

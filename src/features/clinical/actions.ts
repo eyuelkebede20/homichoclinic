@@ -280,30 +280,6 @@ export const updateDoctorOpd = createSafeAction({
   }
 });
 
-export const cancelLabRequest = createSafeAction({
-  schema: z.object({ requestId: z.string() }),
-  requiredPermission: PERMISSIONS.LAB_REQUEST,
-  handler: async (data, ctx) => {
-    const req = await prisma.labRequest.findUnique({ where: { id: data.requestId } });
-    if (!req) throw new Error("Lab request not found");
-    if (req.status === "completed") throw new Error("Cannot cancel a completed lab request");
-
-    const updated = await prisma.labRequest.update({
-      where: { id: data.requestId },
-      data: { status: "cancelled" }
-    });
-
-    await logAudit({
-      actorId: ctx.userId,
-      action: "CANCEL_LAB_REQUEST",
-      resourceId: updated.id,
-      newValue: { status: "cancelled" },
-    });
-
-    revalidatePath("/laboratory");
-    return updated;
-  }
-});
 
 
 export const toggleAdmissionStatus = createSafeAction({
@@ -604,19 +580,7 @@ export const undoDenyVisitBilling = createSafeAction({
 });
 
 
-export const denyVisitBilling = createSafeAction({
-  schema: z.object({ visitId: z.string().min(1) }),
-  requiredPermission: PERMISSIONS.VISIT_READ,
-  handler: async (data, ctx) => {
-    await prisma.visit.update({
-      where: { id: data.visitId },
-      data: { status: "denied" }
-    });
-    revalidatePath("/dashboard");
-    revalidatePath("/dataencoder/denied");
-    return { success: true };
-  }
-});
+
 
 
 const referralSchema = z.object({

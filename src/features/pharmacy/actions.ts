@@ -19,6 +19,8 @@ export const receiveStock = createSafeAction({
           expiryDate: new Date(data.expiryDate),
           quantity: data.quantity,
           cost: data.cost,
+          dateAddedToStock: data.dateAddedToStock ? new Date(data.dateAddedToStock) : undefined,
+          docNo: data.docNo,
         },
       });
 

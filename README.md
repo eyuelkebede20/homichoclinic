@@ -1,54 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bure Card - Clinic Management System
 
-## Getting Started
+Bure Card is an internal company clinic management system designed to track the end-to-end patient journey for staff members and their dependents. It manages visits, lab queues, prescriptions, inventory, and credit-based billing with automatic salary deductions.
 
-First, run the development server:
+## Key Features
+- **Role-Based Dashboards**: Tailored workflows for Receptionists, Nurses, Doctors, Lab Technicians, Pharmacists, Cashiers, and Admins.
+- **Workflow Management**: Tracks patients from check-in through consultation, labs, pharmacy, and billing.
+- **Credit-Based Billing**: Automatic discount application and credit charging tied to staff employee IDs.
+- **Inventory Tracking**: FEFO (First Expired, First Out) digital stock management for the pharmacy.
+
+## Tech Stack
+- Next.js (App Router)
+- React
+- Prisma ORM
+- Tailwind CSS
+
+## Getting Started Locally
+
+First, install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+```
+
+Then, run the development server:
+
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Production Docker Setup (Linux)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+For hosting the app on the clinic's local server (e.g., HP desktop), we use a self-contained Docker environment that ensures reliability and easy updates.
 
-## Learn More
+### 1. First Time Setup
 
-To learn more about Next.js, take a look at the following resources:
+Clone the repository to the server (e.g. `/opt/clinic`) and run the start script:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+chmod +x start.sh
+./start.sh
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**What this script does:**
+- Creates necessary directories (`logs/`, `run/`, `backups/`).
+- Copies `.env.example` to `.env` (you will be prompted to edit it and add secure passwords).
+- Checks Docker installation and network setup.
+- Installs the systemd path unit for the "Admin Update Button".
+- Builds and starts the database and app containers.
+- Waits for healthchecks to pass and displays the LAN IP address to access the app.
 
-## Deploy on Vercel
+*(After the containers are healthy, visit `http://<LAN_IP>:3000/api/seed-db` in your browser to seed initial accounts.)*
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### 2. Updating the System
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+There are three ways to update the system when new code is pushed to GitHub:
 
-## Updating the Database Schema (Prisma)
+**Method A: In-App Admin Button (Recommended)**
+Admin users can click the "Update System" button in the app. This writes a flag file to `/run/updater/update.request`. A host-side systemd watcher (`clinic-update.path`) detects this and securely triggers `update.sh` on the host, preventing the need to expose the Docker socket to the container.
 
-If you pull new updates from the repository that change the database structure, or if you modify `prisma/schema.prisma` yourself, you need to sync those changes to your database.
+**Method B: Quick Zero-Downtime Update (CLI)**
+Run this command on the server to update the app only (skips database restart):
+```bash
+./start.sh --quick
+```
+This automatically backs up the database, builds the new app image in the background, swaps the containers, and **automatically rolls back** to the previous image if the new one fails healthchecks.
 
-### If you are running locally (npm run dev) with Docker just for the database:
-Run this command in your terminal to update the database schema:
+**Method C: Full Restart Update (CLI)**
+```bash
+./start.sh
+```
+This performs a `git pull`, backs up the database, rebuilds images, and runs a full restart.
+
+### 3. Database Management (Prisma)
+
+The database schema automatically updates via Prisma migrations when the app container starts in Docker. 
+
+**Manual Local Reset (Dev Only)**
+If running locally (not in Docker production) and you need to push schema changes directly:
 ```bash
 npx prisma db push --accept-data-loss
 ```
-*(After this, you can safely seed your database with `http://localhost:3000/api/seed-db`)*
 
-### If you are running the full app via Docker Compose:
-The database schema automatically updates when the app container starts, **but only if you rebuild the image** so it catches the new schema files. Run:
-```bash
-docker compose up -d --build
-```
-*(After the container is healthy, visit `http://localhost:3000/api/seed-db` in your browser to seed initial accounts)*
+### 4. Backups
+
+The system automatically performs database backups:
+- Before any CLI update (`./start.sh --quick` or full).
+- Before any Admin UI triggered update (`update.sh`).
+- It is highly recommended to add a cron job for nightly backups.
+
+Backups are saved as gzipped SQL files in the `backups/` folder.

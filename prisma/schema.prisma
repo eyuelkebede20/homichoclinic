@@ -274,6 +274,9 @@ model StockBatch {
   quantity      Int
   cost          Int       // Minor units
 
+  dateAddedToStock DateTime?
+  docNo            String?
+
   movements     StockMovement[]
 
   createdAt     DateTime  @default(now())

@@ -6,6 +6,8 @@ export const receiveStockSchema = z.object({
   expiryDate: z.string().min(1, "Expiry date is required"),
   quantity: z.number().int().positive("Quantity must be positive"),
   cost: z.number().int().nonnegative("Cost must be non-negative (in minor units)"),
+  dateAddedToStock: z.string().optional(),
+  docNo: z.string().optional(),
 });
 
 export const dispensePrescriptionSchema = z.object({

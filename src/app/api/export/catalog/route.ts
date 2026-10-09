@@ -24,11 +24,11 @@ export async function GET(request: Request) {
 
   if (type === "drug") {
     const items = await prisma.drug.findMany({ orderBy: { name: "asc" } });
-    csvContent = "id,nameOfMed,description,price,category,amountInStock,batchNumber,expiryDate\n";
+    csvContent = "id,nameOfMed,description,price,category,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo\n";
     for (const item of items) {
       const price = item.price / 100; // to ETB
       const stock = item.amountInStock ?? "";
-      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"${item.category || ""}",${stock},,\n`;
+      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"${item.category || ""}",${stock},,,,\n`;
     }
   } else if (type === "lab") {
     const items = await prisma.labTest.findMany({ orderBy: { name: "asc" } });

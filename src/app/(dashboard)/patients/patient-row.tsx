@@ -6,7 +6,7 @@ import { calculateAge } from "@/lib/date-utils";
 import { admitPatient } from "@/features/visits/actions";
 import { toast } from "sonner";
 
-export function PatientRow({ patient, totalOpdRooms = 5 }: { patient: import('@prisma/client').Patient, totalOpdRooms?: number }) {
+export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true }: { patient: import('@prisma/client').Patient, totalOpdRooms?: number, canAdmit?: boolean }) {
   const router = useRouter();
   const [selectedOpd, setSelectedOpd] = useState<string>("1");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -56,27 +56,29 @@ export function PatientRow({ patient, totalOpdRooms = 5 }: { patient: import('@p
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.contactNumber || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyContact || "-"}</td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.emergencyMobile || "-"}</td>
-      <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
-        <div className="flex items-center gap-2">
-          <select 
-            value={selectedOpd}
-            onChange={(e) => setSelectedOpd(e.target.value)}
-            onClick={handleDropdownClick}
-            className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-900"
-          >
-            {Array.from({ length: totalOpdRooms }).map((_, i) => (
-              <option key={i + 1} value={i + 1}>OPD {i + 1}</option>
-            ))}
-          </select>
-          <button 
-            onClick={handleAdmit}
-            disabled={isExecuting}
-            className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            {isExecuting ? "..." : "Admit"}
-          </button>
-        </div>
-      </td>
+      {canAdmit && (
+        <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">
+          <div className="flex items-center gap-2">
+            <select 
+              value={selectedOpd}
+              onChange={(e) => setSelectedOpd(e.target.value)}
+              onClick={handleDropdownClick}
+              className="border border-slate-300 dark:border-slate-700 rounded px-2 py-1 text-sm bg-white dark:bg-slate-900"
+            >
+              {Array.from({ length: totalOpdRooms }).map((_, i) => (
+                <option key={i + 1} value={i + 1}>OPD {i + 1}</option>
+              ))}
+            </select>
+            <button 
+              onClick={handleAdmit}
+              disabled={isExecuting}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isExecuting ? "..." : "Admit"}
+            </button>
+          </div>
+        </td>
+      )}
     </tr>
   );
 }

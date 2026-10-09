@@ -146,7 +146,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400">Pharma Used</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Total</th>
               <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Discount Amount</th>
-              {activeTab === "pending" && <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Action</th>}
+              <th className="p-4 font-medium text-slate-600 dark:text-slate-400 text-right">Action</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -173,8 +173,8 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
                   <td className="p-4 text-sm text-red-600 dark:text-red-400 text-right font-medium">
                     {(item.discountAmount / 100).toFixed(2)}
                   </td>
-                  {activeTab === "pending" && (
-                    <td className="p-4 text-right space-x-2">
+                  <td className="p-4 text-right space-x-2">
+                    {activeTab !== "approved" && (
                       <button
                         disabled={executingApprove || executingDisapprove}
                         onClick={() => executeApprove({ invoiceId: item.id })}
@@ -183,6 +183,8 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
                       >
                         <Check className="w-4 h-4" />
                       </button>
+                    )}
+                    {activeTab !== "disapproved" && (
                       <button
                         disabled={executingApprove || executingDisapprove}
                         onClick={() => executeDisapprove({ invoiceId: item.id })}
@@ -191,8 +193,8 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
                       >
                         <X className="w-4 h-4" />
                       </button>
-                    </td>
-                  )}
+                    )}
+                  </td>
                 </tr>
               ))
             )}

@@ -59,6 +59,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   const canCreate = userPermissions.includes(PERMISSIONS.PATIENT_CREATE);
   const canManageUsers = userPermissions.includes(PERMISSIONS.USER_MANAGE) || role === "Admin" || role === "Manager";
+  const canAdmit = role === "Doctor" || role === "Reception" || role === "Admin";
 
   return (
     <div className="p-8 print:p-0 print:max-w-none">
@@ -108,16 +109,16 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Primary Mobile</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Contact</th>
                 <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Emergency Mobile</th>
-                <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                {canAdmit && <th className="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>}
               </tr>
             </thead>
             <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
               {patients.map(patient => (
-                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} />
+                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} canAdmit={canAdmit} />
               ))}
               {patients.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-6 py-8 text-center text-sm text-slate-500">
+                  <td colSpan={canAdmit ? 12 : 11} className="px-6 py-8 text-center text-sm text-slate-500">
                     {query ? "No patients match your search." : "No patients found."}
                   </td>
                 </tr>

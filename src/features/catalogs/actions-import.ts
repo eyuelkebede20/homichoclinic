@@ -77,6 +77,12 @@ export const importCatalogCSV = createSafeAction({
       const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date("2099-12-31");
       const validExpiry = isNaN(expiryDate.getTime()) ? new Date("2099-12-31") : expiryDate;
 
+      const dateAddedToStockStr = row["dateaddedtostock"] || row["date_added"] || row["added_date"] || null;
+      const dateAddedToStock = dateAddedToStockStr ? new Date(dateAddedToStockStr) : null;
+      const validDateAdded = dateAddedToStock && !isNaN(dateAddedToStock.getTime()) ? dateAddedToStock : null;
+
+      const docNo = row["docno"] || row["doc_no"] || row["receipt"] || null;
+
       const description: string | null = rawDescription || null;
 
       if (data.type === "DRUG") {
@@ -102,6 +108,8 @@ export const importCatalogCSV = createSafeAction({
                 expiryDate: validExpiry,
                 quantity: parsedAmountInStock,
                 cost: 0,
+                dateAddedToStock: validDateAdded,
+                docNo: docNo
               }
             });
           }
@@ -112,7 +120,7 @@ export const importCatalogCSV = createSafeAction({
               type: "DRUG",
               action: id ? "UPDATE" : "CREATE",
               targetId: id || null,
-              requestedData: JSON.stringify({ name, price: priceCents, category, description, amountInStock: parsedAmountInStock }),
+              requestedData: JSON.stringify({ name, price: priceCents, category, description, amountInStock: parsedAmountInStock, batchNumber, expiryDate: validExpiry, dateAddedToStock: validDateAdded, docNo }),
               requestedById: ctx.userId,
             }
           });

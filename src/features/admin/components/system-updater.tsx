@@ -28,7 +28,7 @@ const STATUS_POLL_MS = 2_000;
 /** How often to poll /health after the container restarts */
 const HEALTH_POLL_MS = 4_000;
 /** How long to wait for the whole thing before giving up */
-const TOTAL_TIMEOUT_MS = 5 * 60_000; // 5 min
+const TOTAL_TIMEOUT_MS = 10 * 60_000; // 10 min
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -60,7 +60,7 @@ export function SystemUpdater() {
     if (
       !confirm(
         "Pull the latest code and rebuild?\n\n" +
-        "The app will restart automatically (~2 min). " +
+        "The app will restart automatically (~2-5 min). " +
         "Make sure you have a recent database backup."
       )
     ) return;
@@ -77,7 +77,7 @@ export function SystemUpdater() {
         setPhase("failed");
         return;
       }
-      appendLog("✓ Update request sent — Task Scheduler will now run update.bat");
+      appendLog("✓ Update request sent — the system will now run the update script");
     } catch (err: any) {
       appendLog("✗ " + err.message);
       setPhase("failed");
@@ -142,7 +142,7 @@ export function SystemUpdater() {
     }
 
     if (!scriptDone) {
-      appendLog("✗ Timed out waiting for update.bat to finish (5 min). Check server logs.");
+      appendLog("✗ Timed out waiting for update script to finish (10 min). Check server logs.");
     } else {
       appendLog("✗ App did not come back online in time. Check: docker compose logs app");
     }
@@ -156,7 +156,7 @@ export function SystemUpdater() {
   const phaseLabel: Record<Phase, string> = {
     idle:       "Pull Latest Updates",
     requesting: "Sending request...",
-    running:    "Running update.bat...",
+    running:    "Running update script...",
     restarting: "Restarting container...",
     done:       "Pull Latest Updates",
     failed:     "Retry Update",
@@ -192,7 +192,7 @@ export function SystemUpdater() {
         <div className="mb-4 rounded-md border border-slate-200 dark:border-slate-700 bg-slate-950 overflow-hidden flex flex-col">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-700 text-xs text-slate-400">
             <Terminal className="w-3.5 h-3.5" />
-            <span>update.bat — live output</span>
+            <span>Update script — live output</span>
             {isRunning && <RefreshCw className="w-3 h-3 animate-spin ml-auto" />}
           </div>
           <div
