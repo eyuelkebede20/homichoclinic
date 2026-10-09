@@ -13,6 +13,7 @@ import { PatientRow } from "./patient-row";
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams.q || "";
+  const tab = resolvedParams.tab || "all"; // 'all' or 'pending'
   const page = parseInt(resolvedParams.page || "1", 10);
   const PAGE_SIZE = 20;
 
@@ -33,7 +34,10 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
     );
   }
 
+  const baseWhereClause = tab === "pending" ? { status: "PENDING" } : { status: "APPROVED" };
+
   const whereClause = query ? {
+    ...baseWhereClause,
     OR: [
       { firstName: { contains: query, mode: "insensitive" } as const },
       { lastName: { contains: query, mode: "insensitive" } as const },
@@ -42,16 +46,17 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       { militaryId: { contains: query, mode: "insensitive" } as const },
       { id: { contains: query, mode: "insensitive" } as const }
     ]
-  } : undefined;
+  } : baseWhereClause;
 
-  const [patients, totalItems] = await Promise.all([
+  const [patients, totalItems, pendingCount] = await Promise.all([
     prisma.patient.findMany({
       where: whereClause,
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),
-    prisma.patient.count({ where: whereClause })
+    prisma.patient.count({ where: whereClause }),
+    prisma.patient.count({ where: { status: "PENDING" } })
   ]);
 
   const opdSetting = await prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } });
@@ -93,6 +98,28 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
         </div>
       </div>
 
+      <div className="border-b border-slate-200 dark:border-slate-800 mb-6 print:hidden">
+        <nav className="-mb-px flex space-x-8">
+          <Link 
+            href="?tab=all" 
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'all' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
+          >
+            All Patients
+          </Link>
+          <Link 
+            href="?tab=pending" 
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${tab === 'pending' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
+          >
+            Pending Registrations
+            {pendingCount > 0 && (
+              <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium ${tab === 'pending' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200' : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                {pendingCount}
+              </span>
+            )}
+          </Link>
+        </nav>
+      </div>
+
       <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800/60 flex flex-col">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/50">
@@ -114,7 +141,7 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
             </thead>
             <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
               {patients.map(patient => (
-                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} canAdmit={canAdmit} />
+                <PatientRow key={patient.id} patient={patient} totalOpdRooms={totalOpdRooms} canAdmit={canAdmit} canApprove={canManageUsers} />
               ))}
               {patients.length === 0 && (
                 <tr>

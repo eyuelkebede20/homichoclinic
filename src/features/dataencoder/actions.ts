@@ -29,7 +29,7 @@ export const approveInvoice = createSafeAction({
 
       const updated = await tx.invoice.update({
         where: { id: inv.id },
-        data: { status: "approved" },
+        data: { status: "paid" },
       });
 
       // Close visits if approved
@@ -84,3 +84,85 @@ export const disapproveInvoice = createSafeAction({
     return invoice;
   },
 });
+
+export async function autoBillUnbilledItems(patientId: string, actorId: string) {
+  const patient = await prisma.patient.findUnique({ where: { id: patientId } });
+  if (!patient) return;
+
+  const labRequests = await prisma.labRequest.findMany({
+    where: { patientId, status: "completed", invoiceId: null },
+    include: { test: true }
+  });
+
+  const prescriptions = await prisma.prescription.findMany({
+    where: { patientId, status: "dispensed" },
+    include: { items: { where: { invoiceId: null }, include: { drug: true } } }
+  });
+
+  const unbilledPrescriptionItems = prescriptions.flatMap(p => p.items);
+
+  if (labRequests.length === 0 && unbilledPrescriptionItems.length === 0) return;
+
+  const items: import("@prisma/client").Prisma.InvoiceItemCreateWithoutInvoiceInput[] = [];
+
+  labRequests.forEach(l => {
+    items.push({
+      description: `Lab Test: ${l.test.name}`,
+      quantity: 1,
+      unitPrice: l.test.price,
+      isDiscountable: true,
+    });
+  });
+
+  unbilledPrescriptionItems.forEach(pi => {
+    items.push({
+      description: `Pharmacy: ${pi.drug.name} (${pi.quantity} units)`,
+      quantity: pi.quantity,
+      unitPrice: pi.drug.price,
+      isDiscountable: true,
+    });
+  });
+
+  let discountableTotal = 0;
+  let nonDiscountableTotal = 0;
+
+  items.forEach(item => {
+    const lineTotal = item.unitPrice * item.quantity;
+    if (item.isDiscountable) discountableTotal += lineTotal;
+    else nonDiscountableTotal += lineTotal;
+  });
+
+  const subtotal = discountableTotal + nonDiscountableTotal;
+  const discountAmount = Math.round((discountableTotal * patient.discountPercent) / 100);
+  const total = subtotal - discountAmount;
+
+  await prisma.$transaction(async (tx) => {
+    const invoice = await tx.invoice.create({
+      data: {
+        patientId,
+        status: "pending",
+        discountPercentApplied: patient.discountPercent,
+        subtotal,
+        total,
+        items: {
+          create: items
+        }
+      }
+    });
+
+    if (labRequests.length > 0) {
+      await tx.labRequest.updateMany({
+        where: { id: { in: labRequests.map(l => l.id) } },
+        data: { invoiceId: invoice.id }
+      });
+    }
+
+    if (unbilledPrescriptionItems.length > 0) {
+      await tx.prescriptionItem.updateMany({
+        where: { id: { in: unbilledPrescriptionItems.map(p => p.id) } },
+        data: { invoiceId: invoice.id }
+      });
+    }
+  });
+}
+

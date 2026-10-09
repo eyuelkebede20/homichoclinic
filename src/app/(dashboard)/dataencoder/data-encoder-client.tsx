@@ -53,7 +53,9 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
   };
 
   const filtered = initialInvoices.filter(i => {
-    const matchesTab = i.status === activeTab;
+    const matchesTab = activeTab === "approved" 
+      ? (i.status === "approved" || i.status === "paid")
+      : i.status === activeTab;
     const matchesSearch = 
       i.patientName.toLowerCase().includes(searchQuery.toLowerCase()) || 
       i.id.toLowerCase().includes(searchQuery.toLowerCase());

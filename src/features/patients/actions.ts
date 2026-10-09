@@ -109,9 +109,15 @@ export const createPatient = createSafeAction({
       permanentSince = "NaN";
     }
 
+    const autoPilotSetting = await prisma.systemSetting.findUnique({
+      where: { key: "registrationAutoPilot" }
+    });
+    const isAutoPilot = autoPilotSetting?.value === "true";
+
     let status = "APPROVED";
-    // If reception creates a staff/soldier/family patient with paperwork, it goes to PENDING
+    // If reception creates a staff/soldier/family patient with paperwork, it goes to PENDING (unless auto pilot is on)
     if (
+      !isAutoPilot &&
       ctx.role === "Reception" && 
       data.hasPaperwork && 
       ["Soldier", "Civilian Staff", "Civilian Family"].includes(data.patientType || "")

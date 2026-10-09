@@ -181,6 +181,12 @@ export const submitLabResult = createSafeAction({
       newValue: { requestId: data.requestId },
     });
 
+    const labReq = await prisma.labRequest.findUnique({ where: { id: data.requestId }});
+    if (labReq) {
+      const { autoBillUnbilledItems } = await import("@/features/dataencoder/actions");
+      await autoBillUnbilledItems(labReq.patientId, ctx.userId);
+    }
+
     revalidatePath(`/laboratory`);
     return result;
   },
@@ -387,10 +393,13 @@ export const enterLabResult = createSafeAction({
     });
 
     // 2. Mark request as completed
-    await prisma.labRequest.update({
+    const labReq = await prisma.labRequest.update({
       where: { id: data.requestId },
       data: { status: "completed" }
     });
+
+    const { autoBillUnbilledItems } = await import("@/features/dataencoder/actions");
+    await autoBillUnbilledItems(labReq.patientId, ctx.userId);
 
     revalidatePath("/dashboard");
     revalidatePath("/patients");
@@ -454,6 +463,9 @@ export const dispensePrescription = createSafeAction({
         data: { status: "dispensed" }
       });
     });
+
+    const { autoBillUnbilledItems } = await import("@/features/dataencoder/actions");
+    await autoBillUnbilledItems(prescription.patientId, ctx.userId);
 
     revalidatePath("/dashboard");
     return { success: true };

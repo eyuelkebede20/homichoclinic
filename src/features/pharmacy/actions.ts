@@ -118,6 +118,9 @@ export const dispensePrescription = createSafeAction({
       newValue: { status: result.status },
     });
 
+    const { autoBillUnbilledItems } = await import("@/features/dataencoder/actions");
+    await autoBillUnbilledItems(result.patientId, ctx.userId);
+
     revalidatePath("/pharmacy");
     return result;
   },

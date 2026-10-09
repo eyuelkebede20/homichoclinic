@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { UserActionsRow } from "@/features/admin/components/user-actions";
 import { LowPowerToggle } from "@/features/admin/components/low-power-toggle";
 import { HeavyDutyToggle } from "@/features/admin/components/heavy-duty-toggle";
+import { AutoPilotToggle } from "@/features/admin/components/auto-pilot-toggle";
 
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
@@ -41,18 +42,20 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting, autoPilotSetting] = await Promise.all([
     prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
-    prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
+    prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
+    prisma.systemSetting.findUnique({ where: { key: "registrationAutoPilot" } })
   ]);
 
   const isLowPower = lowPowerSetting?.value !== "false";
   const isHeavyDuty = heavyDutySetting?.value === "true";
+  const isAutoPilot = autoPilotSetting?.value === "true";
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicNameAmharic = clinicNameAmharicSetting?.value || "";
   const clinicLogo = clinicLogoSetting?.value || "";
@@ -90,6 +93,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             </div>
             <HeavyDutyToggle initial={isHeavyDuty} />
             <LowPowerToggle initial={isLowPower} />
+            <AutoPilotToggle initial={isAutoPilot} />
             <OpdRoomsManager initialCount={totalRoomsCount} />
             <DatabaseBackupButton />
             <SystemUpdater />
