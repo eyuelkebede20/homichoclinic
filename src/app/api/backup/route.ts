@@ -40,7 +40,7 @@ export async function GET() {
 
   try {
     // Run pg_dump in custom format (-F c) which is binary, compressed, and best for pg_restore
-    await execAsync(`pg_dump "${databaseUrl}" -F c -f "${tmpFilePath}"`);
+    await execAsync(`pg_dump -d "${databaseUrl}" -F c -f "${tmpFilePath}"`);
     
     // Read the file
     const fileBuffer = await fs.readFile(tmpFilePath);

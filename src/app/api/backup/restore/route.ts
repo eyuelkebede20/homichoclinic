@@ -49,9 +49,9 @@ export async function POST(request: Request) {
 
     try {
       if (isSql) {
-        await execAsync(`psql "${databaseUrl}" -f "${tmpFilePath}"`);
+        await execAsync(`psql -d "${databaseUrl}" -f "${tmpFilePath}"`);
       } else {
-        await execAsync(`pg_restore "${databaseUrl}" -1 -c --if-exists -O "${tmpFilePath}"`);
+        await execAsync(`pg_restore -d "${databaseUrl}" -1 -c --if-exists -O "${tmpFilePath}"`);
       }
       await fs.unlink(tmpFilePath).catch(() => {});
       return NextResponse.json({ success: true, message: "Database restored successfully." });
