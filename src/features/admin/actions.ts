@@ -336,3 +336,29 @@ export const updateSystemSetting = createSafeAction({
   }
 });
 
+
+export const updateDiscountRules = createSafeAction({
+  schema: z.object({
+    rules: z.array(z.object({
+      key: z.string(),
+      value: z.string()
+    }))
+  }),
+  requiredPermission: PERMISSIONS.DISCOUNT_UPDATE,
+  handler: async (data, ctx) => {
+    await prisma.$transaction(
+      data.rules.map(rule => prisma.systemSetting.upsert({
+        where: { key: rule.key },
+        update: { value: rule.value },
+        create: { key: rule.key, value: rule.value }
+      }))
+    );
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.DISCOUNT_UPDATE,
+      reason: 'Bulk updated discount rules',
+    });
+    revalidatePath('/admin');
+    return { success: true };
+  }
+});
