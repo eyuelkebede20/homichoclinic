@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { receiveStock } from "../actions";
 import { Loader2, Plus, Search, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
 import { toast } from "sonner";
