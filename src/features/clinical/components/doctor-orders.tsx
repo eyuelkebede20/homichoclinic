@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { requestLabTest, createPrescription, saveReferral } from "../actions";
-import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send, X } from "lucide-react";
+import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send, X, Printer } from "lucide-react";
 import { toast } from "sonner";
 import { isStoolTest, isUrineTest, isHematologyTest } from "../types/lab-panels";
 
@@ -722,7 +722,16 @@ select { background: none; }
             />
           </div>
 
-          <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="flex justify-between items-center pt-4 mt-2 border-t border-slate-100 dark:border-slate-800">
+            <button 
+              type="button" 
+              onClick={() => window.print()}
+              className="py-2 px-4 rounded-xl shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-600 dark:hover:bg-slate-700 transition-all flex items-center gap-2"
+              title="Print the full patient medical history to attach with this referral"
+            >
+              <Printer className="w-4 h-4" />
+              Print Patient History
+            </button>
             <button 
               type="submit" 
               disabled={loading} 
