@@ -54,11 +54,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
           <p className="text-slate-500 dark:text-slate-400">Request or manage new drugs and prices.</p>
         </div>
         <div className="flex gap-3">
-          {canApprove && (
-            <a href="/catalogs/approvals" className="px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg shadow-sm font-medium transition-colors">
-              Review Approvals
-            </a>
-          )}
+
           <PrintButton label="Print Catalog" />
         </div>
       </div>

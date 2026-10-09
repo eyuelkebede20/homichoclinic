@@ -79,19 +79,8 @@ export async function getNotifications() {
   } 
   
   else if (role === "Admin" || role === "Manager") {
-    count = await prisma.catalogChangeRequest.count({ where: { status: "PENDING" } });
-    const pending = await prisma.catalogChangeRequest.findMany({
-      where: { status: "PENDING" },
-      orderBy: { createdAt: "desc" },
-      take: 5
-    });
-    items = pending.map(p => ({
-      id: p.id,
-      title: "Approval Needed",
-      desc: `A new ${p.type} catalog request requires approval.`,
-      time: p.createdAt.toLocaleTimeString(),
-      link: `/catalogs/approvals`
-    }));
+    count = 0;
+    items = [];
   }
 
   return { count, items };

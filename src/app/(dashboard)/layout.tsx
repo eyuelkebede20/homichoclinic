@@ -105,9 +105,7 @@ export default async function DashboardLayout({
   if (isManagerOrAdmin || role === "Pharmacy") {
     navItems.push({ name: dict["nav.pharmacyCatalog"] || "Pharmacy Catalog", href: "/pharmacy/catalog", icon: Tags });
   }
-  if (isManagerOrAdmin) {
-    navItems.push({ name: dict["nav.catalogApprovals"] || "Catalog Approvals", href: "/catalogs/approvals", icon: Activity });
-  }
+
   if (userPermissions.includes(PERMISSIONS.INVOICE_READ)) {
     navItems.push({ name: dict["nav.dataEncoder"] || "Data Encoder", href: "/dataencoder", icon: Receipt });
     navItems.push({ name: dict["nav.zReports"] || "Z-Reports", href: "/dataencoder/z-reports", icon: Activity });
