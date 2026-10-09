@@ -10,7 +10,7 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { PatientRow } from "./patient-row";
 
-export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; tab?: string }> }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams.q || "";
   const tab = resolvedParams.tab || "all"; // 'all' or 'pending'
