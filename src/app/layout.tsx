@@ -48,12 +48,20 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   // Gracefully handle db errors during initial build or if db is unreachable
   let isLowPower = true; // Default to true for OptiPlex machines
+  let isDevMode = false;
+
   if (process.env.DATABASE_URL) {
     try {
-      const setting = await prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } });
-      if (setting?.value === "false") isLowPower = false;
+      const settings = await prisma.systemSetting.findMany({
+        where: { key: { in: ["lowPowerMode", "devMode"] } }
+      });
+      const lowPowerSetting = settings.find(s => s.key === "lowPowerMode");
+      const devModeSetting = settings.find(s => s.key === "devMode");
+
+      if (lowPowerSetting?.value === "false") isLowPower = false;
+      if (devModeSetting?.value === "true") isDevMode = true;
     } catch (e) {
-      console.error("Could not fetch lowPowerMode setting", e);
+      console.error("Could not fetch system settings", e);
     }
   }
 
@@ -89,7 +97,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           {children}
             <Toaster position="top-right" richColors />
-          <TestUserSwitcher />
+          {isDevMode && <TestUserSwitcher />}
         </ThemeProvider>
       </body>
     </html>
