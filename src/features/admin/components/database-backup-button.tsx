@@ -64,12 +64,12 @@ export function DatabaseBackupButton() {
         <div className="flex-1 relative">
           <input 
             type="file" 
-            accept=".sql"
+            accept=".backup,.sql"
             ref={fileInputRef}
             onChange={handleRestore}
             disabled={restoring}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
-            title="Import an SQL Backup"
+            title="Import a Database Backup"
           />
           <button 
             disabled={restoring}

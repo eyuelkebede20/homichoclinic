@@ -35,12 +35,12 @@ export async function GET() {
   databaseUrl = urlParts[0];
 
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const fileName = `homichoclinic_backup_${timestamp}.sql`;
+  const fileName = `homichoclinic_backup_${timestamp}.backup`;
   const tmpFilePath = path.join(os.tmpdir(), fileName);
 
   try {
-    // Run pg_dump with --clean to ensure it can be safely restored later
-    await execAsync(`pg_dump "${databaseUrl}" -F p --clean --if-exists -f "${tmpFilePath}"`);
+    // Run pg_dump in custom format (-F c) which is binary, compressed, and best for pg_restore
+    await execAsync(`pg_dump "${databaseUrl}" -F c -f "${tmpFilePath}"`);
     
     // Read the file
     const fileBuffer = await fs.readFile(tmpFilePath);
@@ -50,7 +50,7 @@ export async function GET() {
 
     return new NextResponse(fileBuffer, {
       headers: {
-        "Content-Type": "application/sql",
+        "Content-Type": "application/octet-stream",
         "Content-Disposition": `attachment; filename="${fileName}"`,
       }
     });

@@ -40,15 +40,19 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    const tmpFilePath = path.join(os.tmpdir(), `restore_${Date.now()}.sql`);
+    
+    // Determine format by file extension or content type
+    const isSql = file.name.endsWith(".sql");
+    const tmpFilePath = path.join(os.tmpdir(), `restore_${Date.now()}.${isSql ? 'sql' : 'backup'}`);
     
     await fs.writeFile(tmpFilePath, buffer);
 
-    // Run psql to restore
-    // Using --set ON_ERROR_STOP=on so it fails fast if there are syntax errors, but backups might have expected duplicate key errors if not using --clean
-    // We will just run it and return the output.
     try {
-      const { stdout, stderr } = await execAsync(`psql "${databaseUrl}" -f "${tmpFilePath}"`);
+      if (isSql) {
+        await execAsync(`psql "${databaseUrl}" -f "${tmpFilePath}"`);
+      } else {
+        await execAsync(`pg_restore "${databaseUrl}" -1 -c --if-exists -O "${tmpFilePath}"`);
+      }
       await fs.unlink(tmpFilePath).catch(() => {});
       return NextResponse.json({ success: true, message: "Database restored successfully." });
     } catch (execError: any) {
