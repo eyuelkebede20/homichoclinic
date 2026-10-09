@@ -126,7 +126,7 @@ export function InventoryManager({ drugs }: {
                 <td colSpan={4} className="py-8 text-center text-sm text-slate-500">
                   <div className="flex flex-col items-center justify-center gap-2">
                     <Search className="w-6 h-6 text-slate-300" />
-                    <span>No medicines match your search "{search}".</span>
+                    <span>No medicines match your search &quot;{search}&quot;.</span>
                   </div>
                 </td>
               </tr>
