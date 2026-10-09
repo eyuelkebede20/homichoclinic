@@ -12,6 +12,7 @@ import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 import { DevWipeCatalogs } from "@/features/admin/components/dev-wipe-catalogs";
 import { DevSeedDatabase } from "@/features/admin/components/dev-seed-db";
+import { DevModeToggle } from "@/features/admin/components/dev-mode-toggle";
 import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
 import { SystemUpdater } from "@/features/admin/components/system-updater";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
@@ -42,7 +43,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting, autoPilotSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting, autoPilotSetting, devModeSetting] = await Promise.all([
     prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
@@ -50,12 +51,14 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
-    prisma.systemSetting.findUnique({ where: { key: "registrationAutoPilot" } })
+    prisma.systemSetting.findUnique({ where: { key: "registrationAutoPilot" } }),
+    prisma.systemSetting.findUnique({ where: { key: "devMode" } })
   ]);
 
   const isLowPower = lowPowerSetting?.value !== "false";
   const isHeavyDuty = heavyDutySetting?.value === "true";
   const isAutoPilot = autoPilotSetting?.value === "true";
+  const isDevMode = devModeSetting?.value === "true";
   const clinicName = clinicNameSetting?.value || "Clinic System";
   const clinicNameAmharic = clinicNameAmharicSetting?.value || "";
   const clinicLogo = clinicLogoSetting?.value || "";
@@ -97,9 +100,14 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             <OpdRoomsManager initialCount={totalRoomsCount} />
             <DatabaseBackupButton />
             <SystemUpdater />
-            <DevWipePatients />
-            <DevWipeCatalogs />
-            <DevSeedDatabase />
+            <DevModeToggle initial={isDevMode} />
+            {isDevMode && (
+              <>
+                <DevWipePatients />
+                <DevWipeCatalogs />
+                <DevSeedDatabase />
+              </>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden mt-8">
@@ -142,7 +150,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 flex justify-end">
                   {session.user.id !== user.id ? (
-                    <UserActionsRow user={user} />
+                    <UserActionsRow user={user} isDevMode={isDevMode} />
                   ) : (
                     <span className="text-slate-400 dark:text-slate-500 text-xs italic">Cannot manage own account</span>
                   )}

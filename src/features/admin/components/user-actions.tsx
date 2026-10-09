@@ -6,7 +6,7 @@ import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
-export function UserActionsRow({ user }: { user: { id: string; email: string; role: string | null } }) {
+export function UserActionsRow({ user, isDevMode = false }: { user: { id: string; email: string; role: string | null }, isDevMode?: boolean }) {
   const [loading, setLoading] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [currentRole, setCurrentRole] = useState(user.role || "User");
@@ -60,6 +60,10 @@ export function UserActionsRow({ user }: { user: { id: string; email: string; ro
     } else {
       router.refresh();
     }
+  }
+
+  if (!isDevMode) {
+    return <span className="text-slate-400 dark:text-slate-500 text-xs italic">Enable Dev Mode to manage</span>;
   }
 
   return (
