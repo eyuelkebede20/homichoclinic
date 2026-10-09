@@ -163,15 +163,16 @@ export default async function DashboardPage() {
 
   // 4. Lab Dashboard
   if (role === "Lab Technician" || role === "Laboratory") {
-    const [requests, setting, nameSetting, amhSetting] = await Promise.all([
+    const [requests, setting, nameSetting, amhSetting, logoSetting] = await Promise.all([
       prisma.labRequest.findMany({
         where: { status: { in: ["requested", "in_progress", "urgent"] } },
         include: { patient: true, test: { select: { name: true } } },
         orderBy: { createdAt: "asc" }
       }),
       prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } }),
-      prisma.systemSetting.findUnique({ where: { key: "clinic_name" } }),
-      prisma.systemSetting.findUnique({ where: { key: "clinic_name_amharic" } })
+      prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
     ]);
 
     let referralDestinations: string[] = [];
@@ -179,14 +180,16 @@ export default async function DashboardPage() {
     let clinicNameAmharic = "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ";
     let clinicSubName = "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER";
     let clinicSubNameAmharic = "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ";
+    let clinicLogo = "";
 
     if (setting) {
       try { referralDestinations = JSON.parse(setting.value); } catch (e) {}
     }
-    if (nameSetting) clinicSubName = nameSetting.value;
-    if (amhSetting) clinicSubNameAmharic = amhSetting.value;
+    if (nameSetting) clinicName = nameSetting.value;
+    if (amhSetting) clinicNameAmharic = amhSetting.value;
+    if (logoSetting) clinicLogo = logoSetting.value;
 
-    const clinicNames = { clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic };
+    const clinicNames = { clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic, clinicLogo };
 
     return <div className="p-8 max-w-7xl mx-auto"><LabDashboard requests={requests} referralDestinations={referralDestinations} clinicNames={clinicNames} /></div>;
   }

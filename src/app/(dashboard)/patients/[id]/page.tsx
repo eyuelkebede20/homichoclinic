@@ -113,19 +113,22 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   let clinicNameAmharic = "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ";
   let clinicSubName = "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER";
   let clinicSubNameAmharic = "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ";
+  let clinicLogo = "";
 
   if (canWriteHistory) {
-    const [setting, nameSetting, amhSetting] = await Promise.all([
+    const [setting, nameSetting, amhSetting, logoSetting] = await Promise.all([
       prisma.systemSetting.findUnique({ where: { key: "referral_destinations" } }),
-      prisma.systemSetting.findUnique({ where: { key: "clinic_name" } }),
-      prisma.systemSetting.findUnique({ where: { key: "clinic_name_amharic" } })
+      prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
+      prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } })
     ]);
     
     if (setting) {
       try { referralDestinations = JSON.parse(setting.value); } catch(e) {}
     }
-    if (nameSetting) clinicSubName = nameSetting.value;
-    if (amhSetting) clinicSubNameAmharic = amhSetting.value;
+    if (nameSetting) clinicName = nameSetting.value;
+    if (amhSetting) clinicNameAmharic = amhSetting.value;
+    if (logoSetting) clinicLogo = logoSetting.value;
   }
 
   let doctorsList: { id: string; name: string }[] = [];
@@ -198,7 +201,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateAge(patient.yob)}</dd>
               </div>
               <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Gender</dt>
+                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Sex</dt>
                 <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 capitalize">{patient.gender || "N/A"}</dd>
               </div>
               <div>
@@ -238,7 +241,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic }} />}
+            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic, clinicLogo }} />}
 
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>

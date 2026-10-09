@@ -13,7 +13,7 @@ export function ReferralButton({
 }: {
   patient: any;
   referralDestinations?: string[];
-  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string };
+  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string; clinicLogo?: string };
   defaultReason?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -191,10 +191,15 @@ select { background: none; }
 
 <main class="sheet">
   <header class="header">
-    <div class="am">${clinicNames?.clinicNameAmharic || "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ"}</div>
-    <div class="am">${clinicNames?.clinicSubNameAmharic || "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ"}</div>
-    <div class="en">${clinicNames?.clinicName || "DEFENCE ENGINEERING INDUSTRIES GROUP"}</div>
-    <div class="en">${clinicNames?.clinicSubName || "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER"}</div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
+      ${clinicNames?.clinicLogo ? `<img src="${clinicNames.clinicLogo}" style="max-width: 80px; max-height: 80px; object-fit: contain;" />` : ''}
+      <div>
+        <div class="am">${clinicNames?.clinicNameAmharic || "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪ ኮርፖሬሽን"}</div>
+        <div class="am">${clinicNames?.clinicSubNameAmharic || "ሆሚቾ አሙኒሽን ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ"}</div>
+        <div class="en">${clinicNames?.clinicName || "DEFENCE ENGINEERING INDUSTRIES GROUP"}</div>
+        <div class="en">${clinicNames?.clinicSubName || "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER"}</div>
+      </div>
+    </div>
     <h1 class="title">REFERAL SHEET</h1>
   </header>
 
