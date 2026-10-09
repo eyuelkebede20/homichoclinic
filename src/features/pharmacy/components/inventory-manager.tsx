@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import { Fragment, useState } from "react";
 import { receiveStock } from "../actions";
 import { Loader2, Plus, Search, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
 import { toast } from "sonner";
@@ -99,7 +99,7 @@ export function InventoryManager({ drugs }: {
               const isExpanded = expandedDrug === drug.id;
 
               return (
-                <React.Fragment key={drug.id}>
+                <Fragment key={drug.id}>
                   <tr 
                     className={`print:break-inside-avoid transition-colors cursor-pointer ${isExpanded ? "bg-slate-50 dark:bg-slate-800/30" : "hover:bg-slate-50 dark:hover:bg-slate-800/20"}`}
                     onClick={() => toggleExpand(drug.id)}
@@ -220,7 +220,7 @@ export function InventoryManager({ drugs }: {
                       </td>
                     </tr>
                   )}
-                </React.Fragment>
+                </Fragment>
               );
             })}
             {filteredDrugs.length === 0 && (
