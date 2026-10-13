@@ -49,7 +49,7 @@ export default async function DashboardPage() {
       prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
       prisma.visit.findMany({
         where: { status: { in: ["scheduled", "in_progress"] }, visitDate: { gte: today }, deletedAt: null },
-        include: { patient: { select: { id: true, firstName: true, lastName: true, contactNumber: true } } }
+        include: { patient: { select: { id: true, firstName: true, lastName: true, contactNumber: true, patientType: true, militaryId: true, employeeId: true, rank: true } } }
       }),
       prisma.patient.findMany({ select: { id: true, firstName: true, lastName: true }, orderBy: { firstName: "asc" } }),
       prisma.user.findMany({ where: { role: "Doctor" }, select: { id: true, name: true, currentOpdRoom: true }, orderBy: { name: "asc" } })

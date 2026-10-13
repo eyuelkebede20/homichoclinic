@@ -28,7 +28,18 @@ export async function GET(request: NextRequest) {
         { contactNumber: { contains: query, mode: "insensitive" } },
         { employeeId: { contains: query, mode: "insensitive" } },
         { militaryId: { contains: query, mode: "insensitive" } },
-        { id: { contains: query, mode: "insensitive" } }
+        { id: { contains: query, mode: "insensitive" } },
+        {
+          primaryPatient: {
+            OR: [
+              { firstName: { contains: query, mode: "insensitive" } },
+              { lastName: { contains: query, mode: "insensitive" } },
+              { contactNumber: { contains: query, mode: "insensitive" } },
+              { employeeId: { contains: query, mode: "insensitive" } },
+              { militaryId: { contains: query, mode: "insensitive" } },
+            ]
+          }
+        }
       ]
     },
     select: {
@@ -37,6 +48,25 @@ export async function GET(request: NextRequest) {
       lastName: true,
       contactNumber: true,
       discountPercent: true,
+      patientType: true,
+      relationship: true,
+      militaryId: true,
+      employeeId: true,
+      rank: true,
+      division: true,
+      department: true,
+      primaryPatient: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          contactNumber: true,
+          employeeId: true,
+          militaryId: true,
+          patientType: true,
+          rank: true,
+        }
+      }
     },
     take: 10,
     orderBy: { firstName: "asc" }

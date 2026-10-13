@@ -10,7 +10,16 @@ import { useState, useEffect } from "react";
 
 type VisitWithPatient = {
   id: string;
-  patient: { id: string; firstName: string; lastName: string; contactNumber: string | null };
+  patient: { 
+    id: string; 
+    firstName: string; 
+    lastName: string; 
+    contactNumber: string | null;
+    patientType?: string;
+    militaryId?: string | null;
+    employeeId?: string | null;
+    rank?: string | null;
+  };
   status: string;
   opdRoom: number | null;
   visitDate: Date;
@@ -48,7 +57,27 @@ export function ReceptionDashboard({
     router.refresh();
   }
 
-  const filteredRooms = totalRooms.filter(room => room.toString().includes(searchOpd));
+  const filteredRooms = totalRooms.filter(room => {
+    if (!searchOpd) return true;
+    const q = searchOpd.toLowerCase().trim();
+    if (room.toString() === q || `opd ${room}`.toLowerCase().includes(q)) return true;
+
+    // Match doctor assigned to room
+    const doctorInRoom = activeDoctors?.some(d => d.currentOpdRoom === room && d.name.toLowerCase().includes(q));
+    if (doctorInRoom) return true;
+
+    // Match patient or personnel in this room
+    const roomVisits = activeVisits.filter(v => v.opdRoom === room);
+    return roomVisits.some(v => {
+      const p = v.patient;
+      const fullName = `${p.firstName} ${p.lastName}`.toLowerCase();
+      const idMatch = (p.militaryId || p.employeeId || "").toLowerCase();
+      const phoneMatch = p.contactNumber || "";
+      const roleMatch = (p.patientType || "").toLowerCase();
+      const rankMatch = (p.rank || "").toLowerCase();
+      return fullName.includes(q) || idMatch.includes(q) || phoneMatch.includes(q) || roleMatch.includes(q) || rankMatch.includes(q);
+    });
+  });
 
   return (
     <div className="space-y-6">
@@ -141,10 +170,30 @@ export function ReceptionDashboard({
                     <Activity className="w-3 h-3" /> Inside Now
                   </h4>
                   {inProgress ? (
-                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded p-2 flex justify-between items-center">
-                      <Link href={`/patients/${inProgress.patient.id}`} className="font-medium text-sm text-blue-700 dark:text-blue-400 hover:underline truncate">
-                        {inProgress.patient.firstName} {inProgress.patient.lastName}
-                      </Link>
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg p-2.5 flex justify-between items-center gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/patients/${inProgress.patient.id}`} className="font-semibold text-sm text-blue-700 dark:text-blue-400 hover:underline truncate block">
+                          {inProgress.patient.firstName} {inProgress.patient.lastName}
+                        </Link>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          {inProgress.patient.patientType && (
+                            <span className={`px-1.5 py-0.2 rounded font-bold ${
+                              inProgress.patient.patientType === "Soldier"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                                : inProgress.patient.patientType === "Civilian Staff"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                            }`}>
+                              {inProgress.patient.rank ? `${inProgress.patient.rank} ` : ""}{inProgress.patient.patientType}
+                            </span>
+                          )}
+                          {(inProgress.patient.militaryId || inProgress.patient.employeeId) && (
+                            <span className="font-mono bg-white/80 dark:bg-slate-900 px-1 rounded border border-slate-200 dark:border-slate-800">
+                              {inProgress.patient.militaryId || inProgress.patient.employeeId}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                       <CancelVisitButton visitId={inProgress.id} />
                     </div>
                   ) : (
@@ -161,10 +210,30 @@ export function ReceptionDashboard({
                       <p className="text-sm text-slate-400 italic">No one waiting</p>
                     ) : (
                       waiting.map(v => (
-                        <div key={v.id} className="flex items-center justify-between p-2 rounded bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                          <Link href={`/patients/${v.patient.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 truncate mr-2">
-                            {v.patient.firstName} {v.patient.lastName}
-                          </Link>
+                        <div key={v.id} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 gap-2">
+                          <div className="min-w-0 flex-1">
+                            <Link href={`/patients/${v.patient.id}`} className="text-sm font-medium text-slate-700 dark:text-slate-300 hover:text-blue-600 truncate block">
+                              {v.patient.firstName} {v.patient.lastName}
+                            </Link>
+                            <div className="flex items-center gap-1.5 flex-wrap text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                              {v.patient.patientType && (
+                                <span className={`px-1.5 py-0.2 rounded font-bold ${
+                                  v.patient.patientType === "Soldier"
+                                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                                    : v.patient.patientType === "Civilian Staff"
+                                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                    : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                                }`}>
+                                  {v.patient.rank ? `${v.patient.rank} ` : ""}{v.patient.patientType}
+                                </span>
+                              )}
+                              {(v.patient.militaryId || v.patient.employeeId) && (
+                                <span className="font-mono bg-white/80 dark:bg-slate-900 px-1 rounded border border-slate-200 dark:border-slate-800">
+                                  {v.patient.militaryId || v.patient.employeeId}
+                                </span>
+                              )}
+                            </div>
+                          </div>
                           <CancelVisitButton visitId={v.id} />
                         </div>
                       ))

@@ -10,6 +10,23 @@ interface Patient {
   lastName?: string;
   contactNumber?: string | null;
   discountPercent?: number;
+  patientType?: string;
+  relationship?: string | null;
+  militaryId?: string | null;
+  employeeId?: string | null;
+  rank?: string | null;
+  division?: string | null;
+  department?: string | null;
+  primaryPatient?: {
+    id: string;
+    firstName: string;
+    lastName: string;
+    contactNumber?: string | null;
+    employeeId?: string | null;
+    militaryId?: string | null;
+    patientType: string;
+    rank?: string | null;
+  } | null;
 }
 
 export function PatientSearchSelect({ 
@@ -99,13 +116,14 @@ export function PatientSearchSelect({
               {loading ? "Searching..." : search.length < 2 ? "Type at least 2 characters..." : "No patients found."}
             </div>
           ) : (
-            <ul className="py-1">
+            <ul className="py-1 divide-y divide-slate-100 dark:divide-slate-800">
               {results.map(p => {
                 const name = `${p.firstName || p.name || ""} ${p.lastName || ""}`.trim();
+                const cardId = p.militaryId || p.employeeId;
                 return (
                   <li 
                     key={p.id}
-                    className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 flex justify-between items-center"
+                    className="px-3 py-2 text-sm cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 flex flex-col gap-0.5"
                     onClick={() => {
                       onChange(p.id);
                       setSelectedPatient(p);
@@ -113,8 +131,30 @@ export function PatientSearchSelect({
                       setOpen(false);
                     }}
                   >
-                    <span className="font-medium text-slate-900 dark:text-slate-100">{name}</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400">{p.contactNumber || "No phone"}</span>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{name}</span>
+                        {p.patientType && (
+                          <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
+                            p.patientType === "Soldier" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" :
+                            p.patientType === "Civilian Staff" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300" :
+                            "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                          }`}>
+                            {p.rank ? `${p.rank} ` : ""}{p.patientType} {p.relationship ? `(${p.relationship})` : ""}
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400 font-mono">{p.contactNumber || "No phone"}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 flex-wrap">
+                      {cardId && <span>ID: <strong className="font-mono text-slate-700 dark:text-slate-300">{cardId}</strong></span>}
+                      {(p.division || p.department) && <span>• {p.division || p.department}</span>}
+                      {p.primaryPatient && (
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                          • Sponsor: {p.primaryPatient.rank ? `${p.primaryPatient.rank} ` : ""}{p.primaryPatient.firstName} {p.primaryPatient.lastName} ({p.primaryPatient.militaryId || p.primaryPatient.employeeId || "Staff"})
+                        </span>
+                      )}
+                    </div>
                   </li>
                 );
               })}

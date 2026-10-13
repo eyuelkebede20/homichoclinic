@@ -50,41 +50,67 @@ export default async function ZReportsPage() {
   const userMap = new Map(staffUsers.map(u => [u.id, u.name]));
   const auditMap = new Map(auditLogs.map(a => [a.resourceId, a.actorId]));
 
+  const [nameSetting, amhSetting, logoSetting] = await Promise.all([
+    prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
+  ]);
+
+  const clinicInfo = {
+    name: nameSetting?.value || "Bure Card Clinic",
+    nameAmharic: amhSetting?.value || "ቡሬ ካርድ ክሊኒክ",
+    logo: logoSetting?.value || "",
+  };
+
   const reports = invoices.map(inv => {
     let laboratoryCost = 0;
     let pharmacyCost = 0;
 
-    inv.items.forEach(item => {
+    const items = inv.items.map(item => {
       const lineTotal = item.unitPrice * item.quantity;
-      if (item.description.startsWith("Lab Test:")) {
+      const descLower = item.description.toLowerCase();
+      let category: "Laboratory" | "Pharmacy" | "Clinical / Service" = "Clinical / Service";
+
+      if (descLower.startsWith("lab test:") || descLower.startsWith("lab:")) {
         laboratoryCost += lineTotal;
-      } else if (item.description.startsWith("Pharmacy:")) {
+        category = "Laboratory";
+      } else if (descLower.startsWith("pharmacy:") || descLower.startsWith("drug:")) {
         pharmacyCost += lineTotal;
+        category = "Pharmacy";
       }
+
+      return {
+        id: item.id,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        totalPrice: lineTotal,
+        category,
+      };
     });
 
     const isDependent = !!inv.patient.primaryPatient;
-    const staffMemberName = isDependent 
-      ? `${inv.patient.primaryPatient!.firstName} ${inv.patient.primaryPatient!.lastName}`
-      : `${inv.patient.firstName} ${inv.patient.lastName}`;
-    const staffId = isDependent
-      ? (inv.patient.primaryPatient!.employeeId || inv.patient.primaryPatient!.militaryId || "N/A")
-      : (inv.patient.employeeId || inv.patient.militaryId || "N/A");
-    const staffDept = isDependent
-      ? (inv.patient.primaryPatient!.department || "N/A")
-      : (inv.patient.department || "N/A");
+    const staffPatient = isDependent ? inv.patient.primaryPatient! : inv.patient;
+    const staffMemberName = `${staffPatient.firstName} ${staffPatient.lastName}`;
+    const staffId = staffPatient.employeeId || staffPatient.militaryId || staffPatient.id || "N/A";
+    const staffDept = staffPatient.department || "N/A";
+    const staffType = staffPatient.patientType || "Staff";
 
     const encoderId = inv.payments[0]?.dataencoderId || auditMap.get(inv.id);
     const encoderName = encoderId ? (userMap.get(encoderId) || "Staff / Encoder") : "Staff / Encoder";
 
     return {
       invoiceNumber: inv.id,
+      createdAt: inv.createdAt.toISOString(),
+      date: inv.createdAt.toLocaleDateString(),
+      time: inv.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
       patientType: inv.patient.patientType,
       relationship: inv.patient.relationship || (isDependent ? "Dependent" : "Self"),
       staffMemberName,
       staffId,
       staffDepartment: staffDept,
+      staffType,
       encoderName,
       discountPercent: inv.discountPercentApplied,
       laboratoryCost,
@@ -92,7 +118,7 @@ export default async function ZReportsPage() {
       total: inv.subtotal,
       discountAmount: inv.subtotal - inv.total,
       afterDiscount: inv.total,
-      date: inv.createdAt.toLocaleDateString(),
+      items,
     };
   });
 
@@ -105,7 +131,7 @@ export default async function ZReportsPage() {
         </p>
       </div>
 
-      <ZReportsClient reports={reports} />
+      <ZReportsClient reports={reports} clinicInfo={clinicInfo} />
     </div>
   );
 }

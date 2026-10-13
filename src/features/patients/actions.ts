@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { patientCreateSchema, patientUpdateSchema, discountUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
-import { getYearsOfService } from "@/lib/date-utils";
+import { getYearsOfService, getStartOfDayLocal } from "@/lib/date-utils";
 
 export const createPatient = createSafeAction({
   schema: patientCreateSchema,
@@ -352,18 +352,54 @@ export const searchPatientsFast = createSafeAction({
           employeeId: true,
           militaryId: true,
           patientType: true,
+          rank: true,
+          division: true,
+          department: true,
+        }
+      },
+      dependents: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          patientType: true,
+          relationship: true,
+          contactNumber: true,
+        }
+      },
+      visits: {
+        where: {
+          visitDate: { gte: getStartOfDayLocal() },
+          status: { in: ["scheduled", "in_progress"] },
+          deletedAt: null
+        },
+        take: 1,
+        select: {
+          id: true,
+          opdRoom: true,
+          status: true,
         }
       }
     };
 
     const roleTarget = data.targetRole || data.patientType;
     let roleCondition: any = undefined;
-    if (roleTarget === "Soldier") {
-      roleCondition = { patientType: "Soldier" };
-    } else if (roleTarget === "Civilian Staff") {
-      roleCondition = { patientType: "Civilian Staff" };
-    } else if (roleTarget === "StaffOnly") {
-      roleCondition = { patientType: { in: ["Soldier", "Civilian Staff"] } };
+    if (roleTarget && roleTarget !== "All") {
+      if (roleTarget === "Soldier") {
+        roleCondition = { patientType: "Soldier" };
+      } else if (roleTarget === "Civilian Staff") {
+        roleCondition = { patientType: "Civilian Staff" };
+      } else if (roleTarget === "Soldier Family") {
+        roleCondition = { patientType: "Soldier Family" };
+      } else if (roleTarget === "Civilian Family") {
+        roleCondition = { patientType: "Civilian Family" };
+      } else if (roleTarget === "Family") {
+        roleCondition = { patientType: { in: ["Soldier Family", "Civilian Family"] } };
+      } else if (roleTarget === "StaffOnly") {
+        roleCondition = { patientType: { in: ["Soldier", "Civilian Staff"] } };
+      } else {
+        roleCondition = { patientType: roleTarget };
+      }
     }
 
     const excludeCondition = data.excludePatientId ? { id: { not: data.excludePatientId } } : undefined;
@@ -373,7 +409,7 @@ export const searchPatientsFast = createSafeAction({
       return await prisma.patient.findMany({
         where: baseConditions.length > 0 ? { AND: baseConditions } : undefined,
         orderBy: { createdAt: "desc" },
-        take: 10,
+        take: 12,
         select: selectFields
       });
     }
@@ -383,7 +419,12 @@ export const searchPatientsFast = createSafeAction({
 
     const tokenConditions = tokens.map(t => {
       if (filterField === "phone") {
-        return { contactNumber: { contains: t, mode: "insensitive" as const } };
+        return {
+          OR: [
+            { contactNumber: { contains: t, mode: "insensitive" as const } },
+            { primaryPatient: { contactNumber: { contains: t, mode: "insensitive" as const } } }
+          ]
+        };
       }
       if (filterField === "id") {
         return {
@@ -391,6 +432,14 @@ export const searchPatientsFast = createSafeAction({
             { employeeId: { contains: t, mode: "insensitive" as const } },
             { militaryId: { contains: t, mode: "insensitive" as const } },
             { id: { contains: t, mode: "insensitive" as const } },
+            {
+              primaryPatient: {
+                OR: [
+                  { employeeId: { contains: t, mode: "insensitive" as const } },
+                  { militaryId: { contains: t, mode: "insensitive" as const } },
+                ]
+              }
+            }
           ]
         };
       }
@@ -399,6 +448,14 @@ export const searchPatientsFast = createSafeAction({
           OR: [
             { firstName: { contains: t, mode: "insensitive" as const } },
             { lastName: { contains: t, mode: "insensitive" as const } },
+            {
+              primaryPatient: {
+                OR: [
+                  { firstName: { contains: t, mode: "insensitive" as const } },
+                  { lastName: { contains: t, mode: "insensitive" as const } },
+                ]
+              }
+            }
           ]
         };
       }
