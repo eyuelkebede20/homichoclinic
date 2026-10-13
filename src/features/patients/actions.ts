@@ -89,7 +89,7 @@ export const createPatient = createSafeAction({
         resolvedPrimaryId = primary.id;
       }
 
-      discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+      discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
     } else if (data.patientType === "Guest") {
       discountPercent = getDiscount("discount:Guest", 0);
     } else {
@@ -202,13 +202,13 @@ export const updatePatient = createSafeAction({
       if (data.primaryPatientId && data.primaryPatientId !== "" && data.primaryPatientId !== "UNLINK") {
         resolvedPrimaryId = data.primaryPatientId;
         newRelationship = data.relationship || existingPatient.relationship || "Other";
-        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
       } else if (data.staffSearchStr != null) {
         const searchStr = data.staffSearchStr.trim();
         if (searchStr === "" || searchStr === "UNLINK") {
           resolvedPrimaryId = null;
           newRelationship = null;
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
         } else {
           const terms = searchStr.split(/[\s,]+/).filter(Boolean);
           const searchConditions = terms.flatMap(term => [
@@ -232,10 +232,10 @@ export const updatePatient = createSafeAction({
           }
           resolvedPrimaryId = primary.id;
           newRelationship = data.relationship || "Other";
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
         }
       } else {
-        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
       }
     } else if (existingPatient.patientType === "Guest") {
       discountPercent = getDiscount("discount:Guest", 0);

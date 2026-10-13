@@ -24,11 +24,12 @@ This document tracks all tasks, reviews the two recently closed paired-programmi
 
 ### Tasks Breakdown & Detailed Status
 
-#### Task 1.1: Civilian Family Member Discount (Fixed at 95%) & Family Linking
-- **Source**: `issues.md` (Issue 1)
+#### Task 1.1: Civilian Family Member Discount (Fixed at 5%) & Family Linking
+- **Source**: `issues.md` (Issue 1) & user clarification
 - **Status**: `Completed`
 - **Implementation**:
-  - In [`createPatient`](file:///D:/Apps/2019/Bure_Card/src/features/patients/actions.ts) and [`updatePatient`](file:///D:/Apps/2019/Bure_Card/src/features/patients/actions.ts), civilian family discount is locked to **95%** (`getDiscount("discount:Civilian Family", 95)`).
+  - In [`createPatient`](file:///D:/Apps/2019/Bure_Card/src/features/patients/actions.ts) and [`updatePatient`](file:///D:/Apps/2019/Bure_Card/src/features/patients/actions.ts), civilian family discount is configured to **5%** (`getDiscount("discount:Civilian Family", 5)`), with the remaining 95% attributed to the staff member's salary.
+  - In [`manage-discounts.tsx`](file:///D:/Apps/2019/Bure_Card/src/features/admin/components/manage-discounts.tsx), default Civilian Family discount tier is set to 5%.
   - Search tokens allow matching primary patient's phone number, card number/ID, military ID, and employee ID.
   - Linking preserves the relationship and discount rules.
 
@@ -155,22 +156,27 @@ This document tracks all tasks, reviews the two recently closed paired-programmi
 | 17 | Optimize notification polling & make Prisma query logging conditional | Performance / Build | `src/lib/prisma.ts`, `notifications/actions.ts`, `global-notifications.tsx`, `notification-ping.tsx` | **DONE** |
 | 18 | **Consolidate similar user credits in Z-Reports with services detail popup, dates, and transaction print voucher** | **Current** | `z-reports/page.tsx`, `z-reports-client.tsx` | **DONE** |
 | 19 | **Reception search popup filtering & show searched personnels on cards** | **Current** | `reception-patient-search.tsx`, `reception-dashboard.tsx`, `patient-search-select.tsx`, `actions.ts` | **DONE** |
+| 20 | **Predictive while searching for numeric inputs (Phone, Card/Employee ID, Military ID) & visual match highlights** | **Current** | `reception-patient-search.tsx`, `patient-search-select.tsx`, `actions.ts`, `api/patients/search` | **DONE** |
+| 21 | **Data Encoder queue family linking attribution: linked staff display, staff search, and salary credit confirmation** | **Current** | `dataencoder/page.tsx`, `data-encoder-client.tsx` | **DONE** |
+| 22 | **Patient directory table live predictive search (debounced table update, preview suggestions popup, number matching without Enter key)** | **Current** | `patients/patient-table-search.tsx`, `patients/page.tsx` | **DONE** |
+| 23 | **Highlight doctor-selected sub-tests with special borders, visual focus rings, and order banner on laboratory result forms** | **Current** | `hematology-result-form.tsx`, `stool-result-form.tsx`, `urine-result-form.tsx`, `lab-panels.ts` | **DONE** |
 
 ---
 
 ## 5. Verification & Health Check
 
+- **Version Release**: Released as **v0.1.28** in `package.json` and git tags.
 - **TypeScript Compilation**: `pnpm exec tsc --noEmit` executed cleanly with **0 errors**.
-- **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated in 7.9s**.
+- **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated**.
 - **Database Schema**: Schema is consistent and synced.
 - **Discounts Verified**:
   - Soldier Family: **100%** discount verified across database patients.
-  - Civilian Family: **95%** discount verified across database patients and admin defaults.
+  - Civilian Family: **5%** discount verified to patient with 95% attributed to primary staff salary.
   - Linking: Primary patient lookup by phone number, employee ID, military ID, or name verified with live autocomplete dropdown and pill badge selection.
-- **Search & Personnel Filtering**:
-  - Filter pills for Personnel / Category (`All`, `Soldier`, `Civilian Staff`, `Soldier Family`, `Civilian Family`).
-  - Filter pills for Match Field (`All Fields`, `Phone Number`, `Card / Military ID`, `Name`).
-  - Searched cards display full personnel attributes (Rank, Unit/Division, Military/Employee ID, Phone, and covered family dependents).
-  - Family member cards display prominent Sponsoring Personnel cards with rank and contact details.
-  - OPD room cards filter on patient name, personnel ID, doctor name, and display personnel badges.
+- **Predictive Search & Number Matching**:
+  - Immediate search on any single digit or character (0ms dead zone, 120ms snappy debounce).
+  - Number queries expand across phone variants (Ethiopian local `09...`, international `+251...`, suffix `9...`), card/employee IDs (with or without leading zeroes), and military IDs.
+  - M and P role codes mapped to Soldier and Civilian Staff respectively across all 1,466 existing patient records.
+  - Top Predicted Match banner with 1-click or Enter key quick check-in.
+  - Visual `<mark>` highlight on matching numbers/text across all card fields.
 - **Git State**: Clean working tree with zero syntax/type errors.

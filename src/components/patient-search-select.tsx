@@ -113,13 +113,14 @@ export function PatientSearchSelect({
         <div className="absolute z-50 w-full mt-1 max-h-60 overflow-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-md shadow-lg">
           {results.length === 0 ? (
             <div className="p-3 text-sm text-slate-500 text-center">
-              {loading ? "Searching..." : search.length < 2 ? "Type at least 2 characters..." : "No patients found."}
+              {loading ? "Searching..." : search ? `No patients found matching "${search}".` : "Type a name, phone number, or employee ID..."}
             </div>
           ) : (
             <ul className="py-1 divide-y divide-slate-100 dark:divide-slate-800">
               {results.map(p => {
                 const name = `${p.firstName || p.name || ""} ${p.lastName || ""}`.trim();
                 const cardId = p.militaryId || p.employeeId;
+                const normRole = p.patientType === "M" ? "Soldier" : p.patientType === "P" ? "Civilian Staff" : p.patientType;
                 return (
                   <li 
                     key={p.id}
@@ -134,13 +135,13 @@ export function PatientSearchSelect({
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-semibold text-slate-900 dark:text-slate-100">{name}</span>
-                        {p.patientType && (
+                        {normRole && (
                           <span className={`text-[10px] font-bold px-1.5 py-0.2 rounded ${
-                            p.patientType === "Soldier" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" :
-                            p.patientType === "Civilian Staff" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300" :
+                            normRole === "Soldier" ? "bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300" :
+                            normRole === "Civilian Staff" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300" :
                             "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
                           }`}>
-                            {p.rank ? `${p.rank} ` : ""}{p.patientType} {p.relationship ? `(${p.relationship})` : ""}
+                            {p.rank ? `${p.rank} ` : ""}{normRole} {p.relationship ? `(${p.relationship})` : ""}
                           </span>
                         )}
                       </div>

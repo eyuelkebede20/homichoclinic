@@ -4,11 +4,11 @@ import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
-import { Search } from "lucide-react";
 import { Pagination } from "@/components/pagination";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { PatientRow } from "./patient-row";
+import { PatientTableSearch } from "./patient-table-search";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; tab?: string }> }) {
   const resolvedParams = await searchParams;
@@ -36,17 +36,52 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
 
   const baseWhereClause = tab === "pending" ? { status: "PENDING" } : { status: { not: "PENDING" } };
 
-  const whereClause = query ? {
-    ...baseWhereClause,
-    OR: [
-      { firstName: { contains: query, mode: "insensitive" } as const },
-      { lastName: { contains: query, mode: "insensitive" } as const },
-      { contactNumber: { contains: query, mode: "insensitive" } as const },
-      { employeeId: { contains: query, mode: "insensitive" } as const },
-      { militaryId: { contains: query, mode: "insensitive" } as const },
-      { id: { contains: query, mode: "insensitive" } as const }
-    ]
-  } : baseWhereClause;
+  let whereClause: any = baseWhereClause;
+  if (query) {
+    const term = query.trim();
+    const isDigitsOnly = /^\d+$/.test(term);
+    const phoneVariants = [term];
+    if (isDigitsOnly) {
+      if (term.startsWith("0")) {
+        phoneVariants.push(term.slice(1));
+        phoneVariants.push(`+251${term.slice(1)}`);
+      } else if (term.startsWith("251")) {
+        phoneVariants.push(`+${term}`);
+        phoneVariants.push(`0${term.slice(3)}`);
+      } else {
+        phoneVariants.push(`0${term}`);
+        phoneVariants.push(`+251${term}`);
+      }
+    }
+
+    const phoneConditions = phoneVariants.flatMap(v => [
+      { contactNumber: { contains: v, mode: "insensitive" as const } },
+      { primaryPatient: { contactNumber: { contains: v, mode: "insensitive" as const } } }
+    ]);
+
+    whereClause = {
+      ...baseWhereClause,
+      OR: [
+        { firstName: { contains: term, mode: "insensitive" as const } },
+        { lastName: { contains: term, mode: "insensitive" as const } },
+        ...phoneConditions,
+        { employeeId: { contains: term, mode: "insensitive" as const } },
+        { militaryId: { contains: term, mode: "insensitive" as const } },
+        { yob: { contains: term, mode: "insensitive" as const } },
+        { id: { contains: term, mode: "insensitive" as const } },
+        {
+          primaryPatient: {
+            OR: [
+              { firstName: { contains: term, mode: "insensitive" as const } },
+              { lastName: { contains: term, mode: "insensitive" as const } },
+              { employeeId: { contains: term, mode: "insensitive" as const } },
+              { militaryId: { contains: term, mode: "insensitive" as const } },
+            ]
+          }
+        }
+      ]
+    };
+  }
 
   const [patients, totalItems, pendingCount] = await Promise.all([
     prisma.patient.findMany({
@@ -73,18 +108,9 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 print:hidden">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Patients</h1>
         
-        <div className="flex w-full md:w-auto gap-4">
+        <div className="flex w-full md:w-auto gap-4 items-center flex-wrap md:flex-nowrap">
           <PrintButton label="Print Directory" />
-          <form className="relative flex-1 md:w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-500" />
-            <input 
-              name="q"
-              defaultValue={query}
-              type="text" 
-              placeholder="Search by name, phone or employee ID..." 
-              className="pl-9 pr-4 py-2 w-full border border-slate-300 dark:border-slate-700 rounded-md text-sm bg-white dark:bg-slate-900"
-            />
-          </form>
+          <PatientTableSearch defaultValue={query} tab={tab} />
           {canManageUsers && (
             <Link href="/patients/import" className="whitespace-nowrap px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-900 text-sm flex items-center">
               Import CSV

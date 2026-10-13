@@ -154,7 +154,7 @@ export function FamilyLinkSelector({
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               {isCivilianFamily 
-                ? "Links to Civilian Staff member for 95% clinic coverage benefit." 
+                ? "Links to Civilian Staff member for 5% clinic coverage benefit." 
                 : "Links to active Soldier for 100% full coverage benefit."}
             </p>
           </div>

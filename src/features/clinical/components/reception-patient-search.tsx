@@ -14,12 +14,12 @@ import {
   Phone, 
   CreditCard, 
   X, 
-  CheckCircle2, 
   User, 
   ShieldCheck,
   ChevronRight,
   Clock,
-  Sparkles
+  Sparkles,
+  Hash
 } from "lucide-react";
 import { searchPatientsFast } from "@/features/patients/actions";
 import { createVisit } from "@/features/clinical/actions";
@@ -28,6 +28,37 @@ import { toast } from "sonner";
 
 type TargetRole = "All" | "Soldier" | "Civilian Staff" | "Soldier Family" | "Civilian Family";
 type FilterField = "all" | "phone" | "id" | "name";
+
+function normalizeRole(patientType: string | null | undefined): string {
+  if (!patientType) return "Civilian Staff";
+  if (patientType === "M") return "Soldier";
+  if (patientType === "P") return "Civilian Staff";
+  return patientType;
+}
+
+function HighlightMatch({ text, query }: { text: string | null | undefined; query: string }) {
+  if (!text) return null;
+  const q = query.trim();
+  if (!q) return <>{text}</>;
+
+  const escaped = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const regex = new RegExp(`(${escaped})`, "gi");
+  const parts = text.split(regex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        regex.test(part) ? (
+          <mark key={i} className="bg-amber-200 dark:bg-amber-900/90 text-amber-950 dark:text-amber-100 font-extrabold px-0.5 rounded shadow-2xs">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      )}
+    </>
+  );
+}
 
 export function ReceptionPatientSearch() {
   const [query, setQuery] = useState("");
@@ -76,17 +107,11 @@ export function ReceptionPatientSearch() {
     }
   }, []);
 
-  // Debounced search on query or filter changes
+  // Snappy predictive search on every keystroke (including single digits)
   useEffect(() => {
-    // If query has only 1 char, don't trigger search unless query is empty (recent list)
-    if (query.length === 1) {
-      setResults([]);
-      return;
-    }
-
     const timer = setTimeout(() => {
       performSearch(query, targetRole, filterField);
-    }, 280);
+    }, 120);
 
     return () => clearTimeout(timer);
   }, [query, targetRole, filterField, performSearch]);
@@ -105,13 +130,14 @@ export function ReceptionPatientSearch() {
     }
   }
 
+  const isDigitsOnly = /^\d+$/.test(query.trim());
   const isFiltered = targetRole !== "All" || filterField !== "all";
 
   const getPlaceholder = () => {
-    if (filterField === "phone") return "Type phone number (e.g. 0911...)...";
-    if (filterField === "id") return "Type military ID or employee card ID...";
-    if (filterField === "name") return "Type patient or personnel name...";
-    return "Search by name, phone, military ID, or card...";
+    if (filterField === "phone") return "Predict phone number (e.g. 0911...)...";
+    if (filterField === "id") return "Predict military ID or employee card ID...";
+    if (filterField === "name") return "Predict patient or personnel name...";
+    return "Predictive search by number (phone/card ID) or name...";
   };
 
   return (
@@ -119,8 +145,8 @@ export function ReceptionPatientSearch() {
       {/* Search Input Bar */}
       <div className="relative flex items-center">
         <div className="absolute left-3.5 flex items-center gap-1.5 text-slate-400 pointer-events-none">
-          {filterField === "phone" ? (
-            <Phone className="w-4 h-4 text-blue-500" />
+          {filterField === "phone" || isDigitsOnly ? (
+            <Phone className="w-4 h-4 text-blue-500 animate-pulse" />
           ) : filterField === "id" ? (
             <CreditCard className="w-4 h-4 text-blue-500" />
           ) : filterField === "name" ? (
@@ -140,6 +166,18 @@ export function ReceptionPatientSearch() {
             setIsOpen(true);
           }}
           onFocus={() => setIsOpen(true)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && results.length > 0) {
+              e.preventDefault();
+              const top = results[0];
+              if (!top.visits || top.visits.length === 0) {
+                handleAdmit(top.id);
+              } else {
+                router.push(`/patients/${top.id}`);
+                setIsOpen(false);
+              }
+            }
+          }}
           className="w-full pl-10 pr-28 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
         />
 
@@ -186,10 +224,16 @@ export function ReceptionPatientSearch() {
         </div>
       </div>
 
-      {/* Active Filter Chips Bar (Shown under input when active) */}
-      {isFiltered && (
-        <div className="flex items-center gap-2 mt-1.5 px-1 text-xs">
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">Filtering:</span>
+      {/* Active Filter & Number Prediction Indicator */}
+      <div className="flex items-center justify-between gap-2 mt-1.5 px-1 text-xs">
+        <div className="flex items-center gap-2 flex-wrap">
+          {isDigitsOnly && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-200 font-bold text-[11px] animate-pulse">
+              <Hash className="w-3 h-3 text-amber-600" />
+              Predicting Numbers (Phone / Card / Military ID)
+            </span>
+          )}
+
           {targetRole !== "All" && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 font-semibold text-[11px]">
               {targetRole}
@@ -198,6 +242,7 @@ export function ReceptionPatientSearch() {
               </button>
             </span>
           )}
+
           {filterField !== "all" && (
             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300 font-semibold text-[11px]">
               Field: {filterField}
@@ -206,14 +251,17 @@ export function ReceptionPatientSearch() {
               </button>
             </span>
           )}
+        </div>
+
+        {isFiltered && (
           <button 
             onClick={() => { setTargetRole("All"); setFilterField("all"); }}
-            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline ml-auto"
+            className="text-[11px] text-blue-600 dark:text-blue-400 hover:underline shrink-0"
           >
-            Reset
+            Reset Filters
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Dropdown Popup */}
       {isOpen && (
@@ -289,6 +337,42 @@ export function ReceptionPatientSearch() {
             </div>
           </div>
 
+          {/* Predictive Best Match Banner */}
+          {query.trim().length > 0 && results.length > 0 && (
+            <div className="m-2 p-2.5 rounded-xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/10 border border-blue-400/40 dark:border-blue-600/40 flex items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="p-1.5 rounded-lg bg-blue-600 text-white shrink-0 shadow-xs">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-blue-900 dark:text-blue-200 truncate">
+                    <span>Predicted Top Match:</span>
+                    <span className="text-slate-900 dark:text-slate-100 font-extrabold">{results[0].firstName} {results[0].lastName}</span>
+                    <span className="text-[10px] px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-300">
+                      {normalizeRole(results[0].patientType)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono truncate">
+                    {results[0].contactNumber && <span>Phone: <HighlightMatch text={results[0].contactNumber} query={query} /></span>}
+                    {(results[0].militaryId || results[0].employeeId) && (
+                      <span> • ID: <HighlightMatch text={results[0].militaryId || results[0].employeeId} query={query} /></span>
+                    )}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAdmit(results[0].id)}
+                disabled={admittingId === results[0].id}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shrink-0 flex items-center gap-1 shadow-sm transition-all"
+                title="Press Enter in the search box to check-in"
+              >
+                {admittingId === results[0].id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                <span>Check-in (Enter)</span>
+              </button>
+            </div>
+          )}
+
           {/* Results List */}
           <div className="max-h-[460px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/80 p-2 space-y-2">
             {query.length === 0 && results.length > 0 && (
@@ -300,21 +384,22 @@ export function ReceptionPatientSearch() {
             {loading ? (
               <div className="p-8 text-center text-sm text-slate-500 flex items-center justify-center gap-2">
                 <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />
-                Searching for matching patients & personnel records...
+                Predicting matching patient & personnel records...
               </div>
             ) : results.length === 0 ? (
               <div className="p-8 text-center space-y-2">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                  {query ? "No patients or personnels found matching your search." : "No records to display."}
+                  {query ? `No patients or personnels found matching "${query}".` : "No records to display."}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Try adjusting the role filter pills or typing a different phone number, military ID, or name.
+                  Check if the phone number or card ID has different digits, or reset role filters.
                 </p>
               </div>
             ) : (
               results.map(p => {
-                const isFamilyMember = p.patientType === "Civilian Family" || p.patientType === "Soldier Family";
-                const isPersonnel = p.patientType === "Soldier" || p.patientType === "Civilian Staff";
+                const normRole = normalizeRole(p.patientType);
+                const isFamilyMember = normRole === "Civilian Family" || normRole === "Soldier Family";
+                const isPersonnel = normRole === "Soldier" || normRole === "Civilian Staff";
                 const cardId = p.militaryId || p.employeeId;
                 const activeVisit = p.visits && p.visits.length > 0 ? p.visits[0] : null;
 
@@ -331,25 +416,26 @@ export function ReceptionPatientSearch() {
                             href={`/patients/${p.id}`} 
                             className="font-bold text-sm text-slate-900 dark:text-slate-100 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
                           >
-                            {p.salutation ? `${p.salutation} ` : ""}{p.firstName} {p.lastName}
+                            {p.salutation ? `${p.salutation} ` : ""}
+                            <HighlightMatch text={`${p.firstName} ${p.lastName}`} query={query} />
                           </Link>
 
                           {/* Patient Role Badge */}
                           <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
-                            p.patientType === "Soldier"
+                            normRole === "Soldier"
                               ? "bg-amber-100 text-amber-900 dark:bg-amber-900/50 dark:text-amber-200"
-                              : p.patientType === "Civilian Staff"
+                              : normRole === "Civilian Staff"
                               ? "bg-blue-100 text-blue-900 dark:bg-blue-900/50 dark:text-blue-200"
-                              : p.patientType === "Soldier Family"
+                              : normRole === "Soldier Family"
                               ? "bg-emerald-100 text-emerald-900 dark:bg-emerald-900/50 dark:text-emerald-200"
-                              : p.patientType === "Civilian Family"
+                              : normRole === "Civilian Family"
                               ? "bg-purple-100 text-purple-900 dark:bg-purple-900/50 dark:text-purple-200"
                               : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           }`}>
-                            {p.patientType === "Soldier" && <Shield className="w-3 h-3" />}
-                            {p.patientType === "Civilian Staff" && <Briefcase className="w-3 h-3" />}
+                            {normRole === "Soldier" && <Shield className="w-3 h-3" />}
+                            {normRole === "Civilian Staff" && <Briefcase className="w-3 h-3" />}
                             {isFamilyMember && <Users className="w-3 h-3" />}
-                            {p.patientType} {p.relationship ? `(${p.relationship})` : ""}
+                            {normRole} {p.relationship ? `(${p.relationship})` : ""}
                           </span>
 
                           {/* Live OPD Status Badge */}
@@ -365,20 +451,24 @@ export function ReceptionPatientSearch() {
                           )}
                         </div>
 
-                        {/* Secondary Patient Attributes */}
+                        {/* Secondary Patient Attributes with Highlighted Numbers */}
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500 dark:text-slate-400 mt-1">
                           {p.contactNumber && (
                             <span className="flex items-center gap-1 font-mono">
                               <Phone className="w-3 h-3 text-slate-400" />
-                              {p.contactNumber}
+                              <HighlightMatch text={p.contactNumber} query={query} />
                             </span>
                           )}
                           {p.gender && <span className="capitalize">• {p.gender}</span>}
-                          {p.yob && <span>• YOB: {p.yob}</span>}
+                          {p.yob && (
+                            <span>
+                              • YOB: <HighlightMatch text={p.yob} query={query} />
+                            </span>
+                          )}
                           {cardId && (
                             <span className="flex items-center gap-1 font-mono text-slate-700 dark:text-slate-300">
                               <CreditCard className="w-3 h-3 text-slate-400" />
-                              ID: <strong>{cardId}</strong>
+                              ID: <strong><HighlightMatch text={cardId} query={query} /></strong>
                             </span>
                           )}
                         </div>
@@ -421,14 +511,14 @@ export function ReceptionPatientSearch() {
                       <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/80 text-xs space-y-1.5">
                         <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
-                            {p.patientType === "Soldier" ? (
+                            {normRole === "Soldier" ? (
                               <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                             ) : (
                               <Briefcase className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
                             )}
                             <span>Personnel Details:</span>
                             {p.rank && <span className="text-blue-700 dark:text-blue-400 font-semibold">{p.rank}</span>}
-                            <span>{p.firstName} {p.lastName}</span>
+                            <span><HighlightMatch text={`${p.firstName} ${p.lastName}`} query={query} /></span>
                           </div>
 
                           {(p.division || p.department) && (
@@ -450,7 +540,7 @@ export function ReceptionPatientSearch() {
                                 href={`/patients/${dep.id}`}
                                 className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60 hover:underline"
                               >
-                                <strong>{dep.firstName} {dep.lastName}</strong>
+                                <strong><HighlightMatch text={`${dep.firstName} ${dep.lastName}`} query={query} /></strong>
                                 <span className="text-[10px] opacity-75">({dep.relationship || "Family"})</span>
                               </Link>
                             ))}
@@ -470,23 +560,24 @@ export function ReceptionPatientSearch() {
                               href={`/patients/${p.primaryPatient.id}`}
                               className="text-emerald-800 dark:text-emerald-300 hover:underline font-extrabold"
                             >
-                              {p.primaryPatient.rank ? `${p.primaryPatient.rank} ` : ""}{p.primaryPatient.firstName} {p.primaryPatient.lastName}
+                              {p.primaryPatient.rank ? `${p.primaryPatient.rank} ` : ""}
+                              <HighlightMatch text={`${p.primaryPatient.firstName} ${p.primaryPatient.lastName}`} query={query} />
                             </Link>
                             <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-200/60 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-200 font-semibold">
-                              {p.primaryPatient.patientType}
+                              {normalizeRole(p.primaryPatient.patientType)}
                             </span>
                           </div>
 
                           <div className="flex items-center gap-2 text-[11px] font-mono text-emerald-800 dark:text-emerald-300">
                             {(p.primaryPatient.militaryId || p.primaryPatient.employeeId) && (
                               <span className="bg-white/80 dark:bg-slate-900 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                                ID: <strong>{p.primaryPatient.militaryId || p.primaryPatient.employeeId}</strong>
+                                ID: <strong><HighlightMatch text={p.primaryPatient.militaryId || p.primaryPatient.employeeId} query={query} /></strong>
                               </span>
                             )}
                             {p.primaryPatient.contactNumber && (
                               <span className="flex items-center gap-1">
                                 <Phone className="w-3 h-3 text-emerald-600" />
-                                {p.primaryPatient.contactNumber}
+                                <HighlightMatch text={p.primaryPatient.contactNumber} query={query} />
                               </span>
                             )}
                           </div>
