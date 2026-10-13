@@ -138,10 +138,12 @@ export function parseHematologySelectedSubTests(testName?: string) {
       reqCoagulation: true,
       reqMorphology: true,
       reqIndices: true,
+      selectedList: ["Complete Blood Count (CBC & Differential)"],
     };
   }
-  const n = testName.toLowerCase();
-  const isFull = n === "hematology" || n.includes("complete") || (!n.includes("-") && !n.includes("("));
+  const n = testName.toLowerCase().trim();
+  const hasSubMarker = n.includes("-") || n.includes("(") || n.includes(":");
+  const isFull = (n === "hematology" || n.includes("complete blood") || n.includes("complete cbc")) && !hasSubMarker;
   if (isFull) {
     return {
       isFull: true,
@@ -152,55 +154,170 @@ export function parseHematologySelectedSubTests(testName?: string) {
       reqCoagulation: true,
       reqMorphology: true,
       reqIndices: true,
+      selectedList: ["Complete Blood Count (CBC & Differential)"],
+    };
+  }
+
+  const reqWbcDiff = n.includes("wbc") || n.includes("differential") || n.includes("white blood");
+  const reqHgbHct = n.includes("hemoglobin") || n.includes("hematocrit") || n.includes("hgb") || n.includes("hct") || n.includes("rbc");
+  const reqPlatelets = n.includes("platelet");
+  const reqEsr = n.includes("esr") || n.includes("sedimentation");
+  const reqCoagulation = n.includes("coagulation") || n.includes("pt") || n.includes("bt") || n.includes("ct") || n.includes("prothrombin");
+  const reqMorphology = n.includes("morphology") || n.includes("smear");
+  const reqIndices = reqHgbHct || n.includes("indices") || n.includes("mcv") || n.includes("mch");
+
+  const selectedList: string[] = [];
+  if (reqWbcDiff) selectedList.push("WBC & Differential Count");
+  if (reqHgbHct) selectedList.push("Hemoglobin & Hematocrit (Hgb/Hct)");
+  if (reqPlatelets) selectedList.push("Platelet Count");
+  if (reqEsr) selectedList.push("ESR (Sedimentation Rate)");
+  if (reqCoagulation) selectedList.push("Coagulation Profile (PT/BT/CT)");
+  if (reqMorphology) selectedList.push("Blood Smear Morphology");
+
+  if (selectedList.length === 0) {
+    return {
+      isFull: true,
+      reqWbcDiff: true,
+      reqHgbHct: true,
+      reqPlatelets: true,
+      reqEsr: true,
+      reqCoagulation: true,
+      reqMorphology: true,
+      reqIndices: true,
+      selectedList: [testName],
     };
   }
 
   return {
     isFull: false,
-    reqWbcDiff: n.includes("wbc") || n.includes("differential") || n.includes("white blood"),
-    reqHgbHct: n.includes("hemoglobin") || n.includes("hematocrit") || n.includes("hgb") || n.includes("hct"),
-    reqPlatelets: n.includes("platelet"),
-    reqEsr: n.includes("esr") || n.includes("sedimentation"),
-    reqCoagulation: n.includes("coagulation") || n.includes("pt") || n.includes("bt") || n.includes("ct") || n.includes("prothrombin"),
-    reqMorphology: n.includes("morphology") || n.includes("smear"),
-    reqIndices: n.includes("indices") || n.includes("mcv") || n.includes("mch"),
+    reqWbcDiff,
+    reqHgbHct,
+    reqPlatelets,
+    reqEsr,
+    reqCoagulation,
+    reqMorphology,
+    reqIndices,
+    selectedList,
   };
 }
 
 export function parseStoolSelectedSubTests(testName?: string) {
   if (!testName) {
-    return { isFull: true, reqOccultBlood: true, reqOvaParasite: true, reqMacroscopic: true };
+    return { 
+      isFull: true, 
+      reqOccultBlood: true, 
+      reqOvaParasite: true, 
+      reqMacroscopic: true,
+      selectedList: ["Full Complete Stool Examination"],
+    };
   }
-  const n = testName.toLowerCase();
-  const isFull = n === "stool examination" || n === "stool test" || (!n.includes("-") && !n.includes("("));
+  const n = testName.toLowerCase().trim();
+  const hasSubMarker = n.includes("-") || n.includes("(") || n.includes(":");
+  const isFull = (n === "stool examination" || n === "stool test" || n === "stool") && !hasSubMarker;
   if (isFull) {
-    return { isFull: true, reqOccultBlood: true, reqOvaParasite: true, reqMacroscopic: true };
+    return { 
+      isFull: true, 
+      reqOccultBlood: true, 
+      reqOvaParasite: true, 
+      reqMacroscopic: true,
+      selectedList: ["Full Complete Stool Examination"],
+    };
   }
+
+  const reqOccultBlood = n.includes("occult") || n.includes("fobt") || n.includes("hidden blood");
+  const reqOvaParasite = n.includes("ova") || n.includes("parasite") || n.includes("microscopic");
+  const reqMacroscopic = n.includes("macroscopic") || n.includes("physical") || n.includes("consistency") || n.includes("appearance") || n.includes("color");
+
+  const selectedList: string[] = [];
+  if (reqOccultBlood) selectedList.push("Occult Blood (FOBT)");
+  if (reqOvaParasite) selectedList.push("Ova & Parasite (Microscopic)");
+  if (reqMacroscopic) selectedList.push("Macroscopic & Physical");
+
+  if (selectedList.length === 0) {
+    return { 
+      isFull: true, 
+      reqOccultBlood: true, 
+      reqOvaParasite: true, 
+      reqMacroscopic: true,
+      selectedList: [testName],
+    };
+  }
+
   return {
     isFull: false,
-    reqOccultBlood: n.includes("occult") || n.includes("fobt") || n.includes("hidden blood"),
-    reqOvaParasite: n.includes("ova") || n.includes("parasite") || n.includes("microscopic"),
-    reqMacroscopic: n.includes("macroscopic") || n.includes("physical") || n.includes("consistency"),
+    reqOccultBlood,
+    reqOvaParasite,
+    reqMacroscopic,
+    selectedList,
   };
 }
 
 export function parseUrineSelectedSubTests(testName?: string) {
   if (!testName) {
-    return { isFull: true, reqDipstick: true, reqSediment: true, reqAlbumin: true, reqSugar: true, reqBile: true, reqPhysical: true };
+    return { 
+      isFull: true, 
+      reqDipstick: true, 
+      reqSediment: true, 
+      reqAlbumin: true, 
+      reqSugar: true, 
+      reqBile: true, 
+      reqPhysical: true,
+      selectedList: ["Full Routine Urinalysis"],
+    };
   }
-  const n = testName.toLowerCase();
-  const isFull = n === "urine examination" || n === "routine urinalysis" || n === "urinalysis" || (!n.includes("-") && !n.includes("("));
+  const n = testName.toLowerCase().trim();
+  const hasSubMarker = n.includes("-") || n.includes("(") || n.includes(":");
+  const isFull = (n === "urine examination" || n === "routine urinalysis" || n === "urinalysis" || n === "urine") && !hasSubMarker;
   if (isFull) {
-    return { isFull: true, reqDipstick: true, reqSediment: true, reqAlbumin: true, reqSugar: true, reqBile: true, reqPhysical: true };
+    return { 
+      isFull: true, 
+      reqDipstick: true, 
+      reqSediment: true, 
+      reqAlbumin: true, 
+      reqSugar: true, 
+      reqBile: true, 
+      reqPhysical: true,
+      selectedList: ["Full Routine Urinalysis"],
+    };
   }
+
+  const reqDipstick = n.includes("dipstick") || n.includes("chemical") || n.includes("strip");
+  const reqSediment = n.includes("sediment") || n.includes("microscopic");
+  const reqAlbumin = reqDipstick || n.includes("albumin") || n.includes("protein");
+  const reqSugar = reqDipstick || n.includes("sugar") || n.includes("glucose");
+  const reqBile = reqDipstick || n.includes("bile") || n.includes("urobilinogen") || n.includes("bilirubin");
+  const reqPhysical = n.includes("physical") || n.includes("gravity") || (!reqDipstick && !reqSediment && !reqAlbumin && !reqSugar && !reqBile);
+
+  const selectedList: string[] = [];
+  if (reqDipstick) selectedList.push("Chemical Dipstick (Protein/Sugar/pH)");
+  if (reqSediment) selectedList.push("Microscopic Sediment Examination");
+  if (reqAlbumin && !reqDipstick) selectedList.push("Albumin / Protein Test");
+  if (reqSugar && !reqDipstick) selectedList.push("Sugar / Glucose Test");
+  if (reqBile && !reqDipstick) selectedList.push("Bile & Urobilinogen");
+  if (reqPhysical) selectedList.push("Physical Examination");
+
+  if (selectedList.length === 0) {
+    return { 
+      isFull: true, 
+      reqDipstick: true, 
+      reqSediment: true, 
+      reqAlbumin: true, 
+      reqSugar: true, 
+      reqBile: true, 
+      reqPhysical: true,
+      selectedList: [testName],
+    };
+  }
+
   return {
     isFull: false,
-    reqDipstick: n.includes("dipstick") || n.includes("chemical") || n.includes("strip"),
-    reqSediment: n.includes("sediment") || n.includes("microscopic"),
-    reqAlbumin: n.includes("albumin") || n.includes("protein"),
-    reqSugar: n.includes("sugar") || n.includes("glucose"),
-    reqBile: n.includes("bile") || n.includes("urobilinogen"),
-    reqPhysical: n.includes("physical") || n.includes("gravity") || n.includes("ph"),
+    reqDipstick,
+    reqSediment,
+    reqAlbumin,
+    reqSugar,
+    reqBile,
+    reqPhysical,
+    selectedList,
   };
 }
 
@@ -250,15 +367,15 @@ export function groupPendingLabRequests<T extends {
         existing.isUrgent = true;
       }
       if (pType === "STOOL") {
-        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Stool\s*(\(|\-)\s*/i, "").replace(/\)$/, "").trim());
+        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Stool\s*(Examination|Test)?\s*(\(|\-)?\s*/i, "").replace(/\)+$/, "").trim());
         const unique = Array.from(new Set(subNames));
         existing.testName = unique.length === 1 ? `Stool - ${unique[0]}` : `Stool Examination (${unique.join(", ")})`;
       } else if (pType === "URINE") {
-        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Urine\s*(\(|\-)\s*/i, "").replace(/\)$/, "").trim());
+        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Urine\s*(Examination|Test|Urinalysis)?\s*(\(|\-)?\s*/i, "").replace(/\)+$/, "").trim());
         const unique = Array.from(new Set(subNames));
         existing.testName = unique.length === 1 ? `Urine - ${unique[0]}` : `Urine Examination (${unique.join(", ")})`;
       } else if (pType === "HEMATOLOGY") {
-        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Hematology\s*(\(|\-)\s*/i, "").replace(/\)$/, "").trim());
+        const subNames = existing.allRequests.map(r => r.test.name.replace(/^Hematology\s*(Panel|CBC)?\s*(\(|\-)?\s*/i, "").replace(/\)+$/, "").trim());
         const unique = Array.from(new Set(subNames));
         existing.testName = unique.length === 1 ? `Hematology - ${unique[0]}` : `Hematology (${unique.join(", ")})`;
       }

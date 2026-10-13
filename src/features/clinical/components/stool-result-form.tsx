@@ -110,248 +110,344 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
         </div>
       </div>
 
-      {!selected.isFull && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5 shadow-2xs">
-          <span className="font-extrabold text-[10px] uppercase bg-amber-500 text-white px-2 py-0.5 rounded-full">
-            Selective Order
-          </span>
-          <span>Only the parameters marked <strong className="text-emerald-700 dark:text-emerald-300">★ REQUIRED</strong> below were requested by the doctor. Other sections are optional.</span>
+      {/* Doctor's Selected Test Banner */}
+      <div className={`p-3.5 rounded-xl border-2 transition-all ${
+        !selected.isFull
+          ? "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm"
+          : "bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800"
+      }`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+              !selected.isFull ? "bg-emerald-600 text-white shadow-xs" : "bg-emerald-200 dark:bg-emerald-800 text-emerald-800 dark:text-emerald-200"
+            }`}>
+              {!selected.isFull ? "Doctor's Selective Order" : "Standard Full Panel"}
+            </span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+              {!selected.isFull
+                ? `Doctor requested ${selected.selectedList.length} specific test(s). Highlighted in special green border below:`
+                : "All stool parameters requested for complete routine examination."}
+            </span>
+          </div>
+          {!selected.isFull && (
+            <span className="text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-emerald-300 dark:border-emerald-700 shadow-2xs">
+              ★ Look for green highlighted boxes
+            </span>
+          )}
         </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 text-xs">
-        {/* Appearance */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Appearance {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
-          </label>
-          <input
-            type="text"
-            value={appearance}
-            onChange={(e) => setAppearance(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            placeholder="e.g. Brownish, Yellowish"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Brownish", "Yellowish", "Dark Brown", "Bloody"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setAppearance(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+        {!selected.isFull && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-emerald-200/70 dark:border-emerald-800/70">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              Requested Sub-tests:
+            </span>
+            {selected.selectedList.map((testItem, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-700/50"
               >
-                {val}
-              </button>
+                ★ {testItem}
+              </span>
             ))}
           </div>
+        )}
+      </div>
+
+      {/* 1. Macroscopic Examination */}
+      <div className={`p-3.5 rounded-xl transition-all ${
+        selected.reqMacroscopic
+          ? "border-2 border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-sm"
+          : !selected.isFull
+          ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+          : "border border-emerald-200 dark:border-emerald-800 bg-white/70 dark:bg-slate-900/50"
+      }`}>
+        <div className="flex items-center justify-between mb-2.5">
+          <h5 className="text-[11px] font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+            <span>1. Macroscopic & Physical Examination</span>
+            {selected.reqMacroscopic ? (
+              <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+                ★ ORDERED
+              </span>
+            ) : !selected.isFull ? (
+              <span className="text-[10px] text-slate-400 font-normal italic">
+                (Optional / Not requested)
+              </span>
+            ) : null}
+          </h5>
         </div>
 
-        {/* Consistence */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Consistence {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
-          </label>
-          <input
-            type="text"
-            value={consistence}
-            onChange={(e) => setConsistence(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            placeholder="e.g. Formed, Loose"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Formed", "Semi-formed", "Loose", "Watery"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setConsistence(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
-              >
-                {val}
-              </button>
-            ))}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
+          {/* Appearance */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Appearance {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={appearance}
+              onChange={(e) => setAppearance(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="e.g. Brownish, Yellowish"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Brownish", "Yellowish", "Dark Brown", "Bloody"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setAppearance(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Consistence */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Consistence {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={consistence}
+              onChange={(e) => setConsistence(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="e.g. Formed, Loose"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Formed", "Semi-formed", "Loose", "Watery"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setConsistence(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Blood-Gross */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Blood-Gross {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={bloodGross}
+              onChange={(e) => setBloodGross(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Negative", "Present (+)", "Trace"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setBloodGross(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pus */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Pus Cells {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={pus}
+              onChange={(e) => setPus(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              placeholder="e.g. Nil, 0-2 /HPF"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Nil", "0-2 /HPF", "2-5 /HPF", "Many"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setPus(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Mucus */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Mucus {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={mucus}
+              onChange={(e) => setMucus(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Negative", "Present (+)", "Moderate"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setMucus(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Bile */}
+          <div>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Bile {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
+            <input
+              type="text"
+              value={bile}
+              onChange={(e) => setBile(e.target.value)}
+              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            />
+            <div className="flex flex-wrap gap-1 mt-1">
+              {["Present", "Absent", "Normal"].map((val) => (
+                <button
+                  type="button"
+                  key={val}
+                  onClick={() => setBile(val)}
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                >
+                  {val}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
+      </div>
 
-        {/* Blood-Gross */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Blood-Gross {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+      {/* 2. Occult Blood (FOBT) */}
+      <div className={`p-3.5 rounded-xl transition-all ${
+        selected.reqOccultBlood
+          ? "border-2 border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-sm"
+          : !selected.isFull
+          ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+          : "border border-emerald-200 dark:border-emerald-800 bg-white/70 dark:bg-slate-900/50"
+      }`}>
+        <div className="flex items-center justify-between mb-2">
+          <label className="font-bold text-xs text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <span>2. Occult Blood (FOBT)</span>
+            {selected.reqOccultBlood ? (
+              <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+                ★ ORDERED
+              </span>
+            ) : !selected.isFull ? (
+              <span className="text-[10px] text-slate-400 font-normal italic">
+                (Optional / Not requested)
+              </span>
+            ) : null}
           </label>
-          <input
-            type="text"
-            value={bloodGross}
-            onChange={(e) => setBloodGross(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Negative", "Present (+)", "Trace"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setBloodGross(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
-              >
-                {val}
-              </button>
-            ))}
-          </div>
         </div>
-
-        {/* Occult Blood (FOBT) */}
-        <div className={selected.reqOccultBlood ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500 shadow-xs" : ""}>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Occult Blood (FOBT) {selected.reqOccultBlood ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
-          </label>
+        <div className="max-w-md">
           <input
             type="text"
             value={occult}
             onChange={(e) => setOccult(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs"
           />
-          <div className="flex flex-wrap gap-1 mt-1">
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {["Negative", "Positive (+)", "Positive (++)"].map((val) => (
               <button
                 type="button"
                 key={val}
                 onClick={() => setOccult(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
               >
                 {val}
               </button>
             ))}
           </div>
         </div>
+      </div>
 
-        {/* Pus */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Pus Cells {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+      {/* 3. Ova and Parasite */}
+      <div className={`p-3.5 rounded-xl transition-all ${
+        selected.reqOvaParasite
+          ? "border-2 border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/70 dark:bg-emerald-950/40 shadow-sm"
+          : !selected.isFull
+          ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+          : "border border-emerald-200 dark:border-emerald-800 bg-white/70 dark:bg-slate-900/50"
+      }`}>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="font-bold text-xs text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <span>3. Ova & Parasite (Microscopic Examination)</span>
+            {selected.reqOvaParasite ? (
+              <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+                ★ ORDERED
+              </span>
+            ) : !selected.isFull ? (
+              <span className="text-[10px] text-slate-400 font-normal italic">
+                (Optional / Not requested)
+              </span>
+            ) : null}
           </label>
-          <input
-            type="text"
-            value={pus}
-            onChange={(e) => setPus(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            placeholder="e.g. Nil, 0-2 /HPF"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Nil", "0-2 /HPF", "2-5 /HPF", "Many"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setPus(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
-              >
-                {val}
-              </button>
-            ))}
-          </div>
+          <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-normal hidden sm:inline">Click chips to quickly insert parasites</span>
         </div>
+        <input
+          type="text"
+          required={selected.reqOvaParasite}
+          value={ovaAndParasite}
+          onChange={(e) => setOvaAndParasite(e.target.value)}
+          className="w-full px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs"
+          placeholder="e.g. No ova or parasite seen, E. histolytica cysts, Giardia lamblia"
+        />
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {[
+            "No ova or parasite seen",
+            "E. histolytica trophozoite",
+            "E. histolytica cyst",
+            "Giardia lamblia trophozoite",
+            "Giardia lamblia cyst",
+            "Ascaris lumbricoides ova",
+            "Hookworm ova",
+            "H. nana ova",
+            "T. trichiura ova",
+            "Strongyloides larvae"
+          ].map((p) => (
+            <button
+              type="button"
+              key={p}
+              onClick={() => {
+                if (p === "No ova or parasite seen") setOvaAndParasite(p);
+                else if (ovaAndParasite === "No ova or parasite seen" || !ovaAndParasite) setOvaAndParasite(p);
+                else setOvaAndParasite(`${ovaAndParasite}, ${p}`);
+              }}
+              className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
+            >
+              + {p}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        {/* Mucus */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Mucus {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
-          </label>
-          <input
-            type="text"
-            value={mucus}
-            onChange={(e) => setMucus(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Negative", "Present (+)", "Moderate"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setMucus(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
-              >
-                {val}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Bile */}
-        <div>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-            Bile {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
-          </label>
-          <input
-            type="text"
-            value={bile}
-            onChange={(e) => setBile(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-          />
-          <div className="flex flex-wrap gap-1 mt-1">
-            {["Present", "Absent", "Normal"].map((val) => (
-              <button
-                type="button"
-                key={val}
-                onClick={() => setBile(val)}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
-              >
-                {val}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Ova and Parasite */}
-        <div className={`col-span-1 sm:col-span-2 lg:col-span-3 ${selected.reqOvaParasite ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-emerald-500 shadow-xs" : ""}`}>
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
-            <span>Ova and Parasite (Microscopic) {selected.reqOvaParasite ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}</span>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-normal">Click chips to quickly insert parasites</span>
-          </label>
-          <input
-            type="text"
-            required={selected.reqOvaParasite}
-            value={ovaAndParasite}
-            onChange={(e) => setOvaAndParasite(e.target.value)}
-            className="w-full px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            placeholder="e.g. No ova or parasite seen, E. histolytica cysts, Giardia lamblia"
-          />
-          <div className="flex flex-wrap gap-1.5 mt-1.5">
-            {[
-              "No ova or parasite seen",
-              "E. histolytica trophozoite",
-              "E. histolytica cyst",
-              "Giardia lamblia trophozoite",
-              "Giardia lamblia cyst",
-              "Ascaris lumbricoides ova",
-              "Hookworm ova",
-              "H. nana ova",
-              "T. trichiura ova",
-              "Strongyloides larvae"
-            ].map((p) => (
-              <button
-                type="button"
-                key={p}
-                onClick={() => {
-                  if (p === "No ova or parasite seen") setOvaAndParasite(p);
-                  else if (ovaAndParasite === "No ova or parasite seen" || !ovaAndParasite) setOvaAndParasite(p);
-                  else setOvaAndParasite(`${ovaAndParasite}, ${p}`);
-                }}
-                className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100/70 dark:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
-              >
-                + {p}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Remarks */}
-        <div className="col-span-1 sm:col-span-2 lg:col-span-3">
-          <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Remarks</label>
-          <textarea
-            value={remarks}
-            onChange={(e) => setRemarks(e.target.value)}
-            rows={2}
-            className="w-full px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
-            placeholder="Enter any additional diagnostic notes or remarks..."
-          />
-        </div>
+      {/* 4. Remarks */}
+      <div className="p-3.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/80 bg-white/70 dark:bg-slate-900/50">
+        <label className="block font-bold text-xs text-slate-700 dark:text-slate-300 mb-1">
+          Remarks & Additional Diagnostic Notes
+        </label>
+        <textarea
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs"
+          placeholder="Enter any additional diagnostic notes or remarks..."
+        />
       </div>
 
       <div className="flex justify-end gap-2.5 pt-2 border-t border-emerald-200 dark:border-emerald-800/80">

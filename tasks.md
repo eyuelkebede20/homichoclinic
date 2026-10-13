@@ -153,16 +153,24 @@ This document tracks all tasks, reviews the two recently closed paired-programmi
 | 15 | Data Encoder direct navigation link to Z-Reports finance ledger | Polish | `src/app/(dashboard)/dataencoder/page.tsx` | **DONE** |
 | 16 | **Family linking filter mechanism by phone number, ID, name & role** | **Current** | `family-link-selector.tsx`, `actions.ts`, `patient-form.tsx`, `patient-edit-form.tsx` | **DONE** |
 | 17 | Optimize notification polling & make Prisma query logging conditional | Performance / Build | `src/lib/prisma.ts`, `notifications/actions.ts`, `global-notifications.tsx`, `notification-ping.tsx` | **DONE** |
+| 18 | **Consolidate similar user credits in Z-Reports with services detail popup, dates, and transaction print voucher** | **Current** | `z-reports/page.tsx`, `z-reports-client.tsx` | **DONE** |
+| 19 | **Reception search popup filtering & show searched personnels on cards** | **Current** | `reception-patient-search.tsx`, `reception-dashboard.tsx`, `patient-search-select.tsx`, `actions.ts` | **DONE** |
 
 ---
 
 ## 5. Verification & Health Check
 
-- **TypeScript Compilation**: `pnpm tsc --noEmit` executed cleanly with **0 errors**.
-- **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated in 1.02s**.
+- **TypeScript Compilation**: `pnpm exec tsc --noEmit` executed cleanly with **0 errors**.
+- **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated in 7.9s**.
 - **Database Schema**: Schema is consistent and synced.
 - **Discounts Verified**:
   - Soldier Family: **100%** discount verified across database patients.
   - Civilian Family: **95%** discount verified across database patients and admin defaults.
   - Linking: Primary patient lookup by phone number, employee ID, military ID, or name verified with live autocomplete dropdown and pill badge selection.
+- **Search & Personnel Filtering**:
+  - Filter pills for Personnel / Category (`All`, `Soldier`, `Civilian Staff`, `Soldier Family`, `Civilian Family`).
+  - Filter pills for Match Field (`All Fields`, `Phone Number`, `Card / Military ID`, `Name`).
+  - Searched cards display full personnel attributes (Rank, Unit/Division, Military/Employee ID, Phone, and covered family dependents).
+  - Family member cards display prominent Sponsoring Personnel cards with rank and contact details.
+  - OPD room cards filter on patient name, personnel ID, doctor name, and display personnel badges.
 - **Git State**: Clean working tree with zero syntax/type errors.

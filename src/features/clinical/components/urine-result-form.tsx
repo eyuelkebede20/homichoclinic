@@ -155,19 +155,68 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
         </div>
       </div>
 
-      {!selected.isFull && (
-        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5 shadow-2xs">
-          <span className="font-extrabold text-[10px] uppercase bg-amber-500 text-white px-2 py-0.5 rounded-full">
-            Selective Order
-          </span>
-          <span>Only the parameters marked <strong className="text-amber-700 dark:text-amber-300">★ REQUIRED</strong> below were requested by the doctor. Other sections are optional.</span>
+      {/* Doctor's Selected Test Banner */}
+      <div className={`p-3.5 rounded-xl border-2 transition-all ${
+        !selected.isFull
+          ? "bg-amber-50 dark:bg-amber-950/40 border-amber-500 ring-2 ring-amber-500/20 shadow-sm"
+          : "bg-amber-50/50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800"
+      }`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wide ${
+              !selected.isFull ? "bg-amber-600 text-white shadow-xs" : "bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-200"
+            }`}>
+              {!selected.isFull ? "Doctor's Selective Order" : "Standard Routine Urinalysis"}
+            </span>
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+              {!selected.isFull
+                ? `Doctor requested ${selected.selectedList.length} specific test(s). Highlighted in special amber border below:`
+                : "All urine parameters requested for complete routine urinalysis."}
+            </span>
+          </div>
+          {!selected.isFull && (
+            <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded-md border border-amber-300 dark:border-amber-700 shadow-2xs">
+              ★ Look for amber highlighted boxes
+            </span>
+          )}
         </div>
-      )}
+
+        {!selected.isFull && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-amber-200/70 dark:border-amber-800/70">
+            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
+              Requested Sub-tests:
+            </span>
+            {selected.selectedList.map((testItem, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-600 text-white shadow-xs ring-1 ring-amber-700/50"
+              >
+                ★ {testItem}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Section 1: Physical Examination */}
-      <div className={selected.reqPhysical ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          1. Physical Examination {selected.reqPhysical ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+      <div className={`p-3.5 rounded-xl transition-all ${
+        selected.reqPhysical
+          ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+          : !selected.isFull
+          ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+          : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+      }`}>
+        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200 mb-2.5 flex items-center justify-between">
+          <span>1. Physical Examination</span>
+          {selected.reqPhysical ? (
+            <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+              ★ ORDERED
+            </span>
+          ) : !selected.isFull ? (
+            <span className="text-[10px] text-slate-400 font-normal italic">
+              (Optional / Not requested)
+            </span>
+          ) : null}
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
@@ -226,15 +275,39 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
       </div>
 
       {/* Section 2: Chemical Examination */}
-      <div>
-        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          2. Chemical Examination {selected.reqDipstick || selected.reqAlbumin || selected.reqSugar || selected.reqBile ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ SELECTIVE / REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+      <div className="space-y-2">
+        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200 flex items-center justify-between">
+          <span>2. Chemical Examination</span>
+          {selected.reqDipstick ? (
+            <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+              ★ DIPSTICK ORDERED (ALL CHEMICAL TESTS)
+            </span>
+          ) : (selected.reqAlbumin || selected.reqSugar || selected.reqBile) ? (
+            <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+              ★ SELECTIVE CHEMICAL TESTS ORDERED
+            </span>
+          ) : !selected.isFull ? (
+            <span className="text-[10px] text-slate-400 font-normal italic">
+              (Optional / Not requested)
+            </span>
+          ) : null}
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Albumin Qual */}
-          <div className={selected.reqAlbumin || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Albumin (Qualitative) {selected.reqAlbumin || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqAlbumin || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Albumin (Qualitative)</span>
+              {(selected.reqAlbumin || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -257,9 +330,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Albumin Quant */}
-          <div className={selected.reqAlbumin || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Albumin (Quantitative) {selected.reqAlbumin || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqAlbumin || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Albumin (Quantitative)</span>
+              {(selected.reqAlbumin || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -271,9 +355,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Sugar Qual */}
-          <div className={selected.reqSugar || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Sugar (Qualitative) {selected.reqSugar || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqSugar || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Sugar (Qualitative)</span>
+              {(selected.reqSugar || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -296,9 +391,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Sugar Quant */}
-          <div className={selected.reqSugar || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Sugar (Quantitative) {selected.reqSugar || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqSugar || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Sugar (Quantitative)</span>
+              {(selected.reqSugar || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -310,9 +416,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Acetone */}
-          <div className={selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Acetone (Ketones) {selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            selected.reqDipstick
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Acetone (Ketones)</span>
+              {selected.reqDipstick ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -323,9 +440,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Diacetic Acid */}
-          <div className={selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Diacetic Acid {selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            selected.reqDipstick
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Diacetic Acid</span>
+              {selected.reqDipstick ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -336,9 +464,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Bilirubin */}
-          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Bilirubin {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqBile || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Bilirubin</span>
+              {(selected.reqBile || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -349,9 +488,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Urobilinogen */}
-          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Urobilinogen {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqBile || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Urobilinogen</span>
+              {(selected.reqBile || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -362,9 +512,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Urobilin */}
-          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Urobilin {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+          <div className={`p-2.5 rounded-xl transition-all ${
+            (selected.reqBile || selected.reqDipstick)
+              ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Urobilin</span>
+              {(selected.reqBile || selected.reqDipstick) ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
               type="text"
@@ -375,8 +536,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* 17-Ketosteroids */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">17-Ketosteroids</label>
+          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>17-Ketosteroids</span>
+              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={ketosteroids17}
@@ -386,8 +550,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Sodium (Na) */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Sodium (Na)</label>
+          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Sodium (Na)</span>
+              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={sodium}
@@ -397,8 +564,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
           </div>
 
           {/* Potassium (K) */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Potassium (K)</label>
+          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Potassium (K)</span>
+              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={potassium}
@@ -410,9 +580,24 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
       </div>
 
       {/* Section 3: Microscopic & Remarks */}
-      <div className={selected.reqSediment ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
-        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          3. Microscopic Sediment Examination & Remarks {selected.reqSediment ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+      <div className={`p-3.5 rounded-xl transition-all ${
+        selected.reqSediment
+          ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm"
+          : !selected.isFull
+          ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+          : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"
+      }`}>
+        <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200 mb-2 flex items-center justify-between">
+          <span>3. Microscopic Sediment Examination</span>
+          {selected.reqSediment ? (
+            <span className="text-[10px] bg-amber-600 text-white font-extrabold px-2 py-0.5 rounded-full shadow-2xs">
+              ★ ORDERED
+            </span>
+          ) : !selected.isFull ? (
+            <span className="text-[10px] text-slate-400 font-normal italic">
+              (Optional / Not requested)
+            </span>
+          ) : null}
         </h5>
         <div className="space-y-3 text-xs">
           <div>
@@ -424,7 +609,7 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               required={selected.reqSediment}
               value={microscopic}
               onChange={(e) => setMicroscopic(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none text-xs"
               placeholder="e.g. Pus cells: 2-4/HPF, RBC: 0-1/HPF, Epith cells: Few, Casts: Nil, Crystals: Nil"
             />
             <div className="flex flex-wrap gap-1.5 mt-1.5">
@@ -460,18 +645,19 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ))}
             </div>
           </div>
-
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Remarks</label>
-            <textarea
-              value={remarks}
-              onChange={(e) => setRemarks(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              placeholder="Additional comments or interpretation..."
-            />
-          </div>
         </div>
+      </div>
+
+      {/* Remarks */}
+      <div className="p-3.5 rounded-xl border border-amber-200/80 dark:border-amber-800/80 bg-white/70 dark:bg-slate-900/50">
+        <label className="block font-bold text-xs text-slate-700 dark:text-slate-300 mb-1">Remarks & Additional Diagnostic Notes</label>
+        <textarea
+          value={remarks}
+          onChange={(e) => setRemarks(e.target.value)}
+          rows={2}
+          className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none text-xs"
+          placeholder="Additional comments or interpretation..."
+        />
       </div>
 
       <div className="flex justify-end gap-2.5 pt-2 border-t border-amber-200 dark:border-amber-800/80">
