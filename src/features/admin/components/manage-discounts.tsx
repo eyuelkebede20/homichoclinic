@@ -14,7 +14,7 @@ export function ManageDiscounts({ initialRules }: { initialRules: Record<string,
   const [rules, setRules] = useState({
     "discount:Soldier": initialRules["discount:Soldier"] ?? "100",
     "discount:Soldier Family": initialRules["discount:Soldier Family"] ?? "100",
-    "discount:Civilian Family": initialRules["discount:Civilian Family"] ?? "5", // Company covers 5%, patient pays 95%
+    "discount:Civilian Family": initialRules["discount:Civilian Family"] ?? "95", // Company covers 95%, patient pays 5%
     "discount:Civilian Staff:20": initialRules["discount:Civilian Staff:20"] ?? "100",
     "discount:Civilian Staff:15": initialRules["discount:Civilian Staff:15"] ?? "75",
     "discount:Civilian Staff:10": initialRules["discount:Civilian Staff:10"] ?? "65",
@@ -76,8 +76,8 @@ export function ManageDiscounts({ initialRules }: { initialRules: Record<string,
             </div>
             <div className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded border border-slate-200 dark:border-slate-700">
               <div className="flex flex-col">
-                <label className="text-sm font-medium">Civilian Family (Unlinked)</label>
-                <span className="text-[10px] text-slate-500">Fallback if not inheriting staff discount</span>
+                <label className="text-sm font-medium">Civilian Family</label>
+                <span className="text-[10px] text-slate-500">Fixed benefit for civilian family members (default 95%)</span>
               </div>
               <div className="flex items-center gap-2">
                 <input type="number" min="0" max="100" value={rules["discount:Civilian Family"]} onChange={e => handleChange("discount:Civilian Family", e.target.value)} className="w-20 rounded border border-slate-300 dark:border-slate-600 px-2 py-1 text-sm bg-white dark:bg-slate-900" />

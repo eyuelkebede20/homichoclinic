@@ -40,6 +40,7 @@ export default async function EditPatientPage({ params }: { params: Promise<{ id
           contactNumber: true,
           employeeId: true,
           militaryId: true,
+          patientType: true,
         }
       }
     }

@@ -4,11 +4,11 @@ import { useState } from "react";
 import { createPatient } from "../actions";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
+import { FamilyLinkSelector } from "./family-link-selector";
 
 export function PatientForm({ userRole = "User" }: { userRole?: string }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
   const [patientType, setPatientType] = useState("Soldier");
   const router = useRouter();
 
@@ -42,6 +42,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       rank: formData.get("rank") as string || undefined,
       division: formData.get("division") as string || undefined,
       permanentSince: formData.get("permanentSince") as string || undefined,
+      primaryPatientId: formData.get("primaryPatientId") as string || undefined,
       staffSearchStr: formData.get("staffSearchStr") as string || undefined,
       relationship: formData.get("relationship") as string || undefined,
       hasPaperwork: formData.get("hasPaperwork") === "on",
@@ -134,24 +135,7 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       )}
 
       {(patientType === "Civilian Family" || patientType === "Soldier Family") && (
-        <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-          <div>
-            <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Staff Member Search (Phone or ID)</label>
-            <input name="staffSearchStr" type="text" placeholder="Enter staff phone or ID (or leave blank if unlinked)" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-            <p className="text-[10px] text-blue-600 dark:text-blue-400 mt-1">Look up primary staff member to inherit benefits. Leave blank to skip linking.</p>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-blue-800 dark:text-blue-300">Relationship to Staff</label>
-            <select required name="relationship" className="mt-1 block w-full rounded border border-blue-300 dark:border-blue-700 dark:bg-slate-950 px-2 py-1 text-sm">
-              <option value="">Select...</option>
-              <option value="Spouse">Spouse</option>
-              <option value="Child">Child</option>
-              <option value="Parent">Parent</option>
-              <option value="Sibling">Sibling</option>
-              <option value="Other">Other Dependent</option>
-            </select>
-          </div>
-        </div>
+        <FamilyLinkSelector patientType={patientType} />
       )}
 
       {patientType === "Civilian Staff" && (

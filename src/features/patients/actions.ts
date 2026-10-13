@@ -14,10 +14,11 @@ export const createPatient = createSafeAction({
   requiredPermission: PERMISSIONS.PATIENT_CREATE,
   handler: async (data, ctx) => {
     
-    // Duplicate Detection Logic
+    // Duplicate Detection Logic (Family members share phone numbers with staff)
+    const isFamily = data.patientType === "Civilian Family" || data.patientType === "Soldier Family";
     if (data.contactNumber || (data.firstName && data.lastName && data.yob)) {
       const duplicateConditions = [];
-      if (data.contactNumber && data.contactNumber.trim() !== "") {
+      if (!isFamily && data.contactNumber && data.contactNumber.trim() !== "") {
         duplicateConditions.push({ contactNumber: data.contactNumber.trim() });
       }
       if (data.firstName && data.lastName && data.yob) {
@@ -62,15 +63,23 @@ export const createPatient = createSafeAction({
       department = data.division || null;
       c_m = "M";
     } else if (data.patientType === "Civilian Family" || data.patientType === "Soldier Family") {
-      if (data.staffSearchStr && !resolvedPrimaryId) {
+      if (data.primaryPatientId) {
+        resolvedPrimaryId = data.primaryPatientId;
+      } else if (data.staffSearchStr && !resolvedPrimaryId) {
+        const terms = data.staffSearchStr.trim().split(/[\s,]+/).filter(Boolean);
+        const searchConditions = terms.flatMap(term => [
+          { contactNumber: { contains: term, mode: "insensitive" as const } },
+          { militaryId: { contains: term, mode: "insensitive" as const } },
+          { employeeId: { contains: term, mode: "insensitive" as const } },
+          { id: { contains: term, mode: "insensitive" as const } },
+          { firstName: { contains: term, mode: "insensitive" as const } },
+          { lastName: { contains: term, mode: "insensitive" as const } }
+        ]);
         const primary = await prisma.patient.findFirst({
           where: {
-            OR: [
-              { contactNumber: { contains: data.staffSearchStr.trim() } },
-              { militaryId: { contains: data.staffSearchStr.trim() } },
-              { employeeId: { contains: data.staffSearchStr.trim() } },
-              { id: { endsWith: data.staffSearchStr.trim() } },
-              { id: { startsWith: data.staffSearchStr.trim() } }
+            AND: [
+              { patientType: { in: ["Soldier", "Civilian Staff"] } },
+              { OR: searchConditions }
             ]
           }
         });
@@ -80,12 +89,7 @@ export const createPatient = createSafeAction({
         resolvedPrimaryId = primary.id;
       }
 
-      if (resolvedPrimaryId) {
-        const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-        discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : (primary ? primary.discountPercent : getDiscount("discount:Civilian Family", 5));
-      } else {
-        discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
-      }
+      discountPercent = data.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
     } else if (data.patientType === "Guest") {
       discountPercent = getDiscount("discount:Guest", 0);
     } else {
@@ -195,21 +199,31 @@ export const updatePatient = createSafeAction({
     if (existingPatient.patientType === "Soldier") {
       discountPercent = getDiscount("discount:Soldier", 100);
     } else if (existingPatient.patientType === "Civilian Family" || existingPatient.patientType === "Soldier Family") {
-      if (data.staffSearchStr != null) {
+      if (data.primaryPatientId && data.primaryPatientId !== "" && data.primaryPatientId !== "UNLINK") {
+        resolvedPrimaryId = data.primaryPatientId;
+        newRelationship = data.relationship || existingPatient.relationship || "Other";
+        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
+      } else if (data.staffSearchStr != null) {
         const searchStr = data.staffSearchStr.trim();
         if (searchStr === "" || searchStr === "UNLINK") {
           resolvedPrimaryId = null;
           newRelationship = null;
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
         } else {
+          const terms = searchStr.split(/[\s,]+/).filter(Boolean);
+          const searchConditions = terms.flatMap(term => [
+            { contactNumber: { contains: term, mode: "insensitive" as const } },
+            { militaryId: { contains: term, mode: "insensitive" as const } },
+            { employeeId: { contains: term, mode: "insensitive" as const } },
+            { id: { contains: term, mode: "insensitive" as const } },
+            { firstName: { contains: term, mode: "insensitive" as const } },
+            { lastName: { contains: term, mode: "insensitive" as const } }
+          ]);
           const primary = await prisma.patient.findFirst({
             where: {
-              OR: [
-                { contactNumber: { contains: searchStr } },
-                { militaryId: { contains: searchStr } },
-                { employeeId: { contains: searchStr } },
-                { id: { endsWith: searchStr } },
-                { id: { startsWith: searchStr } }
+              AND: [
+                { patientType: { in: ["Soldier", "Civilian Staff"] } },
+                { OR: searchConditions }
               ]
             }
           });
@@ -218,16 +232,10 @@ export const updatePatient = createSafeAction({
           }
           resolvedPrimaryId = primary.id;
           newRelationship = data.relationship || "Other";
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : primary.discountPercent;
+          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
         }
       } else {
-        // Just retain existing link, inherit discount again just in case primary changed
-        if (resolvedPrimaryId) {
-          const primary = await prisma.patient.findUnique({ where: { id: resolvedPrimaryId } });
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : (primary ? primary.discountPercent : getDiscount("discount:Civilian Family", 5));
-        } else {
-          discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 5);
-        }
+        discountPercent = existingPatient.patientType === "Soldier Family" ? getDiscount("discount:Soldier Family", 100) : getDiscount("discount:Civilian Family", 95);
       }
     } else if (existingPatient.patientType === "Guest") {
       discountPercent = getDiscount("discount:Guest", 0);
@@ -308,45 +316,129 @@ export const updateDiscount = createSafeAction({
 });
 
 export const searchPatientsFast = createSafeAction({
-  schema: z.object({ query: z.string().optional() }),
+  schema: z.object({ 
+    query: z.string().optional(),
+    patientType: z.string().optional(),
+    targetRole: z.string().optional(),
+    filterField: z.enum(["all", "phone", "id", "name"]).optional(),
+    excludePatientId: z.string().optional(),
+  }),
   requiredPermission: PERMISSIONS.PATIENT_READ,
   handler: async (data, ctx) => {
     const term = (data.query || "").trim();
     
-    if (!term) {
-      // Return 8 most recent patients as recommendations
-      return await prisma.patient.findMany({
-        orderBy: { createdAt: "desc" },
-        take: 8,
+    const selectFields = {
+      id: true,
+      firstName: true,
+      lastName: true,
+      contactNumber: true,
+      yob: true,
+      gender: true,
+      patientType: true,
+      relationship: true,
+      employeeId: true,
+      militaryId: true,
+      rank: true,
+      division: true,
+      department: true,
+      salutation: true,
+      permanentSince: true,
+      primaryPatient: {
         select: {
           id: true,
           firstName: true,
           lastName: true,
           contactNumber: true,
-          yob: true
+          employeeId: true,
+          militaryId: true,
+          patientType: true,
         }
+      }
+    };
+
+    const roleTarget = data.targetRole || data.patientType;
+    let roleCondition: any = undefined;
+    if (roleTarget === "Soldier") {
+      roleCondition = { patientType: "Soldier" };
+    } else if (roleTarget === "Civilian Staff") {
+      roleCondition = { patientType: "Civilian Staff" };
+    } else if (roleTarget === "StaffOnly") {
+      roleCondition = { patientType: { in: ["Soldier", "Civilian Staff"] } };
+    }
+
+    const excludeCondition = data.excludePatientId ? { id: { not: data.excludePatientId } } : undefined;
+
+    if (!term) {
+      const baseConditions = [roleCondition, excludeCondition].filter(Boolean);
+      return await prisma.patient.findMany({
+        where: baseConditions.length > 0 ? { AND: baseConditions } : undefined,
+        orderBy: { createdAt: "desc" },
+        take: 10,
+        select: selectFields
       });
     }
 
+    const tokens = term.split(/[\s,]+/).filter(Boolean);
+    const filterField = data.filterField || "all";
+
+    const tokenConditions = tokens.map(t => {
+      if (filterField === "phone") {
+        return { contactNumber: { contains: t, mode: "insensitive" as const } };
+      }
+      if (filterField === "id") {
+        return {
+          OR: [
+            { employeeId: { contains: t, mode: "insensitive" as const } },
+            { militaryId: { contains: t, mode: "insensitive" as const } },
+            { id: { contains: t, mode: "insensitive" as const } },
+          ]
+        };
+      }
+      if (filterField === "name") {
+        return {
+          OR: [
+            { firstName: { contains: t, mode: "insensitive" as const } },
+            { lastName: { contains: t, mode: "insensitive" as const } },
+          ]
+        };
+      }
+
+      // 'all'
+      return {
+        OR: [
+          { firstName: { contains: t, mode: "insensitive" as const } },
+          { lastName: { contains: t, mode: "insensitive" as const } },
+          { contactNumber: { contains: t, mode: "insensitive" as const } },
+          { employeeId: { contains: t, mode: "insensitive" as const } },
+          { militaryId: { contains: t, mode: "insensitive" as const } },
+          { id: { contains: t, mode: "insensitive" as const } },
+          {
+            primaryPatient: {
+              OR: [
+                { firstName: { contains: t, mode: "insensitive" as const } },
+                { lastName: { contains: t, mode: "insensitive" as const } },
+                { contactNumber: { contains: t, mode: "insensitive" as const } },
+                { employeeId: { contains: t, mode: "insensitive" as const } },
+                { militaryId: { contains: t, mode: "insensitive" as const } },
+              ]
+            }
+          }
+        ]
+      };
+    });
+
+    const andConditions = [
+      ...tokenConditions,
+      roleCondition,
+      excludeCondition
+    ].filter(Boolean);
+
     return await prisma.patient.findMany({
       where: {
-        OR: [
-          { firstName: { contains: term, mode: "insensitive" } },
-          { lastName: { contains: term, mode: "insensitive" } },
-          { contactNumber: { contains: term, mode: "insensitive" } },
-          { employeeId: { contains: term, mode: "insensitive" } },
-          { militaryId: { contains: term, mode: "insensitive" } },
-          { id: { contains: term, mode: "insensitive" } }
-        ]
+        AND: andConditions
       },
-      take: 8,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        contactNumber: true,
-        yob: true
-      }
+      take: 15,
+      select: selectFields
     });
   }
 });
