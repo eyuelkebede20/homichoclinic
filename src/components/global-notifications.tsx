@@ -10,19 +10,35 @@ export function GlobalNotifications() {
   const [data, setData] = useState<{ count: number; items: { id?: string; link: string; title: string; desc: string; time: string }[] }>({ count: 0, items: [] });
 
   useEffect(() => {
+    let isMounted = true;
+
     async function fetchNotifs() {
+      // Don't poll when the browser tab is hidden in background
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       try {
         const result = await getNotifications();
-        setData(result);
+        if (isMounted) setData(result);
       } catch (e) {
         console.error("Failed to fetch notifications", e);
       }
     }
 
     fetchNotifs();
-    // Poll every 15 seconds
-    const interval = setInterval(fetchNotifs, 15000);
-    return () => clearInterval(interval);
+    // Poll every 30 seconds
+    const interval = setInterval(fetchNotifs, 30000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchNotifs();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   return (

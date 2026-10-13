@@ -13,28 +13,35 @@ export async function getNotifications() {
   let items: { id: string; title: string; desc: string; time: string; link: string }[] = [];
 
   if (role === "Doctor") {
-    const doc = await prisma.user.findUnique({ where: { id: session.user.id } });
-    const pending = await prisma.visit.findMany({
-      where: {
-        OR: [
-          { doctorId: session.user.id },
-          ...(doc?.currentOpdRoom ? [{ opdRoom: doc.currentOpdRoom }] : [])
-        ],
-        status: "scheduled"
-      },
-      include: { patient: true },
-      orderBy: { updatedAt: "desc" },
-      take: 5
-    });
-    count = await prisma.visit.count({
-      where: {
-        OR: [
-          { doctorId: session.user.id },
-          ...(doc?.currentOpdRoom ? [{ opdRoom: doc.currentOpdRoom }] : [])
-        ],
-        status: "scheduled"
-      }
-    });
+    const currentOpdRoom = (session.user as any).currentOpdRoom;
+    let room = currentOpdRoom;
+    if (!room) {
+      const doc = await prisma.user.findUnique({ where: { id: session.user.id }, select: { currentOpdRoom: true } });
+      room = doc?.currentOpdRoom;
+    }
+    const where = {
+      OR: [
+        { doctorId: session.user.id },
+        ...(room ? [{ opdRoom: room }] : [])
+      ],
+      status: "scheduled"
+    };
+
+    const [pending, totalCount] = await Promise.all([
+      prisma.visit.findMany({
+        where,
+        select: {
+          id: true,
+          updatedAt: true,
+          patient: { select: { firstName: true, lastName: true } }
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 5
+      }),
+      prisma.visit.count({ where })
+    ]);
+
+    count = totalCount;
     items = pending.map(p => ({
       id: p.id,
       title: "New Patient in Queue",
@@ -45,13 +52,22 @@ export async function getNotifications() {
   } 
   
   else if (role === "Pharmacy") {
-    count = await prisma.prescription.count({ where: { status: "pending" } });
-    const pending = await prisma.prescription.findMany({
-      where: { status: "pending" },
-      include: { patient: true },
-      orderBy: { createdAt: "desc" },
-      take: 5
-    });
+    const where = { status: "pending" };
+    const [pending, totalCount] = await Promise.all([
+      prisma.prescription.findMany({
+        where,
+        select: {
+          id: true,
+          createdAt: true,
+          patient: { select: { firstName: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.prescription.count({ where })
+    ]);
+
+    count = totalCount;
     items = pending.map(p => ({
       id: p.id,
       title: "New Prescription",
@@ -62,13 +78,23 @@ export async function getNotifications() {
   } 
   
   else if (role === "Laboratory") {
-    count = await prisma.labRequest.count({ where: { status: { in: ["requested", "urgent"] } } });
-    const pending = await prisma.labRequest.findMany({
-      where: { status: { in: ["requested", "urgent"] } },
-      include: { patient: true, test: true },
-      orderBy: { createdAt: "desc" },
-      take: 5
-    });
+    const where = { status: { in: ["requested", "urgent"] } };
+    const [pending, totalCount] = await Promise.all([
+      prisma.labRequest.findMany({
+        where,
+        select: {
+          id: true,
+          createdAt: true,
+          patient: { select: { firstName: true } },
+          test: { select: { name: true } }
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5
+      }),
+      prisma.labRequest.count({ where })
+    ]);
+
+    count = totalCount;
     items = pending.map(p => ({
       id: p.id,
       title: "New Lab Request",
