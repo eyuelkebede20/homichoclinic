@@ -7,8 +7,9 @@ export function NotificationPing({ endpoint }: { endpoint?: string }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Poll every 30 seconds to refresh the server component data
+    // Poll every 30 seconds to refresh the server component data (paused when tab is hidden)
     const interval = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
       router.refresh();
     }, 30000);
 
