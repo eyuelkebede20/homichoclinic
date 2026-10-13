@@ -152,12 +152,14 @@ This document tracks all tasks, reviews the two recently closed paired-programmi
 | 14 | Patient registration & edit form live debounced autocomplete linking | Convo 1 / Polish | `patient-form.tsx`, `patient-edit-form.tsx` | **DONE** |
 | 15 | Data Encoder direct navigation link to Z-Reports finance ledger | Polish | `src/app/(dashboard)/dataencoder/page.tsx` | **DONE** |
 | 16 | **Family linking filter mechanism by phone number, ID, name & role** | **Current** | `family-link-selector.tsx`, `actions.ts`, `patient-form.tsx`, `patient-edit-form.tsx` | **DONE** |
+| 17 | Optimize notification polling & make Prisma query logging conditional | Performance / Build | `src/lib/prisma.ts`, `notifications/actions.ts`, `global-notifications.tsx`, `notification-ping.tsx` | **DONE** |
 
 ---
 
 ## 5. Verification & Health Check
 
 - **TypeScript Compilation**: `pnpm tsc --noEmit` executed cleanly with **0 errors**.
+- **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated in 1.02s**.
 - **Database Schema**: Schema is consistent and synced.
 - **Discounts Verified**:
   - Soldier Family: **100%** discount verified across database patients.
