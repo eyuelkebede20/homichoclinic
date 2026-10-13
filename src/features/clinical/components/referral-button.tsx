@@ -13,7 +13,7 @@ export function ReferralButton({
 }: {
   patient: any;
   referralDestinations?: string[];
-  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string; clinicLogo?: string };
+  clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string; clinicLogo?: string };
   defaultReason?: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -49,7 +49,7 @@ export function ReferralButton({
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Referral Sheet – Homicho Ammunation Engineering Industry Health Center</title>
+<title>Referral Sheet – ${clinicNames?.clinicName || "Clinic"}</title>
 <style>
   :root {
     --ink: #111;
@@ -60,130 +60,198 @@ export function ReferralButton({
     --focus: #1a56c4;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; padding: 0; }
   body {
     background: var(--desk);
     color: var(--ink);
     font-family: "Times New Roman", Times, "Liberation Serif", serif;
-    font-size: 16px;
-    line-height: 1.3;
-    padding: 24px 12px 48px;
+    font-size: 13.5px;
+    line-height: 1.25;
+    padding: 16px 12px 32px;
   }
 
-.sheet {
-max-width: 800px;
-margin: 0 auto;
-background: var(--paper);
-padding: 40px 48px 44px;
-box-shadow: 0 1px 6px rgba(0,0,0,.18);
-}
+  .sheet {
+    max-width: 780px;
+    margin: 0 auto;
+    background: var(--paper);
+    padding: 24px 32px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.15);
+  }
 
-.header { text-align: center; margin-bottom: 18px; }
-.header .am { font-size: 17px; font-weight: 700; line-height: 1.35; }
-.header .en { font-size: 17px; font-weight: 700; letter-spacing: .01em; line-height: 1.35; }
-.header .am + .en { margin-top: 6px; }
-.title {
-display: inline-block;
-margin: 22px 0 0;
-font-size: 30px;
-font-weight: 700;
-letter-spacing: .04em;
-border-bottom: 3px solid var(--ink);
-padding-bottom: 1px;
-}
+  .header { text-align: center; margin-bottom: 8px; }
+  .clinic-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .clinic-logo {
+    max-width: 55px;
+    max-height: 55px;
+    object-fit: contain;
+  }
+  .clinic-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .clinic-titles .am {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .clinic-titles .en {
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    line-height: 1.25;
+  }
+  .title {
+    display: inline-block;
+    margin: 6px 0 0;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 1px;
+  }
 
-form { margin-top: 26px; }
-.row { display: flex; gap: 22px; align-items: flex-end; margin-bottom: 20px; }
-.field { display: flex; align-items: flex-end; gap: 8px; flex: 1 1 0; min-width: 0; }
-.field.wide { flex: 2 1 0; }
-.field.narrow { flex: .6 1 0; }
-label { font-weight: 700; white-space: nowrap; font-size: 15px; letter-spacing: .02em; }
-input[type="text"], input[type="number"], input[type="date"], select {
-flex: 1;
-min-width: 0;
-font: inherit;
-font-size: 16px;
-color: var(--ink);
-background: transparent;
-border: 0;
-border-bottom: 1.5px solid var(--rule);
-border-radius: 0;
-padding: 2px 4px;
-outline: none;
-appearance: none;
--webkit-appearance: none;
-}
-select { background: transparent; }
+  form { margin-top: 10px; }
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    margin-bottom: 9px;
+  }
+  .field {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .field.wide { flex: 2 1 0; }
+  .field.narrow { flex: .55 1 0; }
+  label {
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: 12.5px;
+    letter-spacing: .01em;
+  }
+  input[type="text"], input[type="number"], input[type="date"], select {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 1px 3px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select { background: transparent; }
 
-input:focus, textarea:focus, select:focus {
-border-bottom-color: var(--focus);
-box-shadow: 0 2px 0 0 var(--focus);
-}
+  input:focus, textarea:focus, select:focus {
+    border-bottom-color: var(--focus);
+    box-shadow: 0 1.5px 0 0 var(--focus);
+  }
 
-.block { margin-bottom: 22px; }
-.block > label { display: block; margin-bottom: 2px; }
-textarea {
-display: block;
-width: 100%;
-font: inherit;
-font-size: 16px;
-color: var(--ink);
-background-image: repeating-linear-gradient(
-to bottom,
-transparent 0, transparent 31px,
-var(--rule) 31px, var(--rule) 32px
-);
-background-attachment: local;
-border: 0;
-line-height: 32px;
-padding: 0 4px;
-resize: vertical;
-outline: none;
-overflow: hidden;
-}
-textarea.l2 { height: 64px; }
-textarea.l3 { height: 96px; }
-textarea.l4 { height: 128px; }
+  .block { margin-bottom: 8px; }
+  .block > label {
+    display: block;
+    margin-bottom: 1px;
+    font-size: 12px;
+    letter-spacing: .01em;
+  }
+  textarea {
+    display: block;
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 19px,
+      var(--rule) 19px, var(--rule) 20px
+    );
+    background-attachment: local;
+    border: 0;
+    line-height: 20px;
+    padding: 0 4px;
+    resize: none;
+    outline: none;
+    overflow: hidden;
+  }
+  textarea.l3 { height: 40px; }
+  textarea.l4 { height: 60px; }
 
-.signoff { margin-top: 30px; }
+  .signoff {
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
 
-.actions {
-max-width: 800px;
-margin: 16px auto 0;
-display: flex;
-gap: 10px;
-justify-content: flex-end;
-}
-button {
-font: inherit;
-font-size: 15px;
-padding: 9px 18px;
-border: 1.5px solid var(--ink);
-background: var(--paper);
-color: var(--ink);
-cursor: pointer;
-}
-button.primary { background: var(--ink); color: #fff; }
-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .actions {
+    max-width: 780px;
+    margin: 12px auto 0;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  button {
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.primary { background: var(--ink); color: #fff; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
-::placeholder { color: var(--hint); opacity: 1; font-size: 14px; font-style: italic; }
+  ::placeholder { color: var(--hint); opacity: 1; font-size: 12px; font-style: italic; }
 
-@media (max-width: 640px) {
-.sheet { padding: 26px 18px 30px; }
-.row { flex-direction: column; align-items: stretch; gap: 16px; }
-.title { font-size: 25px; }
-.header .am, .header .en { font-size: 15px; }
-}
+  @media (max-width: 640px) {
+    .sheet { padding: 18px 14px; }
+    .row { flex-direction: column; align-items: stretch; gap: 10px; }
+    .title { font-size: 17px; }
+  }
 
-@media print {
-@page { size: A4; margin: 14mm; }
-body { background: #fff; padding: 0; }
-.sheet { box-shadow: none; padding: 0; max-width: none; }
-.actions { display: none; }
-::placeholder { color: transparent; }
-input, textarea, select { border-color: #000; }
-select { background: none; }
-}
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm;
+    }
+    html, body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet {
+      box-shadow: none;
+      padding: 0;
+      max-width: 100%;
+      width: 100%;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .actions { display: none !important; }
+    ::placeholder { color: transparent; }
+    input, textarea, select { border-color: #000; }
+    select { background: none; }
+    * {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  }
 </style>
 
 </head>
@@ -191,16 +259,14 @@ select { background: none; }
 
 <main class="sheet">
   <header class="header">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-      ${clinicNames?.clinicLogo ? `<img src="${clinicNames.clinicLogo}" style="max-width: 80px; max-height: 80px; object-fit: contain;" />` : ''}
-      <div>
-        <div class="am">${clinicNames?.clinicNameAmharic || "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪ ኮርፖሬሽን"}</div>
-        <div class="am">${clinicNames?.clinicSubNameAmharic || "ሆሚቾ አሙኒሽን ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ"}</div>
-        <div class="en">${clinicNames?.clinicName || "DEFENCE ENGINEERING INDUSTRIES GROUP"}</div>
-        <div class="en">${clinicNames?.clinicSubName || "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER"}</div>
+    <div class="clinic-header">
+      ${clinicNames?.clinicLogo ? `<img src="${clinicNames.clinicLogo}" class="clinic-logo" alt="Logo" />` : ''}
+      <div class="clinic-titles">
+        ${clinicNames?.clinicNameAmharic ? `<div class="am">${clinicNames.clinicNameAmharic}</div>` : ''}
+        ${clinicNames?.clinicName ? `<div class="en">${clinicNames.clinicName}</div>` : ''}
       </div>
     </div>
-    <h1 class="title">REFERAL SHEET</h1>
+    <h1 class="title">REFERRAL SHEET</h1>
   </header>
 
   <form id="referral" autocomplete="off">
@@ -237,7 +303,7 @@ select { background: none; }
     <div class="row">
       <div class="field">
         <label for="from">REFERRED FROM</label>
-        <input type="text" id="from" name="referred_from" placeholder="Facility or clinician" value="${clinicNames?.clinicSubName || "Homicho Clinic"}">
+        <input type="text" id="from" name="referred_from" placeholder="Facility or clinician" value="${clinicNames?.clinicName || clinicNames?.clinicNameAmharic || ''}">
       </div>
       <div class="field">
         <label for="to">REFERRED TO</label>

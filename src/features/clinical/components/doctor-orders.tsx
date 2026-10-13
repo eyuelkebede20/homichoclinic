@@ -17,7 +17,7 @@ export function DoctorOrders({
   labTests: { id: string; name: string }[];
   drugs: { id: string; name: string }[];
   referralDestinations?: string[];
-  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string; clinicLogo?: string };
+  clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string; clinicLogo?: string };
 }) {
   const patientId = patient.id;
   const [loading, setLoading] = useState(false);
@@ -29,13 +29,50 @@ export function DoctorOrders({
   const [refDest, setRefDest] = useState("");
   const [refReason, setRefReason] = useState("");
 
-  // Identify the 3 core default tests from the catalog or fallback
-  const stoolTest = labTests.find(t => isStoolTest(t.name));
-  const urineTest = labTests.find(t => isUrineTest(t.name));
-  const hematologyTest = labTests.find(t => isHematologyTest(t.name));
+  // Stool Panel & Sub-tests
+  const mainStoolTest = labTests.find(t => {
+    const n = t.name.toLowerCase().trim();
+    return n === "stool examination" || n === "stool test" || n === "stool (complete examination)" || (isStoolTest(t.name) && !t.name.includes("-"));
+  }) || labTests.find(t => isStoolTest(t.name));
+  const stoolSubTests = labTests.filter(t => isStoolTest(t.name) && t.id !== mainStoolTest?.id);
+  const allStoolTestIds = new Set([mainStoolTest?.id, ...stoolSubTests.map(t => t.id)].filter(Boolean));
 
-  const coreIds = new Set([stoolTest?.id, urineTest?.id, hematologyTest?.id].filter(Boolean));
+  // Urine Panel & Sub-tests
+  const mainUrineTest = labTests.find(t => {
+    const n = t.name.toLowerCase().trim();
+    return n === "urine examination" || n === "routine urinalysis" || n === "urinalysis" || (isUrineTest(t.name) && !t.name.includes("-"));
+  }) || labTests.find(t => isUrineTest(t.name));
+  const urineSubTests = labTests.filter(t => isUrineTest(t.name) && t.id !== mainUrineTest?.id);
+  const allUrineTestIds = new Set([mainUrineTest?.id, ...urineSubTests.map(t => t.id)].filter(Boolean));
+
+  // Hematology Panel & Sub-tests
+  const mainHematologyTest = labTests.find(t => {
+    const n = t.name.toLowerCase().trim();
+    return n === "hematology" || n === "hematology (complete cbc)" || (isHematologyTest(t.name) && !t.name.includes("-"));
+  }) || labTests.find(t => isHematologyTest(t.name));
+  const hematologySubTests = labTests.filter(t => isHematologyTest(t.name) && t.id !== mainHematologyTest?.id);
+  const allHematologyTestIds = new Set([mainHematologyTest?.id, ...hematologySubTests.map(t => t.id)].filter(Boolean));
+
+  const [showStoolPicker, setShowStoolPicker] = useState(false);
+  const [showUrinePicker, setShowUrinePicker] = useState(false);
+  const [showHematologyPicker, setShowHematologyPicker] = useState(false);
+
+  const coreIds = new Set([
+    ...Array.from(allStoolTestIds),
+    ...Array.from(allUrineTestIds),
+    ...Array.from(allHematologyTestIds),
+  ].filter(Boolean));
   const otherTests = labTests.filter(t => !coreIds.has(t.id));
+
+  // Counts and full-panel selections
+  const selectedStoolCount = Array.from(selectedTests).filter(id => allStoolTestIds.has(id)).length;
+  const isFullStoolSelected = mainStoolTest ? selectedTests.has(mainStoolTest.id) : false;
+
+  const selectedUrineCount = Array.from(selectedTests).filter(id => allUrineTestIds.has(id)).length;
+  const isFullUrineSelected = mainUrineTest ? selectedTests.has(mainUrineTest.id) : false;
+
+  const selectedHematologyCount = Array.from(selectedTests).filter(id => allHematologyTestIds.has(id)).length;
+  const isFullHematologySelected = mainHematologyTest ? selectedTests.has(mainHematologyTest.id) : false;
 
   async function handleLabSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -124,7 +161,7 @@ export function DoctorOrders({
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Referral Sheet – Homicho Ammunation Engineering Industry Health Center</title>
+<title>Referral Sheet – \${clinicNames?.clinicName || "Clinic"}</title>
 <style>
   :root {
     --ink: #111;
@@ -135,130 +172,198 @@ export function DoctorOrders({
     --focus: #1a56c4;
   }
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
+  html, body { margin: 0; padding: 0; }
   body {
     background: var(--desk);
     color: var(--ink);
     font-family: "Times New Roman", Times, "Liberation Serif", serif;
-    font-size: 16px;
-    line-height: 1.3;
-    padding: 24px 12px 48px;
+    font-size: 13.5px;
+    line-height: 1.25;
+    padding: 16px 12px 32px;
   }
 
-.sheet {
-max-width: 800px;
-margin: 0 auto;
-background: var(--paper);
-padding: 40px 48px 44px;
-box-shadow: 0 1px 6px rgba(0,0,0,.18);
-}
+  .sheet {
+    max-width: 780px;
+    margin: 0 auto;
+    background: var(--paper);
+    padding: 24px 32px;
+    box-shadow: 0 1px 6px rgba(0,0,0,.15);
+  }
 
-.header { text-align: center; margin-bottom: 18px; }
-.header .am { font-size: 17px; font-weight: 700; line-height: 1.35; }
-.header .en { font-size: 17px; font-weight: 700; letter-spacing: .01em; line-height: 1.35; }
-.header .am + .en { margin-top: 6px; }
-.title {
-display: inline-block;
-margin: 22px 0 0;
-font-size: 30px;
-font-weight: 700;
-letter-spacing: .04em;
-border-bottom: 3px solid var(--ink);
-padding-bottom: 1px;
-}
+  .header { text-align: center; margin-bottom: 8px; }
+  .clinic-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+  }
+  .clinic-logo {
+    max-width: 55px;
+    max-height: 55px;
+    object-fit: contain;
+  }
+  .clinic-titles {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .clinic-titles .am {
+    font-size: 14.5px;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .clinic-titles .en {
+    font-size: 14.5px;
+    font-weight: 700;
+    letter-spacing: .02em;
+    line-height: 1.25;
+  }
+  .title {
+    display: inline-block;
+    margin: 6px 0 0;
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: .05em;
+    border-bottom: 2px solid var(--ink);
+    padding-bottom: 1px;
+  }
 
-form { margin-top: 26px; }
-.row { display: flex; gap: 22px; align-items: flex-end; margin-bottom: 20px; }
-.field { display: flex; align-items: flex-end; gap: 8px; flex: 1 1 0; min-width: 0; }
-.field.wide { flex: 2 1 0; }
-.field.narrow { flex: .6 1 0; }
-label { font-weight: 700; white-space: nowrap; font-size: 15px; letter-spacing: .02em; }
-input[type="text"], input[type="number"], input[type="date"], select {
-flex: 1;
-min-width: 0;
-font: inherit;
-font-size: 16px;
-color: var(--ink);
-background: transparent;
-border: 0;
-border-bottom: 1.5px solid var(--rule);
-border-radius: 0;
-padding: 2px 4px;
-outline: none;
-appearance: none;
--webkit-appearance: none;
-}
-select { background: transparent; }
+  form { margin-top: 10px; }
+  .row {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    margin-bottom: 9px;
+  }
+  .field {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .field.wide { flex: 2 1 0; }
+  .field.narrow { flex: .55 1 0; }
+  label {
+    font-weight: 700;
+    white-space: nowrap;
+    font-size: 12.5px;
+    letter-spacing: .01em;
+  }
+  input[type="text"], input[type="number"], input[type="date"], select {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--rule);
+    border-radius: 0;
+    padding: 1px 3px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select { background: transparent; }
 
-input:focus, textarea:focus, select:focus {
-border-bottom-color: var(--focus);
-box-shadow: 0 2px 0 0 var(--focus);
-}
+  input:focus, textarea:focus, select:focus {
+    border-bottom-color: var(--focus);
+    box-shadow: 0 1.5px 0 0 var(--focus);
+  }
 
-.block { margin-bottom: 22px; }
-.block > label { display: block; margin-bottom: 2px; }
-textarea {
-display: block;
-width: 100%;
-font: inherit;
-font-size: 16px;
-color: var(--ink);
-background-image: repeating-linear-gradient(
-to bottom,
-transparent 0, transparent 31px,
-var(--rule) 31px, var(--rule) 32px
-);
-background-attachment: local;
-border: 0;
-line-height: 32px;
-padding: 0 4px;
-resize: vertical;
-outline: none;
-overflow: hidden;
-}
-textarea.l2 { height: 64px; }
-textarea.l3 { height: 96px; }
-textarea.l4 { height: 128px; }
+  .block { margin-bottom: 8px; }
+  .block > label {
+    display: block;
+    margin-bottom: 1px;
+    font-size: 12px;
+    letter-spacing: .01em;
+  }
+  textarea {
+    display: block;
+    width: 100%;
+    font: inherit;
+    font-size: 13px;
+    color: var(--ink);
+    background-image: repeating-linear-gradient(
+      to bottom,
+      transparent 0, transparent 19px,
+      var(--rule) 19px, var(--rule) 20px
+    );
+    background-attachment: local;
+    border: 0;
+    line-height: 20px;
+    padding: 0 4px;
+    resize: none;
+    outline: none;
+    overflow: hidden;
+  }
+  textarea.l3 { height: 40px; }
+  textarea.l4 { height: 60px; }
 
-.signoff { margin-top: 30px; }
+  .signoff {
+    margin-top: 12px;
+    margin-bottom: 0;
+  }
 
-.actions {
-max-width: 800px;
-margin: 16px auto 0;
-display: flex;
-gap: 10px;
-justify-content: flex-end;
-}
-button {
-font: inherit;
-font-size: 15px;
-padding: 9px 18px;
-border: 1.5px solid var(--ink);
-background: var(--paper);
-color: var(--ink);
-cursor: pointer;
-}
-button.primary { background: var(--ink); color: #fff; }
-button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .actions {
+    max-width: 780px;
+    margin: 12px auto 0;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  button {
+    font: inherit;
+    font-size: 13px;
+    padding: 6px 14px;
+    border: 1px solid var(--ink);
+    background: var(--paper);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  button.primary { background: var(--ink); color: #fff; }
+  button:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
 
-::placeholder { color: var(--hint); opacity: 1; font-size: 14px; font-style: italic; }
+  ::placeholder { color: var(--hint); opacity: 1; font-size: 12px; font-style: italic; }
 
-@media (max-width: 640px) {
-.sheet { padding: 26px 18px 30px; }
-.row { flex-direction: column; align-items: stretch; gap: 16px; }
-.title { font-size: 25px; }
-.header .am, .header .en { font-size: 15px; }
-}
+  @media (max-width: 640px) {
+    .sheet { padding: 18px 14px; }
+    .row { flex-direction: column; align-items: stretch; gap: 10px; }
+    .title { font-size: 17px; }
+  }
 
-@media print {
-@page { size: A4; margin: 14mm; }
-body { background: #fff; padding: 0; }
-.sheet { box-shadow: none; padding: 0; max-width: none; }
-.actions { display: none; }
-::placeholder { color: transparent; }
-input, textarea, select { border-color: #000; }
-select { background: none; }
-}
+  @media print {
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm;
+    }
+    html, body {
+      background: #fff;
+      padding: 0;
+      margin: 0;
+      height: 100%;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .sheet {
+      box-shadow: none;
+      padding: 0;
+      max-width: 100%;
+      width: 100%;
+      page-break-after: avoid;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .actions { display: none !important; }
+    ::placeholder { color: transparent; }
+    input, textarea, select { border-color: #000; }
+    select { background: none; }
+    * {
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+  }
 </style>
 
 </head>
@@ -266,16 +371,14 @@ select { background: none; }
 
 <main class="sheet">
   <header class="header">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-      \${clinicNames?.clinicLogo ? \`<img src="\${clinicNames.clinicLogo}" style="max-width: 80px; max-height: 80px; object-fit: contain;" />\` : ''}
-      <div>
-        <div class="am">\${clinicNames?.clinicNameAmharic || "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪ ኮርፖሬሽን"}</div>
-        <div class="am">\${clinicNames?.clinicSubNameAmharic || "ሆሚቾ አሙኒሽን ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ"}</div>
-        <div class="en">\${clinicNames?.clinicName || "DEFENCE ENGINEERING INDUSTRIES GROUP"}</div>
-        <div class="en">\${clinicNames?.clinicSubName || "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER"}</div>
+    <div class="clinic-header">
+      \${clinicNames?.clinicLogo ? \`<img src="\${clinicNames.clinicLogo}" class="clinic-logo" alt="Logo" />\` : ''}
+      <div class="clinic-titles">
+        \${clinicNames?.clinicNameAmharic ? \`<div class="am">\${clinicNames.clinicNameAmharic}</div>\` : ''}
+        \${clinicNames?.clinicName ? \`<div class="en">\${clinicNames.clinicName}</div>\` : ''}
       </div>
     </div>
-    <h1 class="title">REFERAL SHEET</h1>
+    <h1 class="title">REFERRAL SHEET</h1>
   </header>
 
   <form id="referral" autocomplete="off">
@@ -312,7 +415,7 @@ select { background: none; }
     <div class="row">
       <div class="field">
         <label for="from">REFERRED FROM</label>
-        <input type="text" id="from" name="referred_from" placeholder="Facility or clinician" value="\${clinicNames?.clinicSubName || "Homicho Clinic"}">
+        <input type="text" id="from" name="referred_from" placeholder="Facility or clinician" value="\${clinicNames?.clinicName || clinicNames?.clinicNameAmharic || ''}">
       </div>
       <div class="field">
         <label for="to">REFERRED TO</label>
@@ -431,95 +534,355 @@ select { background: none; }
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* 1. Stool Examination - Green */}
-              {stoolTest ? (
-                <button
-                  type="button"
-                  onClick={() => toggleTest(stoolTest.id)}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
-                    selectedTests.has(stoolTest.id)
-                      ? "bg-emerald-500 text-white border-emerald-600 shadow-md scale-[1.01]"
-                      : "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200 hover:border-emerald-400"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${selectedTests.has(stoolTest.id) ? "bg-white/20 text-white" : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"}`}>
-                        <FlaskConical className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm">Stool Examination</span>
+              {/* 1. Stool Examination - Green with Selective Sub-test Picking */}
+              <div
+                className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
+                  selectedStoolCount > 0
+                    ? "bg-emerald-700 text-white border-emerald-800 shadow-md"
+                    : "bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60 text-emerald-950 dark:text-emerald-200 hover:border-emerald-400"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${selectedStoolCount > 0 ? "bg-white/20 text-white" : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300"}`}>
+                      <FlaskConical className="w-4 h-4" />
                     </div>
-                    {selectedTests.has(stoolTest.id) && <CheckCircle className="w-4 h-4 text-white" />}
+                    <div>
+                      <span className="font-bold text-sm block">Stool Examination</span>
+                      <span className={`text-[10px] block ${selectedStoolCount > 0 ? "text-emerald-200" : "text-slate-400"}`}>
+                        {selectedStoolCount === 0 
+                          ? "Click to select or pick tests"
+                          : isFullStoolSelected 
+                            ? "Complete Stool Panel Selected"
+                            : `${selectedStoolCount} specific test(s) selected`}
+                      </span>
+                    </div>
                   </div>
-                  <p className={`text-[11px] mt-1 line-clamp-2 ${selectedTests.has(stoolTest.id) ? "text-emerald-100" : "text-slate-500 dark:text-slate-400"}`}>
-                    Macroscopic, occult blood, pus/mucus & microscopic ova/parasite
-                  </p>
-                </button>
-              ) : (
-                <div className="p-3 rounded-xl border border-dashed border-emerald-300 dark:border-emerald-800 text-xs text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
-                  Stool Examination (Available in general list)
+                  {selectedStoolCount > 0 && <CheckCircle className="w-4 h-4 text-white" />}
                 </div>
-              )}
 
-              {/* 2. Urine Examination - Yellow/Amber */}
-              {urineTest ? (
-                <button
-                  type="button"
-                  onClick={() => toggleTest(urineTest.id)}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
-                    selectedTests.has(urineTest.id)
-                      ? "bg-amber-500 text-white border-amber-600 shadow-md scale-[1.01]"
-                      : "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-950 dark:text-amber-200 hover:border-amber-400"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${selectedTests.has(urineTest.id) ? "bg-white/20 text-white" : "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300"}`}>
-                        <Droplet className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm">Urine Examination</span>
-                    </div>
-                    {selectedTests.has(urineTest.id) && <CheckCircle className="w-4 h-4 text-white" />}
-                  </div>
-                  <p className={`text-[11px] mt-1 line-clamp-2 ${selectedTests.has(urineTest.id) ? "text-amber-100" : "text-slate-500 dark:text-slate-400"}`}>
-                    Physical, chemical dipstick (Albumin/Sugar/Ketones) & sediment
-                  </p>
-                </button>
-              ) : (
-                <div className="p-3 rounded-xl border border-dashed border-amber-300 dark:border-amber-800 text-xs text-amber-700 dark:text-amber-400 flex items-center justify-center">
-                  Urine Examination (Available in general list)
-                </div>
-              )}
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-emerald-200/50 dark:border-emerald-800/50">
+                  {mainStoolTest && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Set(selectedTests);
+                        if (next.has(mainStoolTest.id)) {
+                          next.delete(mainStoolTest.id);
+                        } else {
+                          // Select full panel and remove any sub-test IDs to avoid duplicates
+                          stoolSubTests.forEach(st => next.delete(st.id));
+                          next.add(mainStoolTest.id);
+                        }
+                        setSelectedTests(next);
+                      }}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                        isFullStoolSelected
+                          ? "bg-white text-emerald-800 shadow-sm"
+                          : selectedStoolCount > 0
+                            ? "bg-emerald-800/80 hover:bg-emerald-800 text-white border border-emerald-500"
+                            : "bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 hover:bg-emerald-200"
+                      }`}
+                    >
+                      {isFullStoolSelected ? "✓ Full Stool" : "Order Full Stool"}
+                    </button>
+                  )}
 
-              {/* 3. Hematology - Blood-Red */}
-              {hematologyTest ? (
-                <button
-                  type="button"
-                  onClick={() => toggleTest(hematologyTest.id)}
-                  className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
-                    selectedTests.has(hematologyTest.id)
-                      ? "bg-rose-700 text-white border-rose-800 shadow-md scale-[1.01]"
-                      : "bg-rose-50/60 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/60 text-rose-950 dark:text-rose-200 hover:border-rose-400"
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <div className="flex items-center gap-2">
-                      <div className={`p-1.5 rounded-lg ${selectedTests.has(hematologyTest.id) ? "bg-white/20 text-white" : "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"}`}>
-                        <Activity className="w-4 h-4" />
-                      </div>
-                      <span className="font-bold text-sm">Hematology / CBC</span>
-                    </div>
-                    {selectedTests.has(hematologyTest.id) && <CheckCircle className="w-4 h-4 text-white" />}
-                  </div>
-                  <p className={`text-[11px] mt-1 line-clamp-2 ${selectedTests.has(hematologyTest.id) ? "text-rose-100" : "text-slate-500 dark:text-slate-400"}`}>
-                    WBC & diff %, RBC, Hgb, Hct, platelets, coagulation & ESR
-                  </p>
-                </button>
-              ) : (
-                <div className="p-3 rounded-xl border border-dashed border-rose-300 dark:border-rose-800 text-xs text-rose-700 dark:text-rose-400 flex items-center justify-center">
-                  Hematology (Available in general list)
+                  <button
+                    type="button"
+                    onClick={() => setShowStoolPicker(!showStoolPicker)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all ${
+                      showStoolPicker
+                        ? "bg-white/30 text-white underline"
+                        : selectedStoolCount > 0
+                          ? "bg-emerald-800/60 hover:bg-emerald-800 text-emerald-100 border border-emerald-500/50"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                    }`}
+                  >
+                    {showStoolPicker ? "Hide Specific Tests ▲" : "Pick Specific Tests ▼"}
+                  </button>
                 </div>
-              )}
+
+                {/* Sub-test Picker: Allows doctor to select individual stool tests */}
+                {showStoolPicker && (
+                  <div className="mt-3 pt-3 border-t border-emerald-300/40 dark:border-emerald-800/60 space-y-2 animate-in fade-in duration-200">
+                    <p className={`text-[11px] font-bold ${selectedStoolCount > 0 ? "text-emerald-100" : "text-slate-700 dark:text-slate-300"}`}>
+                      Select specific test(s) to send to lab (doesn't send everything):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {stoolSubTests.length > 0 ? (
+                        stoolSubTests.map(sub => {
+                          const isSubSelected = selectedTests.has(sub.id);
+                          const label = sub.name.replace(/^Stool\s*-\s*/i, "");
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                const next = new Set(selectedTests);
+                                if (mainStoolTest) next.delete(mainStoolTest.id);
+                                if (isSubSelected) {
+                                  next.delete(sub.id);
+                                } else {
+                                  next.add(sub.id);
+                                }
+                                setSelectedTests(next);
+                              }}
+                              className={`text-[10px] font-medium px-2 py-1 rounded-md border transition-all ${
+                                isSubSelected
+                                  ? "bg-white text-emerald-900 border-white font-bold shadow-xs"
+                                  : selectedStoolCount > 0
+                                    ? "bg-emerald-800/80 text-emerald-100 border-emerald-500 hover:bg-emerald-800"
+                                    : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400"
+                              }`}
+                            >
+                              {isSubSelected ? "✓ " : "+ "}{label}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="text-[11px] opacity-80">
+                          Full stool panel active. (Sub-tests will appear when catalog is initialized).
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Urine Examination - Yellow/Amber with Selective Sub-test Picking */}
+              <div
+                className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
+                  selectedUrineCount > 0
+                    ? "bg-amber-600 text-white border-amber-700 shadow-md"
+                    : "bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/60 text-amber-950 dark:text-amber-200 hover:border-amber-400"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${selectedUrineCount > 0 ? "bg-white/20 text-white" : "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300"}`}>
+                      <Droplet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm block">Urine Examination</span>
+                      <span className={`text-[10px] block ${selectedUrineCount > 0 ? "text-amber-200" : "text-slate-400"}`}>
+                        {selectedUrineCount === 0 
+                          ? "Click to select or pick tests"
+                          : isFullUrineSelected 
+                            ? "Complete Urine Panel Selected"
+                            : `${selectedUrineCount} specific test(s) selected`}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedUrineCount > 0 && <CheckCircle className="w-4 h-4 text-white" />}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-amber-200/50 dark:border-amber-800/50">
+                  {mainUrineTest && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Set(selectedTests);
+                        if (next.has(mainUrineTest.id)) {
+                          next.delete(mainUrineTest.id);
+                        } else {
+                          // Select full panel and remove any sub-test IDs to avoid duplicates
+                          urineSubTests.forEach(st => next.delete(st.id));
+                          next.add(mainUrineTest.id);
+                        }
+                        setSelectedTests(next);
+                      }}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                        isFullUrineSelected
+                          ? "bg-white text-amber-900 shadow-sm"
+                          : selectedUrineCount > 0
+                            ? "bg-amber-700/80 hover:bg-amber-700 text-white border border-amber-400"
+                            : "bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 hover:bg-amber-200"
+                      }`}
+                    >
+                      {isFullUrineSelected ? "✓ Full Urine" : "Order Full Urine"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowUrinePicker(!showUrinePicker)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all ${
+                      showUrinePicker
+                        ? "bg-white/30 text-white underline"
+                        : selectedUrineCount > 0
+                          ? "bg-amber-700/60 hover:bg-amber-700 text-amber-100 border border-amber-400/50"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                    }`}
+                  >
+                    {showUrinePicker ? "Hide Specific Tests ▲" : "Pick Specific Tests ▼"}
+                  </button>
+                </div>
+
+                {/* Sub-test Picker: Allows doctor to select individual urine tests */}
+                {showUrinePicker && (
+                  <div className="mt-3 pt-3 border-t border-amber-300/40 dark:border-amber-800/60 space-y-2 animate-in fade-in duration-200">
+                    <p className={`text-[11px] font-bold ${selectedUrineCount > 0 ? "text-amber-100" : "text-slate-700 dark:text-slate-300"}`}>
+                      Select specific test(s) to send to lab (doesn't send everything):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {urineSubTests.length > 0 ? (
+                        urineSubTests.map(sub => {
+                          const isSubSelected = selectedTests.has(sub.id);
+                          const label = sub.name.replace(/^Urine\s*-\s*/i, "");
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                const next = new Set(selectedTests);
+                                if (mainUrineTest) next.delete(mainUrineTest.id);
+                                if (isSubSelected) {
+                                  next.delete(sub.id);
+                                } else {
+                                  next.add(sub.id);
+                                }
+                                setSelectedTests(next);
+                              }}
+                              className={`text-[10px] font-medium px-2 py-1 rounded-md border transition-all ${
+                                isSubSelected
+                                  ? "bg-white text-amber-950 border-white font-bold shadow-xs"
+                                  : selectedUrineCount > 0
+                                    ? "bg-amber-700/80 text-amber-100 border-amber-400 hover:bg-amber-700"
+                                    : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-amber-200 dark:border-amber-800 hover:border-amber-400"
+                              }`}
+                            >
+                              {isSubSelected ? "✓ " : "+ "}{label}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="text-[11px] opacity-80">
+                          Full urinalysis panel active. (Sub-tests will appear when catalog is initialized).
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 3. Hematology - Blood-Red with Selective Sub-test Picking */}
+              <div
+                className={`flex flex-col text-left p-3.5 rounded-xl border-2 transition-all ${
+                  selectedHematologyCount > 0
+                    ? "bg-rose-700 text-white border-rose-800 shadow-md"
+                    : "bg-rose-50/60 dark:bg-rose-950/20 border-rose-200 dark:border-rose-800/60 text-rose-950 dark:text-rose-200 hover:border-rose-400"
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex items-center gap-2">
+                    <div className={`p-1.5 rounded-lg ${selectedHematologyCount > 0 ? "bg-white/20 text-white" : "bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300"}`}>
+                      <Activity className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="font-bold text-sm block">Hematology / CBC</span>
+                      <span className={`text-[10px] block ${selectedHematologyCount > 0 ? "text-rose-200" : "text-slate-400"}`}>
+                        {selectedHematologyCount === 0 
+                          ? "Click to select or pick tests"
+                          : isFullHematologySelected 
+                            ? "Complete CBC Panel Selected"
+                            : `${selectedHematologyCount} specific test(s) selected`}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedHematologyCount > 0 && <CheckCircle className="w-4 h-4 text-white" />}
+                </div>
+
+                <div className="flex items-center gap-2 mt-2 pt-2 border-t border-rose-200/50 dark:border-rose-800/50">
+                  {mainHematologyTest && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = new Set(selectedTests);
+                        if (next.has(mainHematologyTest.id)) {
+                          next.delete(mainHematologyTest.id);
+                        } else {
+                          // Select full panel and remove any sub-test IDs to avoid duplicates
+                          hematologySubTests.forEach(st => next.delete(st.id));
+                          next.add(mainHematologyTest.id);
+                        }
+                        setSelectedTests(next);
+                      }}
+                      className={`text-[11px] font-bold px-2.5 py-1 rounded-lg transition-all ${
+                        isFullHematologySelected
+                          ? "bg-white text-rose-800 shadow-sm"
+                          : selectedHematologyCount > 0
+                            ? "bg-rose-800/80 hover:bg-rose-800 text-white border border-rose-500"
+                            : "bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 hover:bg-rose-200"
+                      }`}
+                    >
+                      {isFullHematologySelected ? "✓ Full CBC" : "Order Full CBC"}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setShowHematologyPicker(!showHematologyPicker)}
+                    className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg transition-all ${
+                      showHematologyPicker
+                        ? "bg-white/30 text-white underline"
+                        : selectedHematologyCount > 0
+                          ? "bg-rose-800/60 hover:bg-rose-800 text-rose-100 border border-rose-500/50"
+                          : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200"
+                    }`}
+                  >
+                    {showHematologyPicker ? "Hide Specific Tests ▲" : "Pick Specific Tests ▼"}
+                  </button>
+                </div>
+
+                {/* Sub-test Picker: Allows doctor to select individual tests */}
+                {showHematologyPicker && (
+                  <div className="mt-3 pt-3 border-t border-rose-300/40 dark:border-rose-800/60 space-y-2 animate-in fade-in duration-200">
+                    <p className={`text-[11px] font-bold ${selectedHematologyCount > 0 ? "text-rose-100" : "text-slate-700 dark:text-slate-300"}`}>
+                      Select specific test(s) to send to lab (doesn't send everything):
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hematologySubTests.length > 0 ? (
+                        hematologySubTests.map(sub => {
+                          const isSubSelected = selectedTests.has(sub.id);
+                          // Clean label by removing "Hematology - " prefix
+                          const label = sub.name.replace(/^Hematology\s*-\s*/i, "");
+                          return (
+                            <button
+                              key={sub.id}
+                              type="button"
+                              onClick={() => {
+                                const next = new Set(selectedTests);
+                                // Uncheck full CBC if doctor is picking specific tests
+                                if (mainHematologyTest) next.delete(mainHematologyTest.id);
+                                if (isSubSelected) {
+                                  next.delete(sub.id);
+                                } else {
+                                  next.add(sub.id);
+                                }
+                                setSelectedTests(next);
+                              }}
+                              className={`text-[10px] font-medium px-2 py-1 rounded-md border transition-all ${
+                                isSubSelected
+                                  ? "bg-white text-rose-900 border-white font-bold shadow-xs"
+                                  : selectedHematologyCount > 0
+                                    ? "bg-rose-800/80 text-rose-100 border-rose-500 hover:bg-rose-800"
+                                    : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border-rose-200 dark:border-rose-800 hover:border-rose-400"
+                              }`}
+                            >
+                              {isSubSelected ? "✓ " : "+ "}{label}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="text-[11px] opacity-80">
+                          Full CBC panel active. (Sub-tests will appear when catalog is initialized).
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

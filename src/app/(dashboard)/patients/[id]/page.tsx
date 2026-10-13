@@ -44,6 +44,10 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   const patient = await prisma.patient.findUnique({
     where: { id: resolvedParams.id },
     include: {
+      primaryPatient: true,
+      dependents: {
+        orderBy: { createdAt: "asc" },
+      },
       medicalRecords: {
         orderBy: { createdAt: "desc" },
       },
@@ -75,11 +79,30 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   let drugs: { id: string; name: string }[] = [];
 
   if (canPrescribe || canRequestLab) {
-    // Ensure 3 core tests always exist
+    // Ensure core diagnostic tests and individual hematology, stool, and urine sub-tests exist in catalog
     const defaultCoreTests = [
+      // Core Stool & Sub-tests
       { name: "Stool Examination", price: 5000, description: "Macroscopic, chemical occult & microscopic parasite examination" },
+      { name: "Stool - Ova & Parasite (Microscopic)", price: 3000, description: "Direct wet mount and concentration for ova, cysts, and trophozoites" },
+      { name: "Stool - Occult Blood (FOBT)", price: 2500, description: "Detection of hidden fecal blood / gastrointestinal bleeding" },
+      { name: "Stool - Macroscopic & Physical", price: 2000, description: "Color, consistency, gross blood, pus, mucus & bile" },
+
+      // Core Urine & Sub-tests
       { name: "Urine Examination", price: 5000, description: "Routine physical, chemical (dipstick) & microscopic sediment analysis" },
+      { name: "Urine - Chemical Dipstick (Protein/Sugar/pH)", price: 3000, description: "Multistix chemical reagent strip test" },
+      { name: "Urine - Microscopic Sediment Examination", price: 3000, description: "Centrifuged sediment analysis for WBC, RBC, casts, crystals, bacteria" },
+      { name: "Urine - Albumin / Protein Test", price: 2000, description: "Qualitative and quantitative urinary protein/albumin" },
+      { name: "Urine - Sugar / Glucose Test", price: 2000, description: "Qualitative and semi-quantitative urinary glucose" },
+      { name: "Urine - Bile & Urobilinogen", price: 2000, description: "Bile pigments and urobilinogen screening" },
+
+      // Core Hematology & Sub-tests
       { name: "Hematology", price: 10000, description: "Complete blood count (CBC), differential, indices, ESR & morphology" },
+      { name: "Hematology - WBC & Differential", price: 4000, description: "Total White Blood Cell count and differential (%)" },
+      { name: "Hematology - Hemoglobin & Hematocrit (Hgb/Hct)", price: 3500, description: "Hemoglobin and hematocrit concentration" },
+      { name: "Hematology - Platelet Count", price: 3000, description: "Platelet evaluation and count" },
+      { name: "Hematology - ESR", price: 2500, description: "Erythrocyte Sedimentation Rate" },
+      { name: "Hematology - Coagulation Profile (PT/BT/CT)", price: 4000, description: "Bleeding time, coagulation time, prothrombin time" },
+      { name: "Hematology - Blood Smear Morphology", price: 3500, description: "Peripheral blood smear examination and cellular morphology" },
     ];
 
     for (const core of defaultCoreTests) {
@@ -109,10 +132,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   }
 
   let referralDestinations: string[] = [];
-  let clinicName = "DEFENCE ENGINEERING INDUSTRIES GROUP";
-  let clinicNameAmharic = "የመከላከያ ኢንጂነሪንግ ኢንዱስትሪዎች ግሩፕ";
-  let clinicSubName = "HOMICHO AMMUNATION ENGINEERING INDUSTRY HEALTH CENTER";
-  let clinicSubNameAmharic = "ሆሚጮ ጥይት ኢንጂነሪንግ ኢንዱስትሪ ጤና ጣቢያ";
+  let clinicName = "";
+  let clinicNameAmharic = "";
   let clinicLogo = "";
 
   if (canWriteHistory) {
@@ -231,7 +252,77 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                 </div>
               )}
             </dl>
+
+            {/* Linked Primary Staff / Soldier Section */}
+            {patient.primaryPatient && (
+              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 bg-blue-50/60 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-200 dark:border-blue-900/40">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
+                    Linked Primary Staff Member / Soldier
+                  </h3>
+                  <Link
+                    href={`/patients/${patient.primaryPatient.id}`}
+                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold underline"
+                  >
+                    View Primary Profile &rarr;
+                  </Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400 block">Name:</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{patient.primaryPatient.firstName} {patient.primaryPatient.lastName}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400 block">Card / Military / Employee ID:</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{patient.primaryPatient.militaryId || patient.primaryPatient.employeeId || "N/A"}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 dark:text-slate-400 block">Relationship & Type:</span>
+                    <strong className="text-slate-800 dark:text-slate-200">{patient.relationship || "Dependent"} • {patient.primaryPatient.patientType}</strong>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Family Tree / Dependents Section */}
+          {patient.dependents && patient.dependents.length > 0 && (
+            <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+                    Family Tree & Dependents ({patient.dependents.length})
+                  </h3>
+                  <p className="text-xs text-slate-500">Registered family members linked to this staff record</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
+                  {patient.patientType === "Soldier" ? "100% Family Benefit" : "95% Family Benefit"}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {patient.dependents.map((dep) => (
+                  <div key={dep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex justify-between items-center hover:border-blue-400 transition-colors">
+                    <div>
+                      <Link href={`/patients/${dep.id}`} className="font-bold text-sm text-slate-800 dark:text-slate-200 hover:text-blue-600">
+                        {dep.firstName} {dep.lastName}
+                      </Link>
+                      <div className="text-xs text-slate-500 mt-0.5 flex gap-2">
+                        <span>Relation: <strong className="text-slate-700 dark:text-slate-300">{dep.relationship || "Dependent"}</strong></span>
+                        <span>• Type: {dep.patientType}</span>
+                        {dep.yob && <span>• Age: {calculateAge(dep.yob)}</span>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="inline-block text-xs font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                        {dep.discountPercent}% Off
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="print:hidden space-y-6">
             {canWriteHistory && (
@@ -241,7 +332,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </>
             )}
 
-            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicSubName, clinicSubNameAmharic, clinicLogo }} />}
+            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicLogo }} />}
 
             {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
@@ -263,58 +354,63 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   </div>
 )}
 {canReadHistory && (
-          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Laboratory Results</h2>
-            <div className="space-y-4">
-              {patient.labRequests.length === 0 ? (
-                <p className="text-sm text-slate-500 dark:text-slate-400">No lab requests found.</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800/50">
-                    <thead className="bg-slate-50/50 dark:bg-slate-900/30">
-                      <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Date</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Test</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Status</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-slate-500 dark:text-slate-400 uppercase">Result / Notes</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-transparent divide-y divide-slate-100 dark:divide-slate-800/50">
-                      {patient.labRequests.map((req) => (
-                        <tr key={req.id}>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">{req.createdAt.toLocaleDateString()}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">{req.test.name}</td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            {req.status === "completed" ? (
-                              <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-medium text-green-800 dark:text-green-400">
-                                Completed
-                              </span>
-                            ) : req.status === "cancelled" ? (
-                              <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">Cancelled</span>
-                            ) : req.status === "urgent" ? (
-                              <span className="inline-flex items-center rounded-full bg-red-600 text-white px-2.5 py-0.5 text-xs font-extrabold shadow-sm animate-pulse">
-                                ⚡ URGENT
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
-                                Pending
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 min-w-[300px]">
-                            {req.result ? (
-                              <StructuredLabResultView findings={req.result.findings} />
-                            ) : (
-                              <span className="text-slate-400 italic">Awaiting laboratory analysis...</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Laboratory Results</h2>
+              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                {patient.labRequests.length} Test{patient.labRequests.length === 1 ? "" : "s"}
+              </span>
             </div>
+
+            {patient.labRequests.length === 0 ? (
+              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No lab requests found for this patient.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-5">
+                {patient.labRequests.map((req) => (
+                  <div key={req.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/60 p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                          {req.test.name}
+                        </span>
+                        <span className="text-xs text-slate-400">
+                          • {req.createdAt.toLocaleDateString()}
+                        </span>
+                      </div>
+                      <div>
+                        {req.status === "completed" ? (
+                          <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-bold text-green-800 dark:text-green-400">
+                            Completed
+                          </span>
+                        ) : req.status === "cancelled" ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">
+                            Cancelled
+                          </span>
+                        ) : req.status === "urgent" ? (
+                          <span className="inline-flex items-center rounded-full bg-red-600 text-white px-2.5 py-0.5 text-xs font-extrabold shadow-sm animate-pulse">
+                            ⚡ URGENT
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
+                            Pending
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="pt-1">
+                      {req.result ? (
+                        <StructuredLabResultView findings={req.result.findings} testName={req.test.name} />
+                      ) : (
+                        <div className="p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 italic">
+                          Awaiting laboratory analysis and technician input...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 )}
         </div>
