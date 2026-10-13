@@ -5,6 +5,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 
+import Link from "next/link";
+import { FileText } from "lucide-react";
+
 export default async function DataEncoderPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const session = await auth.api.getSession({
     headers: await headers()
@@ -88,11 +91,20 @@ export default async function DataEncoderPage({ searchParams }: { searchParams: 
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Data Encoder</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2">
-          Reconcile manual ledgers with software entries.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Data Encoder</h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2">
+            Reconcile manual ledgers with software entries.
+          </p>
+        </div>
+        <Link
+          href="/dataencoder/z-reports"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors self-start sm:self-auto"
+        >
+          <FileText className="w-4 h-4" />
+          View Z-Reports (Finance Ledger)
+        </Link>
       </div>
 
       <DataEncoderClient initialInvoices={invoices} />

@@ -32,6 +32,16 @@ const _approveInvoice = createSafeAction({
         data: { status: "paid" },
       });
 
+      // Record payment transaction assigned to the data encoder
+      await tx.payment.create({
+        data: {
+          invoiceId: inv.id,
+          amount: inv.total,
+          method: "credit",
+          dataencoderId: ctx.userId,
+        }
+      });
+
       // Close visits if approved
       await tx.visit.updateMany({
         where: { invoiceId: inv.id, status: { not: "completed" } },

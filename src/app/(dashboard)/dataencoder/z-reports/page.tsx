@@ -23,11 +23,32 @@ export default async function ZReportsPage() {
   const invoices = await prisma.invoice.findMany({
     where: { status: "paid" },
     include: {
-      patient: true,
+      patient: {
+        include: {
+          primaryPatient: true,
+        }
+      },
       items: true,
+      payments: true,
     },
     orderBy: { createdAt: "desc" }
   });
+
+  const encoderIds = Array.from(new Set(invoices.flatMap(inv => inv.payments.map(p => p.dataencoderId)).filter(Boolean)));
+  const auditLogs = await prisma.auditLog.findMany({
+    where: {
+      action: "invoice:approve",
+      resourceId: { in: invoices.map(i => i.id) }
+    }
+  });
+
+  const allActorIds = Array.from(new Set([...encoderIds, ...auditLogs.map(a => a.actorId)]));
+  const staffUsers = await prisma.user.findMany({
+    where: { id: { in: allActorIds } },
+    select: { id: true, name: true, role: true }
+  });
+  const userMap = new Map(staffUsers.map(u => [u.id, u.name]));
+  const auditMap = new Map(auditLogs.map(a => [a.resourceId, a.actorId]));
 
   const reports = invoices.map(inv => {
     let laboratoryCost = 0;
@@ -42,15 +63,36 @@ export default async function ZReportsPage() {
       }
     });
 
+    const isDependent = !!inv.patient.primaryPatient;
+    const staffMemberName = isDependent 
+      ? `${inv.patient.primaryPatient!.firstName} ${inv.patient.primaryPatient!.lastName}`
+      : `${inv.patient.firstName} ${inv.patient.lastName}`;
+    const staffId = isDependent
+      ? (inv.patient.primaryPatient!.employeeId || inv.patient.primaryPatient!.militaryId || "N/A")
+      : (inv.patient.employeeId || inv.patient.militaryId || "N/A");
+    const staffDept = isDependent
+      ? (inv.patient.primaryPatient!.department || "N/A")
+      : (inv.patient.department || "N/A");
+
+    const encoderId = inv.payments[0]?.dataencoderId || auditMap.get(inv.id);
+    const encoderName = encoderId ? (userMap.get(encoderId) || "Staff / Encoder") : "Staff / Encoder";
+
     return {
       invoiceNumber: inv.id,
       patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
+      patientType: inv.patient.patientType,
+      relationship: inv.patient.relationship || (isDependent ? "Dependent" : "Self"),
+      staffMemberName,
+      staffId,
+      staffDepartment: staffDept,
+      encoderName,
       discountPercent: inv.discountPercentApplied,
       laboratoryCost,
       pharmacyCost,
       total: inv.subtotal,
       discountAmount: inv.subtotal - inv.total,
       afterDiscount: inv.total,
+      date: inv.createdAt.toLocaleDateString(),
     };
   });
 
