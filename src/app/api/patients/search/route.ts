@@ -15,28 +15,48 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("q") || "";
 
-  if (!query || query.length < 2) {
-    // Return empty array if search is too short to avoid massive queries
+  const term = query.trim();
+  if (!term) {
     return NextResponse.json({ patients: [] });
   }
+
+  const isDigitsOnly = /^\d+$/.test(term);
+  const phoneVariants = [term];
+  if (isDigitsOnly) {
+    if (term.startsWith("0")) {
+      phoneVariants.push(term.slice(1));
+      phoneVariants.push(`+251${term.slice(1)}`);
+    } else if (term.startsWith("251")) {
+      phoneVariants.push(`+${term}`);
+      phoneVariants.push(`0${term.slice(3)}`);
+    } else {
+      phoneVariants.push(`0${term}`);
+      phoneVariants.push(`+251${term}`);
+    }
+  }
+
+  const phoneConditions = phoneVariants.flatMap(v => [
+    { contactNumber: { contains: v, mode: "insensitive" as const } },
+    { primaryPatient: { contactNumber: { contains: v, mode: "insensitive" as const } } }
+  ]);
 
   const patients = await prisma.patient.findMany({
     where: {
       OR: [
-        { firstName: { contains: query, mode: "insensitive" } },
-        { lastName: { contains: query, mode: "insensitive" } },
-        { contactNumber: { contains: query, mode: "insensitive" } },
-        { employeeId: { contains: query, mode: "insensitive" } },
-        { militaryId: { contains: query, mode: "insensitive" } },
-        { id: { contains: query, mode: "insensitive" } },
+        { firstName: { contains: term, mode: "insensitive" } },
+        { lastName: { contains: term, mode: "insensitive" } },
+        ...phoneConditions,
+        { employeeId: { contains: term, mode: "insensitive" } },
+        { militaryId: { contains: term, mode: "insensitive" } },
+        { yob: { contains: term, mode: "insensitive" } },
+        { id: { contains: term, mode: "insensitive" } },
         {
           primaryPatient: {
             OR: [
-              { firstName: { contains: query, mode: "insensitive" } },
-              { lastName: { contains: query, mode: "insensitive" } },
-              { contactNumber: { contains: query, mode: "insensitive" } },
-              { employeeId: { contains: query, mode: "insensitive" } },
-              { militaryId: { contains: query, mode: "insensitive" } },
+              { firstName: { contains: term, mode: "insensitive" } },
+              { lastName: { contains: term, mode: "insensitive" } },
+              { employeeId: { contains: term, mode: "insensitive" } },
+              { militaryId: { contains: term, mode: "insensitive" } },
             ]
           }
         }

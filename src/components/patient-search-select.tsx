@@ -59,7 +59,7 @@ export function PatientSearchSelect({
   }, []);
 
   useEffect(() => {
-    if (!search || search.length < 2) {
+    if (!search || search.trim().length === 0) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults(patients || []);
       return;
@@ -68,7 +68,7 @@ export function PatientSearchSelect({
     const delay = setTimeout(async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/patients/search?q=${encodeURIComponent(search)}`);
+        const res = await fetch(`/api/patients/search?q=${encodeURIComponent(search.trim())}`);
         const data = await res.json();
         setResults(data.patients || []);
       } catch (err) {
@@ -76,7 +76,7 @@ export function PatientSearchSelect({
       } finally {
         setLoading(false);
       }
-    }, 300);
+    }, 120);
     
     return () => clearTimeout(delay);
   }, [search, patients]);

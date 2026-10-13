@@ -386,9 +386,9 @@ export const searchPatientsFast = createSafeAction({
     let roleCondition: any = undefined;
     if (roleTarget && roleTarget !== "All") {
       if (roleTarget === "Soldier") {
-        roleCondition = { patientType: "Soldier" };
+        roleCondition = { patientType: { in: ["Soldier", "M"] } };
       } else if (roleTarget === "Civilian Staff") {
-        roleCondition = { patientType: "Civilian Staff" };
+        roleCondition = { patientType: { in: ["Civilian Staff", "P"] } };
       } else if (roleTarget === "Soldier Family") {
         roleCondition = { patientType: "Soldier Family" };
       } else if (roleTarget === "Civilian Family") {
@@ -396,7 +396,7 @@ export const searchPatientsFast = createSafeAction({
       } else if (roleTarget === "Family") {
         roleCondition = { patientType: { in: ["Soldier Family", "Civilian Family"] } };
       } else if (roleTarget === "StaffOnly") {
-        roleCondition = { patientType: { in: ["Soldier", "Civilian Staff"] } };
+        roleCondition = { patientType: { in: ["Soldier", "Civilian Staff", "M", "P"] } };
       } else {
         roleCondition = { patientType: roleTarget };
       }
@@ -418,12 +418,29 @@ export const searchPatientsFast = createSafeAction({
     const filterField = data.filterField || "all";
 
     const tokenConditions = tokens.map(t => {
+      const isDigitsOnly = /^\d+$/.test(t);
+      const phoneVariants = [t];
+      if (isDigitsOnly) {
+        if (t.startsWith("0")) {
+          phoneVariants.push(t.slice(1));
+          phoneVariants.push(`+251${t.slice(1)}`);
+        } else if (t.startsWith("251")) {
+          phoneVariants.push(`+${t}`);
+          phoneVariants.push(`0${t.slice(3)}`);
+        } else {
+          phoneVariants.push(`0${t}`);
+          phoneVariants.push(`+251${t}`);
+        }
+      }
+
+      const phoneConditions = phoneVariants.flatMap(v => [
+        { contactNumber: { contains: v, mode: "insensitive" as const } },
+        { primaryPatient: { contactNumber: { contains: v, mode: "insensitive" as const } } }
+      ]);
+
       if (filterField === "phone") {
         return {
-          OR: [
-            { contactNumber: { contains: t, mode: "insensitive" as const } },
-            { primaryPatient: { contactNumber: { contains: t, mode: "insensitive" as const } } }
-          ]
+          OR: phoneConditions
         };
       }
       if (filterField === "id") {
@@ -465,16 +482,16 @@ export const searchPatientsFast = createSafeAction({
         OR: [
           { firstName: { contains: t, mode: "insensitive" as const } },
           { lastName: { contains: t, mode: "insensitive" as const } },
-          { contactNumber: { contains: t, mode: "insensitive" as const } },
+          ...phoneConditions,
           { employeeId: { contains: t, mode: "insensitive" as const } },
           { militaryId: { contains: t, mode: "insensitive" as const } },
+          { yob: { contains: t, mode: "insensitive" as const } },
           { id: { contains: t, mode: "insensitive" as const } },
           {
             primaryPatient: {
               OR: [
                 { firstName: { contains: t, mode: "insensitive" as const } },
                 { lastName: { contains: t, mode: "insensitive" as const } },
-                { contactNumber: { contains: t, mode: "insensitive" as const } },
                 { employeeId: { contains: t, mode: "insensitive" as const } },
                 { militaryId: { contains: t, mode: "insensitive" as const } },
               ]
