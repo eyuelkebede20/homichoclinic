@@ -22,14 +22,14 @@ After the first run, double-clicking `START.bat` again just brings the stack bac
 
 ## File reference
 
-| File | What it does | When to run |
-|---|---|---|
-| `START.bat` *(root)* | One-click full startup | Every time the PC boots |
-| `deploy\show-url.bat` | Print the clinic LAN URL + status | Any time |
-| `deploy\static-ip.bat` | Lock the server's LAN IP permanently | Once during setup (as Admin) |
-| `deploy\update.bat` | Manual update (git pull → build → restart) | If needed manually |
-| `deploy\install-watcher.bat` | Install the ClinicUpdater scheduled task | Once (START.bat does this automatically) |
-| `deploy\clinic-watcher.bat` | The watcher itself (called by Task Scheduler) | Never directly |
+| Windows (`.bat`) | Linux (`.sh`) | What it does | When to run |
+|---|---|---|---|
+| `START.bat` *(root)* | `start.sh` *(root)* | One-click full startup & health check | Every time the PC boots |
+| `deploy\show-url.bat` | `deploy/show-url.sh` | Print the clinic LAN URL + status | Any time |
+| `deploy\static-ip.bat` | `deploy/static-ip.sh` | Lock the server's LAN IP permanently | Once during setup |
+| `deploy\update.bat` | `deploy/update.sh` (or `update.sh`) | Manual update (git pull → build → restart) | If needed manually |
+| `deploy\install-watcher.bat` | `deploy/install-watcher.sh` | Install update watcher (Task Scheduler / systemd) | Once (`start.sh` does this automatically) |
+| `deploy\clinic-watcher.bat` | `deploy/clinic-watcher.sh` | The background watcher daemon | Automatically via service or background |
 
 ---
 

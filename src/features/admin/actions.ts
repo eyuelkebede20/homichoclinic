@@ -284,6 +284,10 @@ export const triggerSystemUpdate = createSafeAction({
       }
     } else {
       const flagPath = "/run/updater/update.request";
+      const statusPath = "/run/updater/update.status";
+      try {
+        fs.writeFileSync(statusPath, "=== Update requested ===\n[0/5] Waiting for updater...\n");
+      } catch {}
       try {
         // Ensure the directory exists (should already be mounted by compose)
         fs.mkdirSync(path.dirname(flagPath), { recursive: true });

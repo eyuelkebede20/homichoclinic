@@ -107,7 +107,10 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
   {
     echo
     echo "  ${Y}[..]${Z} Checking for system updates from GitHub..."
+    git config --global --add safe.directory "$ROOT" 2>/dev/null || true
     OLD_HEAD=$(git rev-parse HEAD 2>/dev/null || echo none)
+    # Stash any local uncommitted changes so git pull --ff-only never has conflicts
+    git stash --include-untracked >/dev/null 2>&1 || git stash >/dev/null 2>&1 || true
     if GIT_TERMINAL_PROMPT=0 timeout 30 git pull --ff-only; then
       log "git pull OK"
       NEW_HEAD=$(git rev-parse HEAD 2>/dev/null || echo none)
@@ -119,9 +122,6 @@ if [ "$CHILD" -eq 0 ] && [ "$NO_UPDATE" -eq 0 ] && [ -d .git ] && command -v git
         exit 1
       fi
       echo "  ${Y}[!] Could not reach GitHub or the pull failed.${Z}"
-      if [ -n "$(git status --porcelain --untracked-files=no 2>/dev/null)" ]; then
-        echo "      This PC has local edits to tracked files, which can block a pull."
-      fi
       echo "      Continuing with the version already on this PC."
       UPDATED_ARG=""
     fi
@@ -382,11 +382,13 @@ if [ "$QUICK" = 1 ]; then quick_update; fi
 # ------------------------------------------------------------
 step 2 "Preparing folders"
 mkdir -p run backups logs
+chmod 777 run backups logs 2>/dev/null || true
+# Clean up any stale update requests from prior sessions
+rm -f run/update.request 2>/dev/null || true
 # the app container runs as uid 1000 and must be able to write to run/
-if [ "$(stat -c %u run)" != "1000" ]; then
-  chown 1000:1000 run 2>/dev/null || sudo chown 1000:1000 run 2>/dev/null \
-    || warn "Could not give run/ to uid 1000. The Update button may fail."
-fi
+chown -R 1000:1000 run 2>/dev/null || sudo chown -R 1000:1000 run 2>/dev/null || true
+chmod -R 777 run 2>/dev/null || sudo chmod -R 777 run 2>/dev/null || true
+chmod +x update.sh deploy/*.sh 2>/dev/null || true
 ok "Folders ready: run, backups, logs."
 
 if ! { [ -f docker-compose.yml ] || [ -f docker-compose.yaml ] || [ -f compose.yaml ] || [ -f compose.yml ]; }; then
@@ -444,14 +446,21 @@ ok ".env present and configured."
 # ------------------------------------------------------------
 step 4 "Checking update watcher"
 
+chmod +x update.sh deploy/*.sh 2>/dev/null || true
+
 if ! command -v systemctl >/dev/null 2>&1; then
-  warn "systemd not found - the admin Update button will not work."
+  if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
+    ok "Update watcher (clinic-watcher.sh) already running in background."
+  else
+    info "systemd not found - starting deploy/clinic-watcher.sh in background..."
+    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
+    ok "clinic-watcher.sh started in background."
+  fi
 elif systemctl is-enabled --quiet clinic-update.path 2>/dev/null; then
   ok "Update watcher already installed."
 elif [ ! -f update.sh ]; then
   warn "update.sh was not found - the admin Update button will not work."
 else
-  chmod +x update.sh
   info "Installing the update watcher (needs sudo once)..."
   RUN_USER="${SUDO_USER:-$(id -un)}"
   tmp=$(mktemp -d)
@@ -474,6 +483,8 @@ Description=Run the clinic update
 Type=oneshot
 User=$RUN_USER
 WorkingDirectory=$ROOT
+SupplementaryGroups=docker
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # remove the flag FIRST (as root) so a failed update cannot retrigger forever
 ExecStartPre=+/bin/rm -f $ROOT/run/update.request
 ExecStart=$ROOT/update.sh
@@ -483,8 +494,10 @@ UNIT
      && sudo systemctl enable --now clinic-update.path >/dev/null 2>&1; then
     ok "Update watcher installed."
   else
-    warn "Could not install the update watcher."
-    echo "      The clinic will still start; only the Update button is affected."
+    warn "Could not install the systemd update watcher."
+    echo "      Starting deploy/clinic-watcher.sh in background instead..."
+    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
+    ok "clinic-watcher.sh started in background."
   fi
   rm -rf "$tmp"
 fi
