@@ -283,8 +283,9 @@ export const triggerSystemUpdate = createSafeAction({
         throw new Error(`Failed to start local update script: ${error.message}`);
       }
     } else {
-      const flagPath = "/run/updater/update.request";
-      const statusPath = "/run/updater/update.status";
+      const inContainer = fs.existsSync("/run/updater");
+      const flagPath = inContainer ? "/run/updater/update.request" : path.join(process.cwd(), "run", "update.request");
+      const statusPath = inContainer ? "/run/updater/update.status" : path.join(process.cwd(), "run", "update.status");
       try {
         fs.writeFileSync(statusPath, "=== Update requested ===\n[0/5] Waiting for updater...\n");
       } catch {}
