@@ -7,6 +7,8 @@ import { LabResultForm } from "@/features/clinical/components/lab-result-form";
 import { Search } from "lucide-react";
 import { NotificationPing } from "@/components/notification-ping";
 
+import { groupPendingLabRequests } from "@/features/clinical/types/lab-panels";
+
 export default async function LaboratoryDashboardPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolvedParams = await searchParams;
   const query = resolvedParams.q || "";
@@ -52,6 +54,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
   });
 
   const pendingRequests = requests.filter((r) => r.status === "requested" || r.status === "urgent");
+  const pendingGrouped = groupPendingLabRequests(pendingRequests);
   const completedRequests = requests.filter((r) => r.status === "completed");
 
   const canResult = userPermissions.includes(PERMISSIONS.LAB_RESULT);
@@ -65,7 +68,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
             Laboratory Dashboard
-            {pendingRequests.length > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">{pendingRequests.length} New</span>}
+            {pendingGrouped.length > 0 && <span className="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">{pendingGrouped.length} New</span>}
           </h1>
           <p className="text-slate-500 dark:text-slate-400">Manage pending lab requests and input results.</p>
         </div>
@@ -87,31 +90,38 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
         <div className="space-y-4">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-200">Pending Tests</h2>
           <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden min-h-[300px]">
-            {pendingRequests.length === 0 ? (
+            {pendingGrouped.length === 0 ? (
               <div className="p-8 text-center text-slate-500">No active lab requests.</div>
             ) : (
               <ul className="divide-y divide-slate-200 dark:divide-slate-800">
-                {pendingRequests.map((req) => (
+                {pendingGrouped.map((req) => (
                   <li key={req.id} className="p-4 bg-blue-50/30 dark:bg-blue-900/10">
                     <div className="flex justify-between items-start mb-2">
                       <div>
                         <span className="font-bold text-slate-900 dark:text-slate-100 block">
                           {req.patient.firstName} {req.patient.lastName}
                         </span>
-                        <span className="text-xs text-slate-500">{req.createdAt.toLocaleString()}</span>
+                        <span className="text-xs text-slate-500">{new Date(req.createdAt).toLocaleString()}</span>
                       </div>
-                      {req.status === "urgent" ? (
-                        <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/50 px-2.5 py-0.5 text-xs font-bold text-red-800 dark:text-red-300 animate-pulse border border-red-200 dark:border-red-800">
-                          URGENT
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
-                          Pending
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {req.linkedRequestIds.length > 1 && (
+                          <span className="inline-flex items-center rounded-full bg-blue-100 dark:bg-blue-900/50 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                            {req.linkedRequestIds.length} combined
+                          </span>
+                        )}
+                        {req.isUrgent ? (
+                          <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/50 px-2.5 py-0.5 text-xs font-bold text-red-800 dark:text-red-300 animate-pulse border border-red-200 dark:border-red-800">
+                            URGENT
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
+                            Pending
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">Test: {req.test.name}</div>
-                    <div className="flex justify-end gap-2">{canResult ? <LabResultForm requestId={req.id} testName={req.test.name} /> : <span className="text-slate-400 text-xs">View Only</span>}</div>
+                    <div className="text-sm text-slate-700 dark:text-slate-300 mb-4 font-medium">Test: {req.testName}</div>
+                    <div className="flex justify-end gap-2">{canResult ? <LabResultForm requestId={req.id} testName={req.testName} linkedRequestIds={req.linkedRequestIds} /> : <span className="text-slate-400 text-xs">View Only</span>}</div>
                   </li>
                 ))}
               </ul>

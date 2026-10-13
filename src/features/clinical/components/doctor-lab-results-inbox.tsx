@@ -141,7 +141,7 @@ export function DoctorLabResultsInbox({
               {/* Full Expanded Result Slip */}
               {isExpanded && (
                 <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <StructuredLabResultView findings={res.findings} />
+                  <StructuredLabResultView findings={res.findings} testName={res.request?.test?.name} />
                 </div>
               )}
             </li>

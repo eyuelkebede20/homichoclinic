@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema, vitalsUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal } from "@/lib/date-utils";
+import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
 
 export const createVisit = createSafeAction({
   schema: visitCreateSchema,
@@ -129,8 +130,105 @@ export const requestLabTest = createSafeAction({
   requiredPermission: PERMISSIONS.LAB_REQUEST,
   handler: async (data, ctx) => {
     const status = data.isUrgent ? "urgent" : "requested";
+
+    // 1. Fetch all selected tests
+    const selectedTests = await prisma.labTest.findMany({
+      where: { id: { in: data.testIds } },
+    });
+
+    const finalTestIds: string[] = [];
+
+    // Helper: Group tests by panel
+    const hematologyTests = selectedTests.filter(t => isHematologyTest(t.name));
+    const stoolTests = selectedTests.filter(t => isStoolTest(t.name));
+    const urineTests = selectedTests.filter(t => isUrineTest(t.name));
+    const otherTests = selectedTests.filter(t => !isHematologyTest(t.name) && !isStoolTest(t.name) && !isUrineTest(t.name));
+
+    // Handle Hematology: If sub-tests are chosen, combine into ONE request
+    if (hematologyTests.length > 0) {
+      const fullTest = hematologyTests.find(t => t.name.toLowerCase() === "hematology" || !t.name.includes("-"));
+      if (fullTest) {
+        finalTestIds.push(fullTest.id);
+      } else {
+        const subNames = hematologyTests.map(t => t.name.replace(/^Hematology\s*-\s*/i, "").trim());
+        const combinedName = subNames.length === 1 ? `Hematology - ${subNames[0]}` : `Hematology (${subNames.join(", ")})`;
+        const combinedPrice = hematologyTests.reduce((sum, t) => sum + t.price, 0);
+        let testRec = await prisma.labTest.findFirst({
+          where: { name: { equals: combinedName, mode: "insensitive" } },
+        });
+        if (!testRec) {
+          testRec = await prisma.labTest.create({
+            data: {
+              name: combinedName,
+              price: combinedPrice,
+              description: `Combined Hematology sub-tests: ${subNames.join(", ")}`,
+              isOperational: false,
+            },
+          });
+        }
+        finalTestIds.push(testRec.id);
+      }
+    }
+
+    // Handle Stool: If sub-tests are chosen, combine into ONE request
+    if (stoolTests.length > 0) {
+      const fullTest = stoolTests.find(t => t.name.toLowerCase() === "stool examination" || !t.name.includes("-"));
+      if (fullTest) {
+        finalTestIds.push(fullTest.id);
+      } else {
+        const subNames = stoolTests.map(t => t.name.replace(/^Stool\s*-\s*/i, "").trim());
+        const combinedName = subNames.length === 1 ? `Stool - ${subNames[0]}` : `Stool Examination (${subNames.join(", ")})`;
+        const combinedPrice = stoolTests.reduce((sum, t) => sum + t.price, 0);
+        let testRec = await prisma.labTest.findFirst({
+          where: { name: { equals: combinedName, mode: "insensitive" } },
+        });
+        if (!testRec) {
+          testRec = await prisma.labTest.create({
+            data: {
+              name: combinedName,
+              price: combinedPrice,
+              description: `Combined Stool sub-tests: ${subNames.join(", ")}`,
+              isOperational: false,
+            },
+          });
+        }
+        finalTestIds.push(testRec.id);
+      }
+    }
+
+    // Handle Urine: If sub-tests are chosen, combine into ONE request
+    if (urineTests.length > 0) {
+      const fullTest = urineTests.find(t => t.name.toLowerCase() === "urine examination" || !t.name.includes("-"));
+      if (fullTest) {
+        finalTestIds.push(fullTest.id);
+      } else {
+        const subNames = urineTests.map(t => t.name.replace(/^Urine\s*-\s*/i, "").trim());
+        const combinedName = subNames.length === 1 ? `Urine - ${subNames[0]}` : `Urine Examination (${subNames.join(", ")})`;
+        const combinedPrice = urineTests.reduce((sum, t) => sum + t.price, 0);
+        let testRec = await prisma.labTest.findFirst({
+          where: { name: { equals: combinedName, mode: "insensitive" } },
+        });
+        if (!testRec) {
+          testRec = await prisma.labTest.create({
+            data: {
+              name: combinedName,
+              price: combinedPrice,
+              description: `Combined Urine sub-tests: ${subNames.join(", ")}`,
+              isOperational: false,
+            },
+          });
+        }
+        finalTestIds.push(testRec.id);
+      }
+    }
+
+    // Handle Other Tests
+    for (const ot of otherTests) {
+      finalTestIds.push(ot.id);
+    }
+
     const requests = await prisma.labRequest.createManyAndReturn({
-      data: data.testIds.map(testId => ({
+      data: finalTestIds.map(testId => ({
         patientId: data.patientId,
         testId: testId,
         requestedBy: ctx.userId,
@@ -142,11 +240,12 @@ export const requestLabTest = createSafeAction({
       actorId: ctx.userId,
       action: PERMISSIONS.LAB_REQUEST,
       resourceId: data.patientId,
-      newValue: { testCount: data.testIds.length, isUrgent: !!data.isUrgent },
+      newValue: { testCount: finalTestIds.length, isUrgent: !!data.isUrgent },
     });
 
     revalidatePath(`/patients/${data.patientId}`);
     revalidatePath(`/laboratory`);
+    revalidatePath(`/dashboard`);
     return requests;
   },
 });
@@ -156,7 +255,7 @@ export const submitLabResult = createSafeAction({
   requiredPermission: PERMISSIONS.LAB_RESULT,
   handler: async (data, ctx) => {
     const result = await prisma.$transaction(async (tx) => {
-      // Create the result
+      // 1. Create the primary result
       const labResult = await tx.labResult.create({
         data: {
           requestId: data.requestId,
@@ -165,11 +264,33 @@ export const submitLabResult = createSafeAction({
         },
       });
 
-      // Update the request status
+      // 2. Update the primary request status
       await tx.labRequest.update({
         where: { id: data.requestId },
         data: { status: "completed" },
       });
+
+      // 3. If there are linked/grouped requests, complete them as well
+      if (data.linkedRequestIds && data.linkedRequestIds.length > 0) {
+        for (const linkedId of data.linkedRequestIds) {
+          if (linkedId !== data.requestId) {
+            const existingRes = await tx.labResult.findUnique({ where: { requestId: linkedId } });
+            if (!existingRes) {
+              await tx.labResult.create({
+                data: {
+                  requestId: linkedId,
+                  findings: data.findings,
+                  enteredBy: ctx.userId,
+                },
+              });
+            }
+            await tx.labRequest.update({
+              where: { id: linkedId },
+              data: { status: "completed" },
+            });
+          }
+        }
+      }
 
       return labResult;
     });
@@ -188,6 +309,8 @@ export const submitLabResult = createSafeAction({
     }
 
     revalidatePath(`/laboratory`);
+    revalidatePath(`/dashboard`);
+    revalidatePath(`/patients`);
     return result;
   },
 });
@@ -383,7 +506,7 @@ export const enterLabResult = createSafeAction({
   schema: labResultSchema,
   requiredPermission: PERMISSIONS.LAB_RESULT,
   handler: async (data, ctx) => {
-    // 1. Create the result
+    // 1. Create the primary result
     const result = await prisma.labResult.create({
       data: {
         requestId: data.requestId,
@@ -392,16 +515,39 @@ export const enterLabResult = createSafeAction({
       }
     });
 
-    // 2. Mark request as completed
+    // 2. Mark primary request as completed
     const labReq = await prisma.labRequest.update({
       where: { id: data.requestId },
       data: { status: "completed" }
     });
 
+    // 3. Mark linked requests as completed if any
+    if (data.linkedRequestIds && data.linkedRequestIds.length > 0) {
+      for (const linkedId of data.linkedRequestIds) {
+        if (linkedId !== data.requestId) {
+          const existingRes = await prisma.labResult.findUnique({ where: { requestId: linkedId } });
+          if (!existingRes) {
+            await prisma.labResult.create({
+              data: {
+                requestId: linkedId,
+                findings: data.findings,
+                enteredBy: ctx.userId,
+              },
+            });
+          }
+          await prisma.labRequest.update({
+            where: { id: linkedId },
+            data: { status: "completed" },
+          });
+        }
+      }
+    }
+
     const { autoBillUnbilledItems } = await import("@/features/dataencoder/actions");
     await autoBillUnbilledItems(labReq.patientId, ctx.userId);
 
     revalidatePath("/dashboard");
+    revalidatePath("/laboratory");
     revalidatePath("/patients");
     return result;
   }

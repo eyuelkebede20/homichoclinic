@@ -220,6 +220,9 @@ model LabRequest {
   status        String    @default("requested") // requested, in_progress, completed
   requestedBy   String    // Doctor's User ID
   
+  notes         String?   // Specifically requested sub-tests e.g. "WBC & Differential, ESR"
+  customPrice   Int?      // Custom price sum for selected sub-tests
+
   result        LabResult?
 
   invoiceId     String?

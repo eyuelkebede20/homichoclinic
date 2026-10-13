@@ -3,13 +3,18 @@
 import { parseLabFindings, StoolPanelData, UrinePanelData, HematologyPanelData } from "../types/lab-panels";
 import { FlaskConical, Droplet, Activity, CheckCircle2, AlertCircle, FileText } from "lucide-react";
 
-export function StructuredLabResultView({ findings }: { findings: string | null | undefined }) {
+export function StructuredLabResultView({ findings, testName }: { findings: string | null | undefined; testName?: string }) {
   const parsed = parseLabFindings(findings);
 
   if (!parsed.isStructured || !parsed.data) {
     return (
-      <div className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans">
-        {parsed.rawText || <span className="text-slate-400 italic">No findings recorded.</span>}
+      <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+          <span>{testName ? `${testName} - Diagnostic Findings` : "General Laboratory Findings"}</span>
+        </div>
+        <p className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans font-medium">
+          {parsed.rawText || <span className="text-slate-400 italic">No findings recorded.</span>}
+        </p>
       </div>
     );
   }
@@ -36,9 +41,13 @@ export function StructuredLabResultView({ findings }: { findings: string | null 
             </div>
             <div>
               <h4 className="font-bold text-emerald-950 dark:text-emerald-100 text-sm tracking-tight">
-                Stool Examination (Clinical Parasitology)
+                {testName ? testName : "Stool Examination (Clinical Parasitology)"}
               </h4>
-              <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400">Standard Macroscopic & Microscopic Panel</p>
+              <p className="text-[11px] text-emerald-700/80 dark:text-emerald-400">
+                {testName && testName.includes("-")
+                  ? `Specific Analysis: ${testName.replace(/^Stool\s*-\s*/i, "")}`
+                  : "Standard Macroscopic & Microscopic Panel"}
+              </p>
             </div>
           </div>
           <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 text-[10px] font-extrabold tracking-wider uppercase border border-emerald-300 dark:border-emerald-700">
@@ -124,9 +133,13 @@ export function StructuredLabResultView({ findings }: { findings: string | null 
             </div>
             <div>
               <h4 className="font-bold text-amber-950 dark:text-amber-100 text-sm tracking-tight">
-                Urine Examination (Routine Urinalysis)
+                {testName ? testName : "Urine Examination (Routine Urinalysis)"}
               </h4>
-              <p className="text-[11px] text-amber-700/80 dark:text-amber-400">Physical, Chemical Dipstick & Microscopic Sediment Analysis</p>
+              <p className="text-[11px] text-amber-700/80 dark:text-amber-400">
+                {testName && testName.includes("-")
+                  ? `Specific Analysis: ${testName.replace(/^Urine\s*-\s*/i, "")}`
+                  : "Physical, Chemical Dipstick & Microscopic Sediment Analysis"}
+              </p>
             </div>
           </div>
           <span className="px-3 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/60 dark:text-amber-300 text-[10px] font-extrabold tracking-wider uppercase border border-amber-300 dark:border-amber-700">
@@ -238,9 +251,13 @@ export function StructuredLabResultView({ findings }: { findings: string | null 
             </div>
             <div>
               <h4 className="font-bold text-rose-950 dark:text-rose-100 text-sm tracking-tight">
-                Hematology & Complete Blood Count (CBC)
+                {testName ? testName : "Hematology & Complete Blood Count (CBC)"}
               </h4>
-              <p className="text-[11px] text-rose-700/80 dark:text-rose-400">Automated / Manual Hemogram, Differential & Coagulation Report</p>
+              <p className="text-[11px] text-rose-700/80 dark:text-rose-400">
+                {testName && testName.includes("-")
+                  ? `Specific Analysis: ${testName.replace(/^Hematology\s*-\s*/i, "")}`
+                  : "Automated / Manual Hemogram, Differential & Coagulation Report"}
+              </p>
             </div>
           </div>
           <span className="px-3 py-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-900/60 dark:text-rose-300 text-[10px] font-extrabold tracking-wider uppercase border border-rose-300 dark:border-rose-700">

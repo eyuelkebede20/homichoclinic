@@ -31,6 +31,7 @@ export const labRequestSchema = z.object({
 export const labResultSchema = z.object({
   requestId: z.string().min(1, "Request ID is required"),
   findings: zSafeString().pipe(z.string().min(1, "Findings are required")),
+  linkedRequestIds: z.array(z.string()).optional(),
 });
 
 export const prescriptionCreateSchema = z.object({

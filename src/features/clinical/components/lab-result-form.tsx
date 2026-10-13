@@ -9,7 +9,15 @@ import { StoolResultForm } from "./stool-result-form";
 import { UrineResultForm } from "./urine-result-form";
 import { HematologyResultForm } from "./hematology-result-form";
 
-export function LabResultForm({ requestId, testName = "" }: { requestId: string; testName?: string }) {
+export function LabResultForm({ 
+  requestId, 
+  testName = "",
+  linkedRequestIds
+}: { 
+  requestId: string; 
+  testName?: string;
+  linkedRequestIds?: string[];
+}) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [findings, setFindings] = useState("");
@@ -20,6 +28,7 @@ export function LabResultForm({ requestId, testName = "" }: { requestId: string;
     setLoading(true);
     const result = await submitLabResult({
       requestId,
+      linkedRequestIds,
       findings: findingsJson,
     });
     setLoading(false);
@@ -60,6 +69,7 @@ export function LabResultForm({ requestId, testName = "" }: { requestId: string;
     return (
       <div className="w-full">
         <StoolResultForm
+          testName={testName}
           onSubmit={handleStructuredSubmit}
           onCancel={() => setIsOpen(false)}
           loading={loading}
@@ -72,6 +82,7 @@ export function LabResultForm({ requestId, testName = "" }: { requestId: string;
     return (
       <div className="w-full">
         <UrineResultForm
+          testName={testName}
           onSubmit={handleStructuredSubmit}
           onCancel={() => setIsOpen(false)}
           loading={loading}
@@ -84,6 +95,7 @@ export function LabResultForm({ requestId, testName = "" }: { requestId: string;
     return (
       <div className="w-full">
         <HematologyResultForm
+          testName={testName}
           onSubmit={handleStructuredSubmit}
           onCancel={() => setIsOpen(false)}
           loading={loading}

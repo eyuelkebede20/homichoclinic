@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
-import { HematologyPanelData } from "../types/lab-panels";
+import { HematologyPanelData, parseHematologySelectedSubTests } from "../types/lab-panels";
 
 interface HematologyResultFormProps {
+  testName?: string;
   initialData?: Partial<HematologyPanelData>;
   onSubmit: (findingsJson: string) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export function HematologyResultForm({ initialData, onSubmit, onCancel, loading = false }: HematologyResultFormProps) {
+export function HematologyResultForm({ testName, initialData, onSubmit, onCancel, loading = false }: HematologyResultFormProps) {
+  const selected = parseHematologySelectedSubTests(testName);
+
   // Cell Counts & CBC Core
   const [wbc, setWbc] = useState(initialData?.wbc || "6.8");
   const [rbc, setRbc] = useState(initialData?.rbc || "4.8");
@@ -44,6 +47,45 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
     initialData?.bloodMorphology || "Normocytic, normochromic RBCs. Adequate platelets. Normal WBC morphology."
   );
   const [remarks, setRemarks] = useState(initialData?.remarks || "");
+
+  function handleSetRequestedNormal() {
+    if (selected.reqWbcDiff) {
+      setWbc("6.8");
+      setNeutrophils("60");
+      setBands("2");
+      setLymphocytes("30");
+      setMonocytes("5");
+      setEosinophils("3");
+      setBasophils("0");
+      setBlast("0");
+      setMyelocytes("0");
+    }
+    if (selected.reqHgbHct) {
+      setRbc("4.8");
+      setHemoglobin("14.5");
+      setHematocrit("42.0");
+    }
+    if (selected.reqPlatelets) {
+      setPlatelets("240");
+    }
+    if (selected.reqEsr) {
+      setEsr("8");
+    }
+    if (selected.reqCoagulation) {
+      setBleedingTime("3 min 30 sec");
+      setCoagulationTime("6 min 00 sec");
+      setProthrombinTime("12.5 sec");
+    }
+    if (selected.reqIndices) {
+      setMcv("88.0");
+      setMch("30.0");
+      setMchc("34.0");
+    }
+    if (selected.reqMorphology) {
+      setBloodMorphology("Normocytic, normochromic RBCs. Platelets adequate on smear.");
+    }
+    setRemarks("Requested hematology parameters evaluated and normal.");
+  }
 
   function handleSetNormal() {
     setWbc("6.8");
@@ -107,22 +149,50 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
 
   return (
     <form onSubmit={handleSubmit} className="bg-rose-50/40 dark:bg-rose-950/20 border-2 border-rose-500/40 dark:border-rose-700/60 rounded-xl p-5 shadow-sm space-y-5">
-      <div className="flex items-center justify-between border-b border-rose-200 dark:border-rose-800/80 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-rose-200 dark:border-rose-800/80 pb-3 gap-2">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-rose-600 animate-pulse" />
-          <h4 className="font-bold text-rose-950 dark:text-rose-200 text-base">
-            Hematology & Complete Blood Count (CBC) Panel
-          </h4>
+          <div>
+            <h4 className="font-bold text-rose-950 dark:text-rose-200 text-base">
+              {testName ? testName : "Hematology & Complete Blood Count (CBC) Panel"}
+            </h4>
+            {testName && (testName.includes("-") || testName.includes("(")) && (
+              <p className="text-xs text-rose-700 dark:text-rose-400 font-semibold">
+                Specifically requested: {testName.replace(/^Hematology\s*(\(|\-)\s*/i, "").replace(/\)$/, "")}
+              </p>
+            )}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={handleSetNormal}
-          className="text-xs font-semibold px-2.5 py-1 bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-800 transition-colors flex items-center gap-1.5"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-          Fill All Normal Values
-        </button>
+        <div className="flex items-center gap-1.5">
+          {!selected.isFull && (
+            <button
+              type="button"
+              onClick={handleSetRequestedNormal}
+              className="text-xs font-semibold px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Fill Requested Normal
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSetNormal}
+            className="text-xs font-semibold px-2.5 py-1 bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-200 rounded-lg hover:bg-rose-200 dark:hover:bg-rose-800 transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            Fill All Normal
+          </button>
+        </div>
       </div>
+
+      {!selected.isFull && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5 shadow-2xs">
+          <span className="font-extrabold text-[10px] uppercase bg-amber-500 text-white px-2 py-0.5 rounded-full">
+            Selective Order
+          </span>
+          <span>Only the parameters marked <strong className="text-rose-700 dark:text-rose-300">★ REQUIRED</strong> below were requested by the doctor. Other sections are optional.</span>
+        </div>
+      )}
 
       {/* 1. Core Blood Counts */}
       <div>
@@ -130,8 +200,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
           1. General Cell Counts & Core Parameters
         </h5>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">W.B.C.</label>
+          <div className={selected.reqWbcDiff ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              W.B.C. {selected.reqWbcDiff ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">4.0 - 11.0 ×10³/µL</div>
             <input
               type="text"
@@ -141,8 +213,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">R.B.C.</label>
+          <div className={selected.reqHgbHct ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              R.B.C. {selected.reqHgbHct ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">4.0 - 5.5 ×10⁶/µL</div>
             <input
               type="text"
@@ -152,8 +226,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Hemoglobin</label>
+          <div className={selected.reqHgbHct ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Hemoglobin {selected.reqHgbHct ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">12.0 - 17.5 g/dL</div>
             <input
               type="text"
@@ -163,8 +239,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Hematocrit</label>
+          <div className={selected.reqHgbHct ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Hematocrit {selected.reqHgbHct ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">36 - 52 %</div>
             <input
               type="text"
@@ -174,8 +252,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Platelets</label>
+          <div className={selected.reqPlatelets ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Platelets {selected.reqPlatelets ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">150 - 450 ×10³/µL</div>
             <input
               type="text"
@@ -186,22 +266,29 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Reticulocytes</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Reticulocytes <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>
+            </label>
             <div className="text-[10px] text-slate-400 mb-1">0.5 - 2.5 %</div>
             <input
               type="text"
               value={reticulocytes}
               onChange={(e) => setReticulocytes(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
             />
           </div>
         </div>
       </div>
 
       {/* 2. Differential Count */}
-      <div>
-        <h5 className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2">
-          2. Differential White Cell Count (%)
+      <div className={selected.reqWbcDiff ? "p-3 rounded-xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-300 dark:border-rose-800" : ""}>
+        <h5 className="text-[11px] font-bold uppercase tracking-wider text-rose-800 dark:text-rose-300 mb-2 flex items-center justify-between">
+          <span>2. Differential White Cell Count (%)</span>
+          {selected.reqWbcDiff ? (
+            <span className="text-[10px] text-rose-700 dark:text-rose-300 bg-rose-200 dark:bg-rose-900 px-2 py-0.5 rounded font-extrabold">★ REQUIRED</span>
+          ) : (
+            <span className="text-[10px] text-slate-400 font-normal">(Optional / Not specifically ordered)</span>
+          )}
         </h5>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-2.5 text-xs">
           <div>
@@ -300,8 +387,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
           3. Coagulation, E.S.R. & RBC Indices
         </h5>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Bleeding Time</label>
+          <div className={selected.reqCoagulation ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Bleeding Time {selected.reqCoagulation ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">2 - 7 min</div>
             <input
               type="text"
@@ -311,8 +400,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Coagulation Time</label>
+          <div className={selected.reqCoagulation ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Coagulation Time {selected.reqCoagulation ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">5 - 11 min</div>
             <input
               type="text"
@@ -322,8 +413,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Prothrombin Time</label>
+          <div className={selected.reqCoagulation ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              Prothrombin Time {selected.reqCoagulation ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">11 - 13.5 sec</div>
             <input
               type="text"
@@ -333,8 +426,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">E.S.R.</label>
+          <div className={selected.reqEsr ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              E.S.R. {selected.reqEsr ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">0 - 20 mm/hr</div>
             <input
               type="text"
@@ -344,8 +439,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">MCV</label>
+          <div className={selected.reqIndices ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              MCV {selected.reqIndices ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">80 - 100 fL</div>
             <input
               type="text"
@@ -355,8 +452,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">MCH</label>
+          <div className={selected.reqIndices ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              MCH {selected.reqIndices ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">27 - 33 pg</div>
             <input
               type="text"
@@ -366,8 +465,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
             />
           </div>
 
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">MCHC</label>
+          <div className={selected.reqIndices ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">
+              MCHC {selected.reqIndices ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <div className="text-[9px] text-slate-400 mb-1">32 - 36 g/dL</div>
             <input
               type="text"
@@ -385,8 +486,10 @@ export function HematologyResultForm({ initialData, onSubmit, onCancel, loading 
           4. Blood Morphology & Remarks
         </h5>
         <div className="space-y-3 text-xs">
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Blood Morphology</label>
+          <div className={selected.reqMorphology ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-rose-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Blood Morphology {selected.reqMorphology ? <span className="text-[10px] text-rose-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={bloodMorphology}

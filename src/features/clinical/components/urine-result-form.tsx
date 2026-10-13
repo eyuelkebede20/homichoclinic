@@ -2,16 +2,19 @@
 
 import { useState } from "react";
 import { Loader2, Sparkles, CheckCircle2 } from "lucide-react";
-import { UrinePanelData } from "../types/lab-panels";
+import { UrinePanelData, parseUrineSelectedSubTests } from "../types/lab-panels";
 
 interface UrineResultFormProps {
+  testName?: string;
   initialData?: Partial<UrinePanelData>;
   onSubmit: (findingsJson: string) => Promise<void>;
   onCancel: () => void;
   loading?: boolean;
 }
 
-export function UrineResultForm({ initialData, onSubmit, onCancel, loading = false }: UrineResultFormProps) {
+export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loading = false }: UrineResultFormProps) {
+  const selected = parseUrineSelectedSubTests(testName);
+
   // Physical
   const [quantity, setQuantity] = useState(initialData?.quantity || "Random (20ml)");
   const [reaction, setReaction] = useState(initialData?.reaction || "Acidic (pH 6.0)");
@@ -36,6 +39,38 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
     initialData?.microscopic || "Pus cells: 0-2 /HPF, RBC: 0-1 /HPF, Epith cells: Few, Casts: Nil, Crystals: Nil"
   );
   const [remarks, setRemarks] = useState(initialData?.remarks || "");
+
+  function handleSetRequestedNormal() {
+    if (selected.reqPhysical) {
+      setQuantity("Random (20ml)");
+      setReaction("Acidic (pH 6.0)");
+      setSpecificGravity("1.020");
+    }
+    if (selected.reqAlbumin || selected.reqDipstick) {
+      setAlbuminQualitative("Nil (Negative)");
+      setAlbuminQuantitative("< 30 mg/dL");
+    }
+    if (selected.reqSugar || selected.reqDipstick) {
+      setSugarQualitative("Nil (Negative)");
+      setSugarQuantitative("Normal");
+    }
+    if (selected.reqBile || selected.reqDipstick) {
+      setBilirubin("Negative");
+      setUrobilinogen("Normal (0.2-1.0 mg/dL)");
+      setUrobilin("Negative");
+    }
+    if (selected.reqDipstick) {
+      setAcetone("Negative");
+      setDiaceticAcid("Negative");
+      setKetosteroids17("Normal");
+      setSodium("Normal");
+      setPotassium("Normal");
+    }
+    if (selected.reqSediment) {
+      setMicroscopic("Pus cells: 0-2 /HPF, RBC: 0-1 /HPF, Epith cells: Few, Casts: Nil, Crystals: Nil, Bacteria: None");
+    }
+    setRemarks("Requested urinalysis parameters evaluated and normal.");
+  }
 
   function handleSetNormal() {
     setQuantity("Random (20ml)");
@@ -84,27 +119,55 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
 
   return (
     <form onSubmit={handleSubmit} className="bg-amber-50/40 dark:bg-amber-950/20 border-2 border-amber-500/40 dark:border-amber-700/60 rounded-xl p-5 shadow-sm space-y-4">
-      <div className="flex items-center justify-between border-b border-amber-200 dark:border-amber-800/80 pb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-amber-200 dark:border-amber-800/80 pb-3 gap-2">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-amber-500 animate-pulse" />
-          <h4 className="font-bold text-amber-900 dark:text-amber-200 text-base">
-            Urine Examination (Urinalysis Panel)
-          </h4>
+          <div>
+            <h4 className="font-bold text-amber-900 dark:text-amber-200 text-base">
+              {testName ? testName : "Urine Examination (Urinalysis Panel)"}
+            </h4>
+            {testName && (testName.includes("-") || testName.includes("(")) && (
+              <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                Specifically requested: {testName.replace(/^Urine\s*(\(|\-)\s*/i, "").replace(/\)$/, "")}
+              </p>
+            )}
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={handleSetNormal}
-          className="text-xs font-semibold px-2.5 py-1 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors flex items-center gap-1.5"
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          Fill All Normal
-        </button>
+        <div className="flex items-center gap-1.5">
+          {!selected.isFull && (
+            <button
+              type="button"
+              onClick={handleSetRequestedNormal}
+              className="text-xs font-semibold px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors flex items-center gap-1 shadow-xs"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Fill Requested Normal
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleSetNormal}
+            className="text-xs font-semibold px-2.5 py-1 bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-200 rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors flex items-center gap-1.5"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            Fill All Normal
+          </button>
+        </div>
       </div>
 
+      {!selected.isFull && (
+        <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 rounded-xl p-3 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5 shadow-2xs">
+          <span className="font-extrabold text-[10px] uppercase bg-amber-500 text-white px-2 py-0.5 rounded-full">
+            Selective Order
+          </span>
+          <span>Only the parameters marked <strong className="text-amber-700 dark:text-amber-300">★ REQUIRED</strong> below were requested by the doctor. Other sections are optional.</span>
+        </div>
+      )}
+
       {/* Section 1: Physical Examination */}
-      <div>
+      <div className={selected.reqPhysical ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          1. Physical Examination
+          1. Physical Examination {selected.reqPhysical ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
@@ -165,12 +228,14 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
       {/* Section 2: Chemical Examination */}
       <div>
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          2. Chemical Examination
+          2. Chemical Examination {selected.reqDipstick || selected.reqAlbumin || selected.reqSugar || selected.reqBile ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ SELECTIVE / REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Albumin Qual */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Albumin (Qualitative)</label>
+          <div className={selected.reqAlbumin || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Albumin (Qualitative) {selected.reqAlbumin || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={albuminQualitative}
@@ -192,8 +257,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Albumin Quant */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Albumin (Quantitative)</label>
+          <div className={selected.reqAlbumin || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Albumin (Quantitative) {selected.reqAlbumin || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={albuminQuantitative}
@@ -204,8 +271,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Sugar Qual */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Sugar (Qualitative)</label>
+          <div className={selected.reqSugar || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Sugar (Qualitative) {selected.reqSugar || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={sugarQualitative}
@@ -227,8 +296,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Sugar Quant */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Sugar (Quantitative)</label>
+          <div className={selected.reqSugar || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Sugar (Quantitative) {selected.reqSugar || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={sugarQuantitative}
@@ -239,8 +310,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Acetone */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Acetone (Ketones)</label>
+          <div className={selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Acetone (Ketones) {selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={acetone}
@@ -250,8 +323,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Diacetic Acid */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Diacetic Acid</label>
+          <div className={selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Diacetic Acid {selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={diaceticAcid}
@@ -261,8 +336,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Bilirubin */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Bilirubin</label>
+          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Bilirubin {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={bilirubin}
@@ -272,8 +349,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Urobilinogen */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Urobilinogen</label>
+          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Urobilinogen {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={urobilinogen}
@@ -283,8 +362,10 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
           </div>
 
           {/* Urobilin */}
-          <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Urobilin</label>
+          <div className={selected.reqBile || selected.reqDipstick ? "p-2 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Urobilin {selected.reqBile || selected.reqDipstick ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            </label>
             <input
               type="text"
               value={urobilin}
@@ -329,9 +410,9 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
       </div>
 
       {/* Section 3: Microscopic & Remarks */}
-      <div>
+      <div className={selected.reqSediment ? "p-2.5 rounded-xl bg-white dark:bg-slate-900 border-2 border-amber-500 shadow-xs" : ""}>
         <h5 className="text-[11px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-300 mb-2">
-          3. Microscopic Sediment Examination & Remarks
+          3. Microscopic Sediment Examination & Remarks {selected.reqSediment ? <span className="text-[10px] text-amber-600 font-bold ml-1">★ REQUIRED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
         </h5>
         <div className="space-y-3 text-xs">
           <div>
@@ -340,7 +421,7 @@ export function UrineResultForm({ initialData, onSubmit, onCancel, loading = fal
             </label>
             <input
               type="text"
-              required
+              required={selected.reqSediment}
               value={microscopic}
               onChange={(e) => setMicroscopic(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"

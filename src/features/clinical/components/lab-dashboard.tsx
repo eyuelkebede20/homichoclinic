@@ -6,7 +6,7 @@ import { Loader2, FlaskConical, Droplet, Activity, TestTube, CheckCircle2, Alert
 import { enterLabResult } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { getLabPanelType } from "../types/lab-panels";
+import { getLabPanelType, groupPendingLabRequests, GroupedLabRequest } from "../types/lab-panels";
 import { StoolResultForm } from "./stool-result-form";
 import { UrineResultForm } from "./urine-result-form";
 import { HematologyResultForm } from "./hematology-result-form";
@@ -19,9 +19,10 @@ export function LabDashboard({
 }: { 
   requests: any[];
   referralDestinations?: string[];
-  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string };
+  clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string };
 }) {
-  const urgentCount = requests.filter(r => r.status === "urgent").length;
+  const groupedRequests = groupPendingLabRequests(requests);
+  const urgentCount = groupedRequests.filter(r => r.isUrgent).length;
 
   return (
     <div className="space-y-6">
@@ -43,21 +44,28 @@ export function LabDashboard({
 
       <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Tests ({requests.length})</h3>
+          <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Tests ({groupedRequests.length})</h3>
           <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 text-xs font-bold px-2.5 py-1 rounded-full">
-            {requests.length} in queue
+            {groupedRequests.length} in queue
           </span>
         </div>
         
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {requests.length === 0 ? (
+          {groupedRequests.length === 0 ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400 italic flex flex-col items-center justify-center">
               <CheckCircle2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
               <p className="font-medium">No pending lab requests.</p>
               <p className="text-xs text-slate-400 mt-0.5">All patient diagnostic orders have been completed.</p>
             </div>
           ) : (
-            requests.map(req => <LabRequestRow key={req.id} request={req} referralDestinations={referralDestinations} clinicNames={clinicNames} />)
+            groupedRequests.map(group => (
+              <LabRequestRow 
+                key={group.id} 
+                groupedItem={group} 
+                referralDestinations={referralDestinations} 
+                clinicNames={clinicNames} 
+              />
+            ))
           )}
         </div>
       </div>
@@ -66,21 +74,21 @@ export function LabDashboard({
 }
 
 function LabRequestRow({ 
-  request,
+  groupedItem,
   referralDestinations,
   clinicNames
 }: { 
-  request: any;
+  groupedItem: GroupedLabRequest<any>;
   referralDestinations?: string[];
-  clinicNames?: { clinicName: string; clinicNameAmharic: string; clinicSubName: string; clinicSubNameAmharic: string };
+  clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string };
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [genericFindings, setGenericFindings] = useState("");
   const [saving, setSaving] = useState(false);
   const router = useRouter();
 
-  const isUrgent = request.status === "urgent";
-  const panelType = getLabPanelType(request.test.name);
+  const isUrgent = groupedItem.isUrgent;
+  const panelType = groupedItem.panelType;
 
   async function handleSaveFindings(findingsString: string) {
     if (!findingsString.trim()) {
@@ -88,7 +96,11 @@ function LabRequestRow({
       return;
     }
     setSaving(true);
-    const res = await enterLabResult({ requestId: request.id, findings: findingsString });
+    const res = await enterLabResult({ 
+      requestId: groupedItem.id, 
+      linkedRequestIds: groupedItem.linkedRequestIds,
+      findings: findingsString 
+    });
     setSaving(false);
     if (res.error) toast.error(res.error);
     else {
@@ -138,8 +150,13 @@ function LabRequestRow({
         {/* Left info */}
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base">{request.test.name}</h4>
+            <h4 className="font-bold text-slate-900 dark:text-slate-100 text-base">{groupedItem.testName}</h4>
             {getPanelBadge()}
+            {groupedItem.linkedRequestIds.length > 1 && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/60 dark:text-blue-300 border border-blue-300 dark:border-blue-700">
+                {groupedItem.linkedRequestIds.length} orders combined
+              </span>
+            )}
             {isUrgent && (
               <span className="inline-flex items-center gap-1 text-[10px] uppercase font-extrabold px-2 py-0.5 rounded bg-red-600 text-white shadow-sm animate-pulse">
                 ⚡ STAT / URGENT
@@ -147,21 +164,21 @@ function LabRequestRow({
             )}
           </div>
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            <span className="font-medium text-slate-900 dark:text-slate-100">Patient:</span> {request.patient.firstName} {request.patient.lastName}
-            {request.patient.contactNumber && <span className="text-xs text-slate-400 ml-2">({request.patient.contactNumber})</span>}
+            <span className="font-medium text-slate-900 dark:text-slate-100">Patient:</span> {groupedItem.patient.firstName} {groupedItem.patient.lastName}
+            {groupedItem.patient.contactNumber && <span className="text-xs text-slate-400 ml-2">({groupedItem.patient.contactNumber})</span>}
           </p>
           <p className="text-xs text-slate-400">
-            Requested {new Date(request.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {new Date(request.createdAt).toLocaleDateString()}
+            Requested {new Date(groupedItem.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {new Date(groupedItem.createdAt).toLocaleDateString()}
           </p>
         </div>
 
         {/* Action Toggle */}
         <div className="flex items-center gap-2">
           <ReferralButton 
-            patient={request.patient}
+            patient={groupedItem.patient}
             referralDestinations={referralDestinations}
             clinicNames={clinicNames}
-            defaultReason={`Referred for ${request.test.name} evaluation.`}
+            defaultReason={`Referred for ${groupedItem.testName} evaluation.`}
           />
           {!isExpanded ? (
             <button
@@ -177,7 +194,7 @@ function LabRequestRow({
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
-              {panelType ? `Open ${request.test.name} Form` : "Enter Results"}
+              {panelType ? `Open ${groupedItem.testName} Form` : "Enter Results"}
             </button>
           ) : (
             <button
@@ -195,6 +212,7 @@ function LabRequestRow({
         <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-800">
           {panelType === "STOOL" && (
             <StoolResultForm
+              testName={groupedItem.testName}
               onSubmit={handleSaveFindings}
               onCancel={() => setIsExpanded(false)}
               loading={saving}
@@ -203,6 +221,7 @@ function LabRequestRow({
 
           {panelType === "URINE" && (
             <UrineResultForm
+              testName={groupedItem.testName}
               onSubmit={handleSaveFindings}
               onCancel={() => setIsExpanded(false)}
               loading={saving}
@@ -211,6 +230,7 @@ function LabRequestRow({
 
           {panelType === "HEMATOLOGY" && (
             <HematologyResultForm
+              testName={groupedItem.testName}
               onSubmit={handleSaveFindings}
               onCancel={() => setIsExpanded(false)}
               loading={saving}
