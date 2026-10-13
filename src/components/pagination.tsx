@@ -6,18 +6,25 @@ export function Pagination({
   totalItems,
   pageSize,
   baseUrl,
-  searchQuery
+  searchQuery,
+  extraParams,
 }: {
   currentPage: number;
   totalItems: number;
   pageSize: number;
   baseUrl: string;
   searchQuery?: string;
+  extraParams?: Record<string, string>;
 }) {
   const totalPages = Math.ceil(totalItems / pageSize) || 1;
   
   const buildUrl = (page: number) => {
     const params = new URLSearchParams();
+    if (extraParams) {
+      Object.entries(extraParams).forEach(([k, v]) => {
+        if (v) params.set(k, v);
+      });
+    }
     if (searchQuery) params.set("q", searchQuery);
     if (page > 1) params.set("page", page.toString());
     return `${baseUrl}?${params.toString()}`;

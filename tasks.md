@@ -158,14 +158,14 @@ This document tracks all tasks, reviews the two recently closed paired-programmi
 | 19 | **Reception search popup filtering & show searched personnels on cards** | **Current** | `reception-patient-search.tsx`, `reception-dashboard.tsx`, `patient-search-select.tsx`, `actions.ts` | **DONE** |
 | 20 | **Predictive while searching for numeric inputs (Phone, Card/Employee ID, Military ID) & visual match highlights** | **Current** | `reception-patient-search.tsx`, `patient-search-select.tsx`, `actions.ts`, `api/patients/search` | **DONE** |
 | 21 | **Data Encoder queue family linking attribution: linked staff display, staff search, and salary credit confirmation** | **Current** | `dataencoder/page.tsx`, `data-encoder-client.tsx` | **DONE** |
-| 22 | **Patient directory table live predictive search (debounced table update, preview suggestions popup, number matching without Enter key)** | **Current** | `patients/patient-table-search.tsx`, `patients/page.tsx` | **DONE** |
+| 22 | **Patient directory table live keystroke search (debounced table update on every keystroke, removed floating prediction cards, preserved across All and Pending tabs)** | **Current** | `patients/patient-table-search.tsx`, `patients/page.tsx`, `pagination.tsx` | **DONE** |
 | 23 | **Highlight doctor-selected sub-tests with special borders, visual focus rings, and order banner on laboratory result forms** | **Current** | `hematology-result-form.tsx`, `stool-result-form.tsx`, `urine-result-form.tsx`, `lab-panels.ts` | **DONE** |
 
 ---
 
 ## 5. Verification & Health Check
 
-- **Version Release**: Released as **v0.1.28** in `package.json` and git tags.
+- **Version Release**: Released as **v0.1.29** in `package.json` and git tags.
 - **TypeScript Compilation**: `pnpm exec tsc --noEmit` executed cleanly with **0 errors**.
 - **Production Build**: `pnpm next build` completed successfully with **all 36 routes generated**.
 - **Database Schema**: Schema is consistent and synced.

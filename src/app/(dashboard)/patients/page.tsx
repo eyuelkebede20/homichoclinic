@@ -127,13 +127,13 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       <div className="border-b border-slate-200 dark:border-slate-800 mb-6 print:hidden">
         <nav className="-mb-px flex space-x-8">
           <Link 
-            href="?tab=all" 
+            href={query ? `/patients?tab=all&q=${encodeURIComponent(query)}` : "/patients?tab=all"} 
             className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'all' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
           >
             All Patients
           </Link>
           <Link 
-            href="?tab=pending" 
+            href={query ? `/patients?tab=pending&q=${encodeURIComponent(query)}` : "/patients?tab=pending"} 
             className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${tab === 'pending' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
           >
             Pending Registrations
@@ -186,7 +186,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
               totalItems={totalItems} 
               pageSize={PAGE_SIZE} 
               baseUrl="/patients" 
-              searchQuery={query} 
+              searchQuery={query}
+              extraParams={tab !== "all" ? { tab } : undefined}
             />
           )}
         </div>
