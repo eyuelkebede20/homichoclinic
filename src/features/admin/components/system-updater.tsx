@@ -90,6 +90,7 @@ export function SystemUpdater() {
     let seenLines = 0;
     let scriptDone = false;
     let scriptFailed = false;
+    let waitingCycles = 0;
 
     while (!stopRef.current && Date.now() < deadline) {
       await sleep(STATUS_POLL_MS);
@@ -103,6 +104,30 @@ export function SystemUpdater() {
             setLogLines((prev) => [...prev, ...newLines]);
             seenLines = data.lines.length;
           }
+
+          // Detect if stuck on initial "[0/5] Waiting for updater..."
+          const isOnlyWaiting =
+            data.lines.length <= 2 &&
+            data.lines.some((l) => l.includes("Waiting for"));
+
+          if (isOnlyWaiting) {
+            waitingCycles++;
+            // If waiting for ~24 seconds (12 cycles * 2s) with no response from host:
+            if (waitingCycles >= 12) {
+              appendLog("");
+              appendLog("⚠️ The host updater service did not pick up the update request.");
+              appendLog("   Troubleshooting options:");
+              appendLog("   1. On Linux (Docker): Ensure the host watcher is active:");
+              appendLog("      sudo ./deploy/install-watcher.sh");
+              appendLog("      Or run update manually on the host:  ./update.sh");
+              appendLog("   2. On Windows: Run deploy\\install-watcher.bat (as Admin) or run UPDATE.bat");
+              setPhase("failed");
+              return;
+            }
+          } else {
+            waitingCycles = 0;
+          }
+
           if (data.done) {
             scriptDone = true;
             scriptFailed = data.failed;
@@ -208,6 +233,8 @@ export function SystemUpdater() {
                     ? "text-emerald-400"
                     : line.includes("✗") || line.includes("!!")
                     ? "text-red-400"
+                    : line.includes("⚠️") || line.startsWith("   👉") || line.includes("Troubleshooting")
+                    ? "text-amber-400 font-semibold"
                     : line.startsWith("---")
                     ? "text-slate-500 italic"
                     : "text-slate-300"

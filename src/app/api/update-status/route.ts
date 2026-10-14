@@ -20,13 +20,13 @@ export async function GET() {
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  let fileToRead = STATUS_FILE;
-  const localStatusFile = path.join(process.cwd(), "run", "update.status");
-  
-  if (fs.existsSync(localStatusFile)) {
-    fileToRead = localStatusFile;
-  } else if (!fs.existsSync(STATUS_FILE)) {
-    return NextResponse.json({ lines: [], done: false });
+  const inContainer = fs.existsSync("/run/updater");
+  const fileToRead = inContainer
+    ? "/run/updater/update.status"
+    : path.join(process.cwd(), "run", "update.status");
+
+  if (!fs.existsSync(fileToRead)) {
+    return NextResponse.json({ lines: [], done: false, failed: false });
   }
 
   try {

@@ -56,7 +56,7 @@ SupplementaryGroups=docker
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 # Remove the flag first so failed update does not loop
 ExecStartPre=+/bin/rm -f $ROOT/run/update.request
-ExecStart=$ROOT/update.sh
+ExecStart=/bin/bash $ROOT/update.sh
 UNIT
 
 sudo install -m 644 "$tmp/clinic-update.path" "$tmp/clinic-update.service" /etc/systemd/system/

@@ -27,12 +27,13 @@ while true; do
     echo "[$(date '+%F %T')] Update request detected." >> "$LOG"
     rm -f "$FLAG" 2>/dev/null || true
     
-    if [ -x "$ROOT/update.sh" ]; then
-      "$ROOT/update.sh" >> "$LOG" 2>&1
+    if [ -f "$ROOT/update.sh" ]; then
+      /bin/bash "$ROOT/update.sh" >> "$LOG" 2>&1
       RC=$?
       echo "[$(date '+%F %T')] update.sh finished (exit code $RC)." >> "$LOG"
     else
-      echo "[$(date '+%F %T')] ERROR: $ROOT/update.sh not found or not executable." >> "$LOG"
+      echo "[$(date '+%F %T')] ERROR: $ROOT/update.sh not found." >> "$LOG"
+      echo "[!] ERROR: $ROOT/update.sh not found on host." >> "$ROOT/run/update.status" 2>/dev/null || true
     fi
   fi
   sleep 3
