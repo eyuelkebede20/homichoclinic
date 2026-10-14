@@ -10,11 +10,9 @@ import { getLabPanelType, groupPendingLabRequests, GroupedLabRequest } from "../
 import { StoolResultForm } from "./stool-result-form";
 import { UrineResultForm } from "./urine-result-form";
 import { HematologyResultForm } from "./hematology-result-form";
-import { ReferralButton } from "./referral-button";
 
 export function LabDashboard({ 
   requests,
-  referralDestinations = [],
   clinicNames
 }: { 
   requests: any[];
@@ -62,7 +60,6 @@ export function LabDashboard({
               <LabRequestRow 
                 key={group.id} 
                 groupedItem={group} 
-                referralDestinations={referralDestinations} 
                 clinicNames={clinicNames} 
               />
             ))
@@ -75,11 +72,9 @@ export function LabDashboard({
 
 function LabRequestRow({ 
   groupedItem,
-  referralDestinations,
   clinicNames
 }: { 
   groupedItem: GroupedLabRequest<any>;
-  referralDestinations?: string[];
   clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string };
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -174,12 +169,6 @@ function LabRequestRow({
 
         {/* Action Toggle */}
         <div className="flex items-center gap-2">
-          <ReferralButton 
-            patient={groupedItem.patient}
-            referralDestinations={referralDestinations}
-            clinicNames={clinicNames}
-            defaultReason={`Referred for ${groupedItem.testName} evaluation.`}
-          />
           {!isExpanded ? (
             <button
               onClick={() => setIsExpanded(true)}

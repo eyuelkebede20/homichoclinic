@@ -360,10 +360,20 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
           </div>
 
           {/* Reticulocytes */}
-          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-rose-200 dark:border-rose-800 bg-white/70 dark:bg-slate-900/50"}`}>
+          <div className={`p-2.5 rounded-xl transition-all ${
+            selected.reqReticulocytes
+              ? "border-2 border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/70 dark:bg-rose-950/40 shadow-sm"
+              : !selected.isFull
+              ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75"
+              : "border border-rose-200 dark:border-rose-800 bg-white/70 dark:bg-slate-900/50"
+          }`}>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5 flex items-center justify-between">
               <span>Reticulocytes</span>
-              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+              {selected.reqReticulocytes ? (
+                <span className="text-[10px] bg-rose-700 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <div className="text-[10px] text-slate-400 mb-1">0.5 - 2.5 %</div>
             <input

@@ -1,7 +1,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
-import { PERMISSIONS, ROLE_PERMISSIONS, PermissionString } from "@/lib/permissions";
+import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -11,35 +11,87 @@ const importCatalogSchema = z.object({
   type: z.enum(["DRUG", "LAB_TEST"]),
 });
 
-function parseCSV(text: string) {
-  const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
+function normalizeKey(str: string): string {
+  return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseCSV(text: string): Record<string, string>[] {
+  // Strip UTF-8 BOM if present
+  const cleanedText = text.replace(/^\uFEFF/, "");
+  const lines = cleanedText.split(/\r?\n/).filter((line) => line.trim().length > 0);
   if (lines.length < 2) return [];
 
-  const parseLine = (line: string) => {
-    const result = [];
+  // Detect delimiter: check first line for comma vs semicolon vs tab
+  const firstLine = lines[0];
+  const commaCount = (firstLine.match(/,/g) || []).length;
+  const semiCount = (firstLine.match(/;/g) || []).length;
+  const tabCount = (firstLine.match(/\t/g) || []).length;
+
+  let delimiter = ",";
+  if (semiCount > commaCount && semiCount > tabCount) {
+    delimiter = ";";
+  } else if (tabCount > commaCount && tabCount > semiCount) {
+    delimiter = "\t";
+  }
+
+  const parseLine = (line: string, delim: string) => {
+    const result: string[] = [];
     let startValueIndex = 0;
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
-      if (line[i] === '"') inQuotes = !inQuotes;
-      else if (line[i] === ',' && !inQuotes) {
-        result.push(line.substring(startValueIndex, i).replace(/^"|"$/g, '').trim());
+      if (line[i] === '"') {
+        inQuotes = !inQuotes;
+      } else if (line[i] === delim && !inQuotes) {
+        result.push(
+          line.substring(startValueIndex, i).replace(/^"|"$/g, "").trim()
+        );
         startValueIndex = i + 1;
       }
     }
-    result.push(line.substring(startValueIndex).replace(/^"|"$/g, '').trim());
+    result.push(
+      line.substring(startValueIndex).replace(/^"|"$/g, "").trim()
+    );
     return result;
   };
 
-  const headers = parseLine(lines[0]).map(h => h.toLowerCase());
-  
-  return lines.slice(1).map(line => {
-    const values = parseLine(line);
-    const obj: Record<string, string> = {};
-    headers.forEach((header, index) => {
-      obj[header] = values[index] || "";
-    });
-    return obj;
-  });
+  const rawHeaders = parseLine(lines[0], delimiter);
+  const normalizedHeaders = rawHeaders.map(normalizeKey);
+
+  return lines
+    .slice(1)
+    .map((line) => {
+      const values = parseLine(line, delimiter);
+      const row: Record<string, string> = {};
+      normalizedHeaders.forEach((header, index) => {
+        if (header) {
+          row[header] = (values[index] || "").trim();
+        }
+      });
+      return row;
+    })
+    .filter((row) => Object.values(row).some((val) => val.length > 0));
+}
+
+function getField(row: Record<string, string>, aliases: string[]): string {
+  // Pass 1: exact normalized match
+  for (const alias of aliases) {
+    const norm = normalizeKey(alias);
+    if (row[norm] !== undefined && row[norm] !== "") {
+      return row[norm];
+    }
+  }
+
+  // Pass 2: partial substring match (e.g. "unitpriceetb" matching "unitprice" or "price")
+  for (const alias of aliases) {
+    const norm = normalizeKey(alias);
+    if (norm.length < 3) continue; // avoid overly broad matching on short codes
+    for (const key of Object.keys(row)) {
+      if (key.includes(norm) && row[key] !== "") {
+        return row[key];
+      }
+    }
+  }
+  return "";
 }
 
 export const importCatalogCSV = createSafeAction({
@@ -50,105 +102,279 @@ export const importCatalogCSV = createSafeAction({
 
     const rows = parseCSV(data.csvText);
     if (rows.length === 0) {
-      return { error: "No valid rows found in CSV." };
+      return { error: "No valid rows found in CSV/Excel file." };
     }
 
     let processedCount = 0;
-    let requestCount = 0;
+    let updatedCount = 0;
+    let createdCount = 0;
 
     for (const row of rows) {
-      const id = row["id"];
-      const name = row["nameofmed"] || row["nameoftest"] || row["name"];
+      const id = getField(row, ["id", "drugid", "testid", "itemid", "code"]);
+      const name = getField(row, [
+        "nameofmed",
+        "medicinename",
+        "drugname",
+        "nameoftest",
+        "testname",
+        "drug",
+        "medicine",
+        "itemname",
+        "item",
+        "name",
+      ]);
+
       if (!name) continue; // Name is required
 
-      const priceEtb = parseFloat(row["price"] || "0");
+      const priceRaw = getField(row, [
+        "price",
+        "unitprice",
+        "sellingprice",
+        "priceetb",
+        "cost",
+        "unitcost",
+        "rate",
+        "fee",
+      ]).replace(/[^0-9.]/g, "");
+      const priceEtb = parseFloat(priceRaw || "0");
       const priceCents = isNaN(priceEtb) ? 0 : Math.round(priceEtb * 100);
-      const category = row["category"] || null;
-      const rawDescription = row["description"];
-      
-      const amountInStockStr = row["amountinstock"];
-      const amountInStock = amountInStockStr ? parseInt(amountInStockStr, 10) : null;
-      const parsedAmountInStock = amountInStock !== null && !isNaN(amountInStock) ? amountInStock : null;
 
-      const batchNumber = row["batchnumber"] || row["batch_number"] || row["batch"] || null;
-      const expiryDateStr = row["expirydate"] || row["expiry_date"] || row["expiry"] || null;
+      const category =
+        getField(row, ["category", "dosageform", "form", "type", "class", "group"]) ||
+        null;
+      const description =
+        getField(row, [
+          "description",
+          "desc",
+          "strength",
+          "specification",
+          "remark",
+          "notes",
+          "note",
+        ]) || null;
+
+      // Initial Stock (Hamle baseline)
+      const initialStockRaw = getField(row, [
+        "initialstock",
+        "initialinstock",
+        "hamlestock",
+        "startingstock",
+        "openingstock",
+        "baseline",
+        "initial",
+      ]);
+
+      // Current Stock (counted quantity)
+      const currentStockRaw = getField(row, [
+        "currentstock",
+        "currentinstock",
+        "physicalcount",
+        "countedstock",
+        "actualstock",
+      ]);
+
+      // Generic Stock column (e.g. "Stock", "Quantity", "AmountInStock")
+      const genericStockRaw = getField(row, [
+        "amountinstock",
+        "stock",
+        "quantity",
+        "qty",
+        "amount",
+        "balance",
+      ]);
+
+      let parsedInitialStock: number | null = null;
+      let parsedCurrentStock: number | null = null;
+
+      if (initialStockRaw !== "") {
+        const parsed = parseInt(initialStockRaw, 10);
+        if (!isNaN(parsed)) parsedInitialStock = parsed;
+      }
+
+      if (currentStockRaw !== "") {
+        const parsed = parseInt(currentStockRaw, 10);
+        if (!isNaN(parsed)) parsedCurrentStock = parsed;
+      }
+
+      // If initial stock was not explicitly named, but a generic stock column is present:
+      // In baseline inventory imports, map generic stock to initialStock!
+      if (parsedInitialStock === null && genericStockRaw !== "") {
+        const parsed = parseInt(genericStockRaw, 10);
+        if (!isNaN(parsed)) {
+          parsedInitialStock = parsed;
+        }
+      }
+
+      const batchNumber =
+        getField(row, [
+          "batchnumber",
+          "batchno",
+          "batch",
+          "lotnumber",
+          "lotno",
+          "lot",
+        ]) || null;
+
+      const expiryDateStr =
+        getField(row, ["expirydate", "expiry", "expdate", "exp", "expirationdate"]) ||
+        null;
       const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date("2099-12-31");
       const validExpiry = isNaN(expiryDate.getTime()) ? new Date("2099-12-31") : expiryDate;
 
-      const dateAddedToStockStr = row["dateaddedtostock"] || row["date_added"] || row["added_date"] || null;
+      const dateAddedToStockStr =
+        getField(row, [
+          "dateaddedtostock",
+          "dateadded",
+          "addeddate",
+          "receiptdate",
+          "date",
+        ]) || null;
       const dateAddedToStock = dateAddedToStockStr ? new Date(dateAddedToStockStr) : null;
-      const validDateAdded = dateAddedToStock && !isNaN(dateAddedToStock.getTime()) ? dateAddedToStock : null;
+      const validDateAdded =
+        dateAddedToStock && !isNaN(dateAddedToStock.getTime()) ? dateAddedToStock : null;
 
-      const docNo = row["docno"] || row["doc_no"] || row["receipt"] || null;
-
-      const description: string | null = rawDescription || null;
+      const docNo =
+        getField(row, ["docno", "documentno", "receiptno", "receipt", "invoiceno", "invoice", "refno"]) ||
+        null;
 
       if (data.type === "DRUG") {
         if (canApprove) {
-          let drug;
+          // Check if drug already exists by ID or by Case-Insensitive Name
+          let existingDrug = null;
           if (id) {
-            drug = await prisma.drug.upsert({
-              where: { id },
-              update: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock },
-              create: { id, name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
-            });
-          } else {
-            drug = await prisma.drug.create({
-              data: { name, price: priceCents, category, description, amountInStock: parsedAmountInStock }
+            existingDrug = await prisma.drug.findUnique({ where: { id } });
+          }
+          if (!existingDrug) {
+            existingDrug = await prisma.drug.findFirst({
+              where: {
+                name: { equals: name.trim(), mode: "insensitive" },
+                deletedAt: null,
+              },
             });
           }
 
-          if (parsedAmountInStock !== null) {
-            await prisma.stockBatch.create({
+          let drug;
+          if (existingDrug) {
+            // Update existing drug
+            const updatePayload: {
+              name: string;
+              price?: number;
+              category?: string | null;
+              description?: string | null;
+              initialStock?: number | null;
+              amountInStock?: number | null;
+            } = {
+              name: name.trim(),
+            };
+
+            if (priceCents > 0 || !existingDrug.price) {
+              updatePayload.price = priceCents;
+            }
+            if (category) {
+              updatePayload.category = category;
+            }
+            if (description) {
+              updatePayload.description = description;
+            }
+            if (parsedInitialStock !== null) {
+              updatePayload.initialStock = parsedInitialStock;
+            }
+            if (parsedCurrentStock !== null) {
+              updatePayload.amountInStock = parsedCurrentStock;
+            }
+
+            drug = await prisma.drug.update({
+              where: { id: existingDrug.id },
+              data: updatePayload,
+            });
+            updatedCount++;
+          } else {
+            // Create brand new drug
+            drug = await prisma.drug.create({
               data: {
-                drugId: drug.id,
-                batchNumber: batchNumber || `import-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-                expiryDate: validExpiry,
-                quantity: parsedAmountInStock,
-                cost: 0,
-                dateAddedToStock: validDateAdded,
-                docNo: docNo
-              }
+                ...(id ? { id } : {}),
+                name: name.trim(),
+                price: priceCents,
+                category,
+                description,
+                initialStock: parsedInitialStock,
+                amountInStock: parsedCurrentStock,
+              },
+            });
+            createdCount++;
+          }
+
+          // If a concrete batch number is provided, upsert the stock batch
+          if (batchNumber && parsedCurrentStock !== null && parsedCurrentStock > 0) {
+            const existingBatch = await prisma.stockBatch.findFirst({
+              where: { drugId: drug.id, batchNumber },
+            });
+
+            if (existingBatch) {
+              await prisma.stockBatch.update({
+                where: { id: existingBatch.id },
+                data: {
+                  quantity: parsedCurrentStock,
+                  expiryDate: validExpiry,
+                  dateAddedToStock: validDateAdded,
+                  docNo,
+                },
+              });
+            } else {
+              await prisma.stockBatch.create({
+                data: {
+                  drugId: drug.id,
+                  batchNumber,
+                  expiryDate: validExpiry,
+                  quantity: parsedCurrentStock,
+                  cost: 0,
+                  dateAddedToStock: validDateAdded,
+                  docNo,
+                },
+              });
+            }
+          }
+
+          processedCount++;
+        }
+      } else {
+        // LAB_TEST
+        if (canApprove) {
+          let existingTest = null;
+          if (id) {
+            existingTest = await prisma.labTest.findUnique({ where: { id } });
+          }
+          if (!existingTest) {
+            existingTest = await prisma.labTest.findFirst({
+              where: {
+                name: { equals: name.trim(), mode: "insensitive" },
+                deletedAt: null,
+              },
             });
           }
-          processedCount++;
-        } else {
-          await prisma.catalogChangeRequest.create({
-            data: {
-              type: "DRUG",
-              action: id ? "UPDATE" : "CREATE",
-              targetId: id || null,
-              requestedData: JSON.stringify({ name, price: priceCents, category, description, amountInStock: parsedAmountInStock, batchNumber, expiryDate: validExpiry, dateAddedToStock: validDateAdded, docNo }),
-              requestedById: ctx.userId,
-            }
-          });
-          requestCount++;
-        }
-      } else { // LAB_TEST
-        if (canApprove) {
-          if (id) {
-            await prisma.labTest.upsert({
-              where: { id },
-              update: { name, price: priceCents, description },
-              create: { id, name, price: priceCents, description }
+
+          if (existingTest) {
+            await prisma.labTest.update({
+              where: { id: existingTest.id },
+              data: {
+                name: name.trim(),
+                ...(priceCents > 0 ? { price: priceCents } : {}),
+                ...(description ? { description } : {}),
+              },
             });
+            updatedCount++;
           } else {
             await prisma.labTest.create({
-              data: { name, price: priceCents, description }
+              data: {
+                ...(id ? { id } : {}),
+                name: name.trim(),
+                price: priceCents,
+                description,
+              },
             });
+            createdCount++;
           }
           processedCount++;
-        } else {
-          await prisma.catalogChangeRequest.create({
-            data: {
-              type: "LAB_TEST",
-              action: id ? "UPDATE" : "CREATE",
-              targetId: id || null,
-              requestedData: JSON.stringify({ name, price: priceCents, description }),
-              requestedById: ctx.userId,
-            }
-          });
-          requestCount++;
         }
       }
     }
@@ -156,12 +382,11 @@ export const importCatalogCSV = createSafeAction({
     revalidatePath("/catalogs");
     revalidatePath("/catalogs/approvals");
     revalidatePath("/pharmacy/catalog");
+    revalidatePath("/pharmacy");
     revalidatePath("/laboratory/catalog");
 
-    if (canApprove) {
-      return { success: `Successfully imported/updated ${processedCount} items directly.` };
-    } else {
-      return { success: `Submitted ${requestCount} items for approval.` };
-    }
-  }
+    return {
+      success: `Successfully processed ${processedCount} items (${createdCount} new, ${updatedCount} updated).`,
+    };
+  },
 });

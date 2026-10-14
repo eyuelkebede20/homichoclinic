@@ -149,7 +149,9 @@ export function parseHematologySelectedSubTests(testName?: string) {
       isFull: true,
       reqWbcDiff: true,
       reqHgbHct: true,
+      reqRbc: true,
       reqPlatelets: true,
+      reqReticulocytes: true,
       reqEsr: true,
       reqCoagulation: true,
       reqMorphology: true,
@@ -159,17 +161,22 @@ export function parseHematologySelectedSubTests(testName?: string) {
   }
 
   const reqWbcDiff = n.includes("wbc") || n.includes("differential") || n.includes("white blood");
-  const reqHgbHct = n.includes("hemoglobin") || n.includes("hematocrit") || n.includes("hgb") || n.includes("hct") || n.includes("rbc");
+  const reqHgbHct = n.includes("hemoglobin") || n.includes("hematocrit") || n.includes("hgb") || n.includes("hct");
+  const reqRbc = n.includes("rbc") || n.includes("red blood") || reqHgbHct;
   const reqPlatelets = n.includes("platelet");
+  const reqReticulocytes = n.includes("reticulocyte");
   const reqEsr = n.includes("esr") || n.includes("sedimentation");
-  const reqCoagulation = n.includes("coagulation") || n.includes("pt") || n.includes("bt") || n.includes("ct") || n.includes("prothrombin");
+  const reqCoagulation = n.includes("coagulation") || n.includes("pt") || n.includes("bt") || n.includes("ct") || n.includes("prothrombin") || n.includes("bleeding") || n.includes("clotting");
   const reqMorphology = n.includes("morphology") || n.includes("smear");
-  const reqIndices = reqHgbHct || n.includes("indices") || n.includes("mcv") || n.includes("mch");
+  const reqIndices = n.includes("indices") || n.includes("mcv") || n.includes("mch") || n.includes("mchc");
 
   const selectedList: string[] = [];
   if (reqWbcDiff) selectedList.push("WBC & Differential Count");
   if (reqHgbHct) selectedList.push("Hemoglobin & Hematocrit (Hgb/Hct)");
+  if (reqRbc && !reqHgbHct) selectedList.push("RBC Count");
   if (reqPlatelets) selectedList.push("Platelet Count");
+  if (reqReticulocytes) selectedList.push("Reticulocyte Count");
+  if (reqIndices) selectedList.push("RBC Indices (MCV/MCH/MCHC)");
   if (reqEsr) selectedList.push("ESR (Sedimentation Rate)");
   if (reqCoagulation) selectedList.push("Coagulation Profile (PT/BT/CT)");
   if (reqMorphology) selectedList.push("Blood Smear Morphology");
@@ -179,7 +186,9 @@ export function parseHematologySelectedSubTests(testName?: string) {
       isFull: true,
       reqWbcDiff: true,
       reqHgbHct: true,
+      reqRbc: true,
       reqPlatelets: true,
+      reqReticulocytes: true,
       reqEsr: true,
       reqCoagulation: true,
       reqMorphology: true,
@@ -192,7 +201,9 @@ export function parseHematologySelectedSubTests(testName?: string) {
     isFull: false,
     reqWbcDiff,
     reqHgbHct,
+    reqRbc,
     reqPlatelets,
+    reqReticulocytes,
     reqEsr,
     reqCoagulation,
     reqMorphology,
@@ -226,12 +237,20 @@ export function parseStoolSelectedSubTests(testName?: string) {
 
   const reqOccultBlood = n.includes("occult") || n.includes("fobt") || n.includes("hidden blood");
   const reqOvaParasite = n.includes("ova") || n.includes("parasite") || n.includes("microscopic");
-  const reqMacroscopic = n.includes("macroscopic") || n.includes("physical") || n.includes("consistency") || n.includes("appearance") || n.includes("color");
+  const reqMacroscopic = n.includes("macroscopic") || n.includes("physical") || n.includes("consistency") || n.includes("appearance") || n.includes("color") || n.includes("gross") || n.includes("pus") || n.includes("mucus") || n.includes("bile");
+  const reqAppearance = n.includes("appearance") || n.includes("consistency") || reqMacroscopic;
+  const reqGrossBlood = n.includes("gross blood") || reqMacroscopic;
+  const reqPusMucus = n.includes("pus") || n.includes("mucus") || reqMacroscopic;
+  const reqBile = n.includes("bile") || reqMacroscopic;
 
   const selectedList: string[] = [];
   if (reqOccultBlood) selectedList.push("Occult Blood (FOBT)");
   if (reqOvaParasite) selectedList.push("Ova & Parasite (Microscopic)");
-  if (reqMacroscopic) selectedList.push("Macroscopic & Physical");
+  if (n.includes("appearance") || n.includes("consistency")) selectedList.push("Appearance & Consistency");
+  if (n.includes("gross blood")) selectedList.push("Gross Blood");
+  if (n.includes("pus") || n.includes("mucus")) selectedList.push("Pus & Mucus");
+  if (n.includes("bile")) selectedList.push("Bile");
+  if (n.includes("macroscopic") && selectedList.length === 0) selectedList.push("Macroscopic & Physical");
 
   if (selectedList.length === 0) {
     return { 
@@ -239,6 +258,10 @@ export function parseStoolSelectedSubTests(testName?: string) {
       reqOccultBlood: true, 
       reqOvaParasite: true, 
       reqMacroscopic: true,
+      reqAppearance: true,
+      reqGrossBlood: true,
+      reqPusMucus: true,
+      reqBile: true,
       selectedList: [testName],
     };
   }
@@ -248,6 +271,10 @@ export function parseStoolSelectedSubTests(testName?: string) {
     reqOccultBlood,
     reqOvaParasite,
     reqMacroscopic,
+    reqAppearance,
+    reqGrossBlood,
+    reqPusMucus,
+    reqBile,
     selectedList,
   };
 }
@@ -262,6 +289,9 @@ export function parseUrineSelectedSubTests(testName?: string) {
       reqSugar: true, 
       reqBile: true, 
       reqPhysical: true,
+      reqAcetone: true,
+      reqKetosteroids: true,
+      reqElectrolytes: true,
       selectedList: ["Full Routine Urinalysis"],
     };
   }
@@ -277,6 +307,9 @@ export function parseUrineSelectedSubTests(testName?: string) {
       reqSugar: true, 
       reqBile: true, 
       reqPhysical: true,
+      reqAcetone: true,
+      reqKetosteroids: true,
+      reqElectrolytes: true,
       selectedList: ["Full Routine Urinalysis"],
     };
   }
@@ -285,16 +318,22 @@ export function parseUrineSelectedSubTests(testName?: string) {
   const reqSediment = n.includes("sediment") || n.includes("microscopic");
   const reqAlbumin = reqDipstick || n.includes("albumin") || n.includes("protein");
   const reqSugar = reqDipstick || n.includes("sugar") || n.includes("glucose");
-  const reqBile = reqDipstick || n.includes("bile") || n.includes("urobilinogen") || n.includes("bilirubin");
-  const reqPhysical = n.includes("physical") || n.includes("gravity") || (!reqDipstick && !reqSediment && !reqAlbumin && !reqSugar && !reqBile);
+  const reqBile = reqDipstick || n.includes("bile") || n.includes("urobilinogen") || n.includes("bilirubin") || n.includes("urobilin");
+  const reqAcetone = reqDipstick || n.includes("acetone") || n.includes("diacetic") || n.includes("ketone");
+  const reqKetosteroids = n.includes("ketosteroid") || n.includes("17-");
+  const reqElectrolytes = n.includes("electrolyte") || n.includes("sodium") || n.includes("potassium") || n.includes("na") || n.includes("k");
+  const reqPhysical = n.includes("physical") || n.includes("gravity") || n.includes("reaction") || n.includes("quantity") || (!reqDipstick && !reqSediment && !reqAlbumin && !reqSugar && !reqBile && !reqAcetone && !reqKetosteroids && !reqElectrolytes);
 
   const selectedList: string[] = [];
   if (reqDipstick) selectedList.push("Chemical Dipstick (Protein/Sugar/pH)");
   if (reqSediment) selectedList.push("Microscopic Sediment Examination");
   if (reqAlbumin && !reqDipstick) selectedList.push("Albumin / Protein Test");
   if (reqSugar && !reqDipstick) selectedList.push("Sugar / Glucose Test");
+  if (reqAcetone && !reqDipstick) selectedList.push("Acetone & Diacetic Acid");
   if (reqBile && !reqDipstick) selectedList.push("Bile & Urobilinogen");
-  if (reqPhysical) selectedList.push("Physical Examination");
+  if (reqKetosteroids) selectedList.push("17-Ketosteroids");
+  if (reqElectrolytes) selectedList.push("Electrolytes (Na & K)");
+  if (reqPhysical && !reqDipstick) selectedList.push("Physical Examination");
 
   if (selectedList.length === 0) {
     return { 
@@ -305,6 +344,9 @@ export function parseUrineSelectedSubTests(testName?: string) {
       reqSugar: true, 
       reqBile: true, 
       reqPhysical: true,
+      reqAcetone: true,
+      reqKetosteroids: true,
+      reqElectrolytes: true,
       selectedList: [testName],
     };
   }
@@ -317,6 +359,9 @@ export function parseUrineSelectedSubTests(testName?: string) {
     reqSugar,
     reqBile,
     reqPhysical,
+    reqAcetone,
+    reqKetosteroids,
+    reqElectrolytes,
     selectedList,
   };
 }

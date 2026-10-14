@@ -152,3 +152,83 @@ export const cancelPrescription = createSafeAction({
     return updated;
   }
 });
+
+export const updateTemporaryDrugStock = createSafeAction({
+  schema: z.object({
+    drugId: z.string(),
+    currentStock: z.number().int().min(0).nullable(),
+    initialStock: z.number().int().min(0).nullable().optional(),
+  }),
+  requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
+  handler: async (data, ctx) => {
+    const existing = await prisma.drug.findUnique({
+      where: { id: data.drugId },
+    });
+    if (!existing) throw new Error("Drug not found");
+
+    const updateData: {
+      amountInStock: number | null;
+      initialStock?: number | null;
+    } = {
+      amountInStock: data.currentStock,
+    };
+
+    if (data.initialStock !== undefined) {
+      updateData.initialStock = data.initialStock;
+    }
+
+    const updated = await prisma.drug.update({
+      where: { id: data.drugId },
+      data: updateData,
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.INVENTORY_ADJUST,
+      resourceId: updated.id,
+      newValue: {
+        drugName: updated.name,
+        amountInStock: updated.amountInStock,
+        initialStock: updated.initialStock,
+      },
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath("/pharmacy/catalog");
+    return updated;
+  },
+});
+
+export const setDrugOutOfStock = createSafeAction({
+  schema: z.object({
+    drugId: z.string(),
+  }),
+  requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
+  handler: async (data, ctx) => {
+    const existing = await prisma.drug.findUnique({
+      where: { id: data.drugId },
+    });
+    if (!existing) throw new Error("Drug not found");
+
+    const updated = await prisma.drug.update({
+      where: { id: data.drugId },
+      data: { amountInStock: 0 },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.INVENTORY_ADJUST,
+      resourceId: updated.id,
+      newValue: {
+        drugName: updated.name,
+        amountInStock: 0,
+        status: "out_of_stock",
+      },
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath("/pharmacy/catalog");
+    return updated;
+  },
+});
+

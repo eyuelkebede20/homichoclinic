@@ -1,8 +1,9 @@
 "use client";
 
-import { Printer, Download, Banknote, FileSpreadsheet, LayoutDashboard, Search, UserCheck, Eye, X, Layers, List, CheckCircle2, Calendar, FileText } from "lucide-react";
+import { Printer, Download, Banknote, FileSpreadsheet, LayoutDashboard, Search, UserCheck, Eye, X, Layers, List, CheckCircle2, Calendar, FileText, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
+import { toast } from "sonner";
 
 export type InvoiceItemDetail = {
   id: string;
@@ -145,6 +146,89 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
       { total: 0, laboratoryCost: 0, pharmacyCost: 0, discountAmount: 0, afterDiscount: 0 }
     );
   }, [filteredReports]);
+
+  type GroupedSortField =
+    | "staffMemberName"
+    | "staffId"
+    | "transactionCount"
+    | "discountPercent"
+    | "laboratoryCost"
+    | "pharmacyCost"
+    | "total"
+    | "discountAmount"
+    | "afterDiscount";
+
+  type IndivSortField =
+    | "date"
+    | "invoiceNumber"
+    | "patientName"
+    | "staffMemberName"
+    | "staffId"
+    | "encoderName"
+    | "discountPercent"
+    | "laboratoryCost"
+    | "pharmacyCost"
+    | "total"
+    | "discountAmount"
+    | "afterDiscount";
+
+  const [groupedSortField, setGroupedSortField] = useState<GroupedSortField>("afterDiscount");
+  const [groupedSortDirection, setGroupedSortDirection] = useState<"asc" | "desc">("desc");
+
+  const [indivSortField, setIndivSortField] = useState<IndivSortField>("date");
+  const [indivSortDirection, setIndivSortDirection] = useState<"asc" | "desc">("desc");
+
+  const toggleGroupedSort = (field: GroupedSortField) => {
+    if (groupedSortField === field) {
+      setGroupedSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setGroupedSortField(field);
+      setGroupedSortDirection(field === "staffMemberName" || field === "staffId" ? "asc" : "desc");
+    }
+  };
+
+  const toggleIndivSort = (field: IndivSortField) => {
+    if (indivSortField === field) {
+      setIndivSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setIndivSortField(field);
+      setIndivSortDirection(field === "patientName" || field === "staffMemberName" || field === "staffId" ? "asc" : "desc");
+    }
+  };
+
+  const sortedGroupedStaffCredits = useMemo(() => {
+    const list = [...groupedStaffCredits];
+    list.sort((a, b) => {
+      const aVal = a[groupedSortField];
+      const bVal = b[groupedSortField];
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        const cmp = aVal.localeCompare(bVal);
+        return groupedSortDirection === "asc" ? cmp : -cmp;
+      }
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return groupedSortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+    return list;
+  }, [groupedStaffCredits, groupedSortField, groupedSortDirection]);
+
+  const sortedIndividualReports = useMemo(() => {
+    const list = [...filteredReports];
+    list.sort((a, b) => {
+      const aVal = a[indivSortField] ?? "";
+      const bVal = b[indivSortField] ?? "";
+      if (typeof aVal === "string" && typeof bVal === "string") {
+        const cmp = aVal.localeCompare(bVal);
+        return indivSortDirection === "asc" ? cmp : -cmp;
+      }
+      if (typeof aVal === "number" && typeof bVal === "number") {
+        return indivSortDirection === "asc" ? aVal - bVal : bVal - aVal;
+      }
+      return 0;
+    });
+    return list;
+  }, [filteredReports, indivSortField, indivSortDirection]);
 
   const handlePrint = () => {
     window.print();
@@ -535,6 +619,8 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
 
   // Export Excel
   const handleExportExcel = () => {
+    const workbook = XLSX.utils.book_new();
+
     if (viewMode === "grouped") {
       const headers = [
         "Staff Member (Salary Charge)",
@@ -551,7 +637,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
         "Total Charged to Salary (ETB)"
       ];
 
-      const data = groupedStaffCredits.map(g => [
+      const formatGroupRow = (g: GroupedStaffCredit) => [
         g.staffMemberName,
         g.staffId,
         g.staffDepartment,
@@ -559,17 +645,62 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
         g.transactionCount,
         g.patientsCovered.join("; "),
         `${g.discountPercent}%`,
-        (g.laboratoryCost / 100).toFixed(2),
-        (g.pharmacyCost / 100).toFixed(2),
-        (g.total / 100).toFixed(2),
-        (g.discountAmount / 100).toFixed(2),
-        (g.afterDiscount / 100).toFixed(2)
-      ]);
+        Number((g.laboratoryCost / 100).toFixed(2)),
+        Number((g.pharmacyCost / 100).toFixed(2)),
+        Number((g.total / 100).toFixed(2)),
+        Number((g.discountAmount / 100).toFixed(2)),
+        Number((g.afterDiscount / 100).toFixed(2))
+      ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Staff-Credits-Summary");
+      const computeGroupTotals = (items: GroupedStaffCredit[]) => {
+        const totalTx = items.reduce((sum, g) => sum + g.transactionCount, 0);
+        const totalLab = items.reduce((sum, g) => sum + g.laboratoryCost, 0);
+        const totalPharma = items.reduce((sum, g) => sum + g.pharmacyCost, 0);
+        const totalGross = items.reduce((sum, g) => sum + g.total, 0);
+        const totalDisc = items.reduce((sum, g) => sum + g.discountAmount, 0);
+        const totalAfter = items.reduce((sum, g) => sum + g.afterDiscount, 0);
+
+        return [
+          "TOTAL",
+          `${items.length} Staff Accounts`,
+          "-",
+          "-",
+          totalTx,
+          "-",
+          "-",
+          Number((totalLab / 100).toFixed(2)),
+          Number((totalPharma / 100).toFixed(2)),
+          Number((totalGross / 100).toFixed(2)),
+          Number((totalDisc / 100).toFixed(2)),
+          Number((totalAfter / 100).toFixed(2))
+        ];
+      };
+
+      // 1. Master sheet: All Staff Credits
+      const masterRows = sortedGroupedStaffCredits.map(formatGroupRow);
+      const masterTotals = computeGroupTotals(sortedGroupedStaffCredits);
+      const masterWorksheet = XLSX.utils.aoa_to_sheet([headers, ...masterRows, [], masterTotals]);
+      XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Staff Credits");
+
+      // 2. Multiple worksheets partitioned by % discounts
+      const discountMap = new Map<number, GroupedStaffCredit[]>();
+      sortedGroupedStaffCredits.forEach(g => {
+        const pct = g.discountPercent ?? 0;
+        if (!discountMap.has(pct)) discountMap.set(pct, []);
+        discountMap.get(pct)!.push(g);
+      });
+
+      const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
+      sortedPcts.forEach(pct => {
+        const groupItems = discountMap.get(pct)!;
+        const rows = groupItems.map(formatGroupRow);
+        const totals = computeGroupTotals(groupItems);
+        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows, [], totals]);
+        XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
+      });
+
       XLSX.writeFile(workbook, `z-report-staff-credits-${new Date().toISOString().split("T")[0]}.xlsx`);
+      toast.success(`Exported Staff Credits with ${sortedPcts.length + 1} worksheets!`);
     } else {
       const headers = [
         "Date",
@@ -589,7 +720,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
         "Total After Discount (ETB)"
       ];
 
-      const data = filteredReports.map(r => [
+      const formatIndivRow = (r: InvoiceReport) => [
         r.date || "",
         r.invoiceNumber,
         r.patientName,
@@ -600,17 +731,64 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
         r.encoderName,
         r.items.map(i => `${i.description} (x${i.quantity})`).join(", "),
         `${r.discountPercent}%`,
-        (r.laboratoryCost / 100).toFixed(2),
-        (r.pharmacyCost / 100).toFixed(2),
-        (r.total / 100).toFixed(2),
-        (r.discountAmount / 100).toFixed(2),
-        (r.afterDiscount / 100).toFixed(2)
-      ]);
+        Number((r.laboratoryCost / 100).toFixed(2)),
+        Number((r.pharmacyCost / 100).toFixed(2)),
+        Number((r.total / 100).toFixed(2)),
+        Number((r.discountAmount / 100).toFixed(2)),
+        Number((r.afterDiscount / 100).toFixed(2))
+      ];
 
-      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...data]);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Z-Report-Transactions");
+      const computeIndivTotals = (items: InvoiceReport[]) => {
+        const totalLab = items.reduce((sum, r) => sum + r.laboratoryCost, 0);
+        const totalPharma = items.reduce((sum, r) => sum + r.pharmacyCost, 0);
+        const totalGross = items.reduce((sum, r) => sum + r.total, 0);
+        const totalDisc = items.reduce((sum, r) => sum + r.discountAmount, 0);
+        const totalAfter = items.reduce((sum, r) => sum + r.afterDiscount, 0);
+
+        return [
+          "TOTAL",
+          `${items.length} Invoices`,
+          "-",
+          "-",
+          "-",
+          "-",
+          "-",
+          "-",
+          "-",
+          "-",
+          Number((totalLab / 100).toFixed(2)),
+          Number((totalPharma / 100).toFixed(2)),
+          Number((totalGross / 100).toFixed(2)),
+          Number((totalDisc / 100).toFixed(2)),
+          Number((totalAfter / 100).toFixed(2))
+        ];
+      };
+
+      // 1. Master sheet: All Transactions
+      const masterRows = sortedIndividualReports.map(formatIndivRow);
+      const masterTotals = computeIndivTotals(sortedIndividualReports);
+      const masterWorksheet = XLSX.utils.aoa_to_sheet([headers, ...masterRows, [], masterTotals]);
+      XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Transactions");
+
+      // 2. Multiple worksheets partitioned by % discounts
+      const discountMap = new Map<number, InvoiceReport[]>();
+      sortedIndividualReports.forEach(r => {
+        const pct = r.discountPercent ?? 0;
+        if (!discountMap.has(pct)) discountMap.set(pct, []);
+        discountMap.get(pct)!.push(r);
+      });
+
+      const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
+      sortedPcts.forEach(pct => {
+        const groupItems = discountMap.get(pct)!;
+        const rows = groupItems.map(formatIndivRow);
+        const totals = computeIndivTotals(groupItems);
+        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows, [], totals]);
+        XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
+      });
+
       XLSX.writeFile(workbook, `z-report-itemized-${new Date().toISOString().split("T")[0]}.xlsx`);
+      toast.success(`Exported Itemized Ledger with ${sortedPcts.length + 1} worksheets!`);
     }
   };
 
@@ -767,21 +945,129 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-[11px] uppercase tracking-wider">
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Staff Member (Salary Account)</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Card / ID</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-center">Invoices</th>
+                  <th 
+                    onClick={() => toggleGroupedSort("staffMemberName")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Staff Member (Salary Account)</span>
+                      {groupedSortField === "staffMemberName" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("staffId")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Card / ID</span>
+                      {groupedSortField === "staffId" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("transactionCount")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-center cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-center gap-1.5">
+                      <span>Invoices</span>
+                      {groupedSortField === "transactionCount" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Beneficiaries Covered</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Discount</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Lab Cost</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Pharmacy Cost</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Total Gross</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Subsidy</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Net Salary Charge</th>
+                  <th 
+                    onClick={() => toggleGroupedSort("discountPercent")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Discount</span>
+                      {groupedSortField === "discountPercent" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("laboratoryCost")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Lab Cost</span>
+                      {groupedSortField === "laboratoryCost" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("pharmacyCost")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Pharmacy Cost</span>
+                      {groupedSortField === "pharmacyCost" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("total")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Total Gross</span>
+                      {groupedSortField === "total" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("discountAmount")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Subsidy</span>
+                      {groupedSortField === "discountAmount" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleGroupedSort("afterDiscount")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Net Salary Charge</span>
+                      {groupedSortField === "afterDiscount" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-center print:hidden">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {groupedStaffCredits.length === 0 ? (
+                {sortedGroupedStaffCredits.length === 0 ? (
                   <tr>
                     <td colSpan={11} className="p-12 text-center">
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
@@ -791,7 +1077,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
                     </td>
                   </tr>
                 ) : (
-                  groupedStaffCredits.map((group, idx) => (
+                  sortedGroupedStaffCredits.map((group, idx) => (
                     <tr 
                       key={group.key}
                       onClick={() => setSelectedCreditGroup(group)}
@@ -861,22 +1147,154 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white dark:bg-slate-900 border-b-2 border-slate-100 dark:border-slate-800 text-[11px] uppercase tracking-wider">
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Date & Ref</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Patient</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Staff Member (Salary Charge)</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Card / ID</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Encoder</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Discount</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Lab Cost</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Pharmacy Cost</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Total</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Subsidy</th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right">Salary Charge</th>
+                  <th 
+                    onClick={() => toggleIndivSort("date")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Date & Ref</span>
+                      {indivSortField === "date" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("patientName")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Patient</span>
+                      {indivSortField === "patientName" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("staffMemberName")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Staff Member (Salary Charge)</span>
+                      {indivSortField === "staffMemberName" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("staffId")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Card / ID</span>
+                      {indivSortField === "staffId" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("encoderName")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Encoder</span>
+                      {indivSortField === "encoderName" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("discountPercent")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Discount</span>
+                      {indivSortField === "discountPercent" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("laboratoryCost")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Lab Cost</span>
+                      {indivSortField === "laboratoryCost" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("pharmacyCost")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Pharmacy Cost</span>
+                      {indivSortField === "pharmacyCost" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("total")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Total</span>
+                      {indivSortField === "total" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("discountAmount")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Subsidy</span>
+                      {indivSortField === "discountAmount" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
+                  <th 
+                    onClick={() => toggleIndivSort("afterDiscount")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center justify-end gap-1.5">
+                      <span>Salary Charge</span>
+                      {indivSortField === "afterDiscount" ? (
+                        indivSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-center print:hidden">Print</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-xs">
-                {filteredReports.length === 0 ? (
+                {sortedIndividualReports.length === 0 ? (
                   <tr>
                     <td colSpan={12} className="p-12 text-center">
                       <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mb-4">
@@ -886,7 +1304,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
                     </td>
                   </tr>
                 ) : (
-                  filteredReports.map((item, idx) => (
+                  sortedIndividualReports.map((item, idx) => (
                     <tr key={item.invoiceNumber} className={`hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors ${idx % 2 === 0 ? "bg-white dark:bg-slate-900/20" : "bg-slate-50/30 dark:bg-slate-900/40"}`}>
                       <td className="p-3.5 text-slate-700 dark:text-slate-300">
                         <div className="font-medium">{item.date}</div>
