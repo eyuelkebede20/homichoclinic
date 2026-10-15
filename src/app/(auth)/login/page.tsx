@@ -2,15 +2,19 @@
 
 import { useState } from "react";
 import { signIn } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const deactivatedParam = searchParams?.get("error") === "deactivated";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(
+    deactivatedParam ? "Your account has been deactivated. Please contact an Administrator or Manager." : ""
+  );
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 

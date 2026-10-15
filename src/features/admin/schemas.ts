@@ -14,6 +14,11 @@ export const updateUserRoleSchema = z.object({
   role: z.string().min(1, "Role is required"),
 });
 
+export const toggleUserActiveSchema = z.object({
+  userId: z.string().min(1, "User ID is required"),
+  isActive: z.boolean(),
+});
+
 export const clinicProfileSchema = z.object({ 
   clinicName: z.string().min(1), 
   clinicNameAmharic: z.string().optional(),

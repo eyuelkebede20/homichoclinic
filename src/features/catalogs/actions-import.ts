@@ -155,9 +155,11 @@ export const importCatalogCSV = createSafeAction({
 
       // Initial Stock (Hamle baseline)
       const initialStockRaw = getField(row, [
+        "hamleinput",
+        "hamle",
+        "hamlestock",
         "initialstock",
         "initialinstock",
-        "hamlestock",
         "startingstock",
         "openingstock",
         "baseline",
@@ -304,32 +306,35 @@ export const importCatalogCSV = createSafeAction({
             createdCount++;
           }
 
-          // If a concrete batch number is provided, upsert the stock batch
-          if (batchNumber && parsedCurrentStock !== null && parsedCurrentStock > 0) {
+          // Upsert stock batch so dispensing and inventory manager immediately reflect the stock
+          const effectiveStock = parsedCurrentStock ?? parsedInitialStock;
+          if (effectiveStock !== null && effectiveStock > 0) {
+            const bNum = batchNumber || `HAMLE-${new Date().getFullYear()}`;
             const existingBatch = await prisma.stockBatch.findFirst({
-              where: { drugId: drug.id, batchNumber },
+              where: { drugId: drug.id, ...(batchNumber ? { batchNumber } : {}) },
+              orderBy: { createdAt: "desc" },
             });
 
             if (existingBatch) {
               await prisma.stockBatch.update({
                 where: { id: existingBatch.id },
                 data: {
-                  quantity: parsedCurrentStock,
+                  quantity: effectiveStock,
                   expiryDate: validExpiry,
                   dateAddedToStock: validDateAdded,
-                  docNo,
+                  docNo: docNo || "HAMLE-BASELINE-IMPORT",
                 },
               });
             } else {
               await prisma.stockBatch.create({
                 data: {
                   drugId: drug.id,
-                  batchNumber,
+                  batchNumber: bNum,
                   expiryDate: validExpiry,
-                  quantity: parsedCurrentStock,
-                  cost: 0,
-                  dateAddedToStock: validDateAdded,
-                  docNo,
+                  quantity: effectiveStock,
+                  cost: priceCents || 0,
+                  dateAddedToStock: validDateAdded || new Date(),
+                  docNo: docNo || "HAMLE-BASELINE-IMPORT",
                 },
               });
             }

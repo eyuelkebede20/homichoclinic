@@ -24,6 +24,7 @@ model User {
   accounts      Account[]
   
   role          String?   // Maps to Role.name below
+  isActive      Boolean   @default(true)
   currentOpdRoom Int?     // Currently active OPD room for this doctor
 
   requestedChanges CatalogChangeRequest[] @relation("RequestedChanges")

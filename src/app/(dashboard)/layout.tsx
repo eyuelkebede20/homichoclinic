@@ -35,6 +35,11 @@ export default async function DashboardLayout({
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
+
+  if (fullUser && fullUser.isActive === false) {
+    redirect("/login?error=deactivated");
+  }
+
   const clinicName = clinicNameSetting?.value || "Clinic ERP";
   let clinicLogo = clinicLogoSetting?.value || "";
   const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);

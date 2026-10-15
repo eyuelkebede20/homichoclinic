@@ -471,9 +471,30 @@ export const dismissLabResult = createSafeAction({
   handler: async (data, ctx) => {
     const result = await prisma.labResult.update({
       where: { id: data.resultId },
-      data: { isReadByDoctor: true }
+      data: { isReadByDoctor: true },
+      include: { request: true },
     });
     revalidatePath("/dashboard");
+    if (result.request?.patientId) {
+      revalidatePath(`/patients/${result.request.patientId}`);
+    }
+    return result;
+  }
+});
+
+export const toggleLabResultReadStatus = createSafeAction({
+  schema: z.object({ resultId: z.string(), isRead: z.boolean() }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const result = await prisma.labResult.update({
+      where: { id: data.resultId },
+      data: { isReadByDoctor: data.isRead },
+      include: { request: true },
+    });
+    revalidatePath("/dashboard");
+    if (result.request?.patientId) {
+      revalidatePath(`/patients/${result.request.patientId}`);
+    }
     return result;
   }
 });

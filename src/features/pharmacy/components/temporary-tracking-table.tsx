@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { updateTemporaryDrugStock, setDrugOutOfStock } from "../actions";
 import { importCatalogCSV } from "@/features/catalogs/actions-import";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export interface TrackedDrug {
   id: string;
@@ -36,6 +37,7 @@ export interface TrackedDrug {
 }
 
 export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: TrackedDrug[] }) {
+  const router = useRouter();
   const [drugs, setDrugs] = useState<TrackedDrug[]>(initialDrugs);
   const [search, setSearch] = useState("");
   const [filterMode, setFilterMode] = useState<"all" | "uncounted" | "instock" | "outofstock" | "discrepancy">("all");
@@ -152,13 +154,14 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
           prev.map((d) => (d.id === drugId ? { ...d, amountInStock: drug.amountInStock } : d))
         );
       } else {
-        toast.success(`Saved count for ${drug.name}: ${targetCount} units`);
+        toast.success(`Saved count for ${drug.name}: ${targetCount} units (in-stock synchronized)`);
         // Clear editing state for this drug
         setEditingValues((prev) => {
           const next = { ...prev };
           delete next[drugId];
           return next;
         });
+        router.refresh();
       }
     } catch {
       toast.error("Failed to update stock quantity.");
@@ -192,6 +195,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
         );
       } else {
         toast.success(`Marked ${drug.name} as Out of Stock (0 units).`);
+        router.refresh();
       }
     } catch {
       toast.error("Failed to mark drug as out of stock.");
@@ -426,6 +430,16 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
               {isImporting ? "Importing…" : "Import Hamle Stock"}
             </button>
           </div>
+
+          {/* Download Hamle Template (Excel) */}
+          <a
+            href="/api/export/catalog?type=drug&format=xlsx"
+            className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-medium rounded-lg text-xs flex items-center gap-1.5 transition-colors border border-slate-200 dark:border-slate-700"
+            title="Download Excel template containing all registered drugs with hamle-input column"
+          >
+            <Download className="w-3.5 h-3.5 text-blue-500" />
+            Download Hamle Template
+          </a>
 
           {/* Export to Excel */}
           <button

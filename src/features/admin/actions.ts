@@ -5,7 +5,7 @@ import { z } from "zod";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { deleteUserSchema, resetPasswordSchema, updateUserRoleSchema, clinicProfileSchema } from "./schemas";
+import { deleteUserSchema, resetPasswordSchema, updateUserRoleSchema, toggleUserActiveSchema, clinicProfileSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import bcrypt from "bcryptjs"; // Used to hash the manual reset password
 
@@ -95,6 +95,41 @@ export const updateUserRole = createSafeAction({
       resourceId: data.userId,
       newValue: { role: data.role },
       reason: "Admin changed user role",
+    });
+
+    revalidatePath("/admin");
+    return updatedUser;
+  },
+});
+
+export const toggleUserActiveStatus = createSafeAction({
+  schema: toggleUserActiveSchema,
+  requiredPermission: PERMISSIONS.USER_MANAGE,
+  handler: async (data, ctx) => {
+    if (data.userId === ctx.userId) {
+      throw new Error("You cannot change the active status of your own account.");
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: data.userId },
+      data: { isActive: data.isActive },
+    });
+
+    // If deactivated, revoke all active sessions immediately
+    if (!data.isActive) {
+      await prisma.session.deleteMany({
+        where: { userId: data.userId },
+      });
+    }
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.USER_MANAGE,
+      resourceId: data.userId,
+      newValue: { isActive: data.isActive },
+      reason: data.isActive
+        ? `Activated staff account ${updatedUser.email}`
+        : `Deactivated staff account ${updatedUser.email}`,
     });
 
     revalidatePath("/admin");

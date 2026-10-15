@@ -388,7 +388,18 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                           • {req.createdAt.toLocaleDateString()}
                         </span>
                       </div>
-                      <div>
+                      <div className="flex items-center gap-2">
+                        {req.result && (
+                          req.result.isReadByDoctor ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                              ✓ Reviewed by Doctor
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
+                              ● Pending Doctor Review
+                            </span>
+                          )
+                        )}
                         {req.status === "completed" ? (
                           <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-bold text-green-800 dark:text-green-400">
                             Completed

@@ -53,13 +53,23 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
   }
 
   return (
-    <div className="flex flex-col sm:flex-row gap-3">
+    <div className="flex flex-col sm:flex-row gap-2.5">
+      <a 
+        href={`/api/export/catalog?type=${downloadType}&format=xlsx`}
+        className="px-3.5 py-2 bg-emerald-700 text-white font-medium rounded hover:bg-emerald-600 shadow-sm text-xs sm:text-sm flex items-center justify-center transition-colors"
+        title="Download formatted Excel (.xlsx) file with hamle-input column"
+      >
+        <Download className="w-4 h-4 mr-1.5" />
+        Download Excel Template
+      </a>
+
       <a 
         href={`/api/export/catalog?type=${downloadType}`}
-        className="px-4 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-sm flex items-center justify-center transition-colors"
+        className="px-3.5 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-xs sm:text-sm flex items-center justify-center transition-colors"
+        title="Download standard CSV file"
       >
-        <Download className="w-4 h-4 mr-2" />
-        Download Template/Data
+        <Download className="w-4 h-4 mr-1.5" />
+        Download CSV
       </a>
 
       <div className="relative">

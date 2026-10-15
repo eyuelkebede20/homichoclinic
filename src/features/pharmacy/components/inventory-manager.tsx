@@ -8,6 +8,7 @@ export function InventoryManager({ drugs }: {
     id: string; 
     name: string; 
     description: string | null;
+    amountInStock?: number | null;
     batches: { id: string; batchNumber: string; quantity: number; expiryDate: Date; createdAt: Date }[] 
   }[] 
 }) {
@@ -56,7 +57,8 @@ export function InventoryManager({ drugs }: {
           </thead>
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredDrugs.map(drug => {
-              const totalStock = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
+              const totalBatches = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
+              const totalStock = drug.batches.length > 0 ? totalBatches : (drug.amountInStock ?? 0);
               const isExpanded = expandedDrug === drug.id;
 
               return (

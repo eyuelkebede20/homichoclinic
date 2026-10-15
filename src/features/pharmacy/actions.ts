@@ -163,6 +163,7 @@ export const updateTemporaryDrugStock = createSafeAction({
   handler: async (data, ctx) => {
     const existing = await prisma.drug.findUnique({
       where: { id: data.drugId },
+      include: { batches: { orderBy: { createdAt: "desc" } } },
     });
     if (!existing) throw new Error("Drug not found");
 
@@ -177,9 +178,56 @@ export const updateTemporaryDrugStock = createSafeAction({
       updateData.initialStock = data.initialStock;
     }
 
-    const updated = await prisma.drug.update({
-      where: { id: data.drugId },
-      data: updateData,
+    const updated = await prisma.$transaction(async (tx) => {
+      const drug = await tx.drug.update({
+        where: { id: data.drugId },
+        data: updateData,
+      });
+
+      // Synchronize physical in-stock batches with current stock
+      if (data.currentStock !== null) {
+        if (data.currentStock === 0) {
+          // Zero out active batches
+          await tx.stockBatch.updateMany({
+            where: { drugId: data.drugId },
+            data: { quantity: 0 },
+          });
+        } else {
+          // currentStock > 0
+          if (existing.batches.length > 0) {
+            // Update the latest batch to reflect the counted stock, and clear older depleted batches
+            const latestBatch = existing.batches[0];
+            await tx.stockBatch.update({
+              where: { id: latestBatch.id },
+              data: { quantity: data.currentStock },
+            });
+            if (existing.batches.length > 1) {
+              const olderBatchIds = existing.batches.slice(1).map((b) => b.id);
+              await tx.stockBatch.updateMany({
+                where: { id: { in: olderBatchIds } },
+                data: { quantity: 0 },
+              });
+            }
+          } else {
+            // No batch exists yet: auto-create active stock batch for dispensing & inventory tracking
+            const defaultExpiry = new Date();
+            defaultExpiry.setFullYear(defaultExpiry.getFullYear() + 2);
+            await tx.stockBatch.create({
+              data: {
+                drugId: data.drugId,
+                batchNumber: `HAMLE-${new Date().getFullYear()}`,
+                quantity: data.currentStock,
+                cost: existing.price || 0,
+                expiryDate: defaultExpiry,
+                dateAddedToStock: new Date(),
+                docNo: "HAMLE-PHYSICAL-COUNT",
+              },
+            });
+          }
+        }
+      }
+
+      return drug;
     });
 
     await logAudit({
@@ -195,6 +243,7 @@ export const updateTemporaryDrugStock = createSafeAction({
 
     revalidatePath("/pharmacy");
     revalidatePath("/pharmacy/catalog");
+    revalidatePath("/catalogs");
     return updated;
   },
 });
@@ -210,9 +259,19 @@ export const setDrugOutOfStock = createSafeAction({
     });
     if (!existing) throw new Error("Drug not found");
 
-    const updated = await prisma.drug.update({
-      where: { id: data.drugId },
-      data: { amountInStock: 0 },
+    const updated = await prisma.$transaction(async (tx) => {
+      const drug = await tx.drug.update({
+        where: { id: data.drugId },
+        data: { amountInStock: 0 },
+      });
+
+      // Zero out all active batches
+      await tx.stockBatch.updateMany({
+        where: { drugId: data.drugId },
+        data: { quantity: 0 },
+      });
+
+      return drug;
     });
 
     await logAudit({
@@ -228,6 +287,7 @@ export const setDrugOutOfStock = createSafeAction({
 
     revalidatePath("/pharmacy");
     revalidatePath("/pharmacy/catalog");
+    revalidatePath("/catalogs");
     return updated;
   },
 });

@@ -111,9 +111,10 @@ export default async function DashboardPage() {
         orderBy: { updatedAt: "desc" }
       }),
       prisma.labResult.findMany({
-        where: { isReadByDoctor: false, request: { requestedBy: session.user.id } },
+        where: { request: { requestedBy: session.user.id } },
         include: { request: { include: { patient: true, test: true } } },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
+        take: 100,
       })
     ]);
 

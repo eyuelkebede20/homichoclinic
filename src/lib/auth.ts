@@ -52,6 +52,12 @@ export const auth = betterAuth({
         required: false,
         input: false, // Cannot be set by user through standard endpoints
       },
+      isActive: {
+        type: "boolean",
+        required: false,
+        defaultValue: true,
+        input: false,
+      },
     },
   },
   session: {
@@ -68,7 +74,19 @@ export const auth = betterAuth({
           } else {
             user.role = "User";
           }
+          user.isActive = true;
           return { data: user, cancel: false };
+        }
+      }
+    },
+    session: {
+      create: {
+        before: async (session) => {
+          const user = await prisma.user.findUnique({ where: { id: session.userId } });
+          if (user && user.isActive === false) {
+            throw new Error("This account has been deactivated. Please contact an Administrator or Manager.");
+          }
+          return { data: session, cancel: false };
         }
       }
     }

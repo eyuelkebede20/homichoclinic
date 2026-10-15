@@ -42,6 +42,10 @@ export function createSafeAction<TInput, TOutput>({
         return { error: "Unauthorized: Please log in." };
       }
 
+      if ((session.user as any).isActive === false) {
+        return { error: "Account deactivated. Please contact an Administrator or Manager." };
+      }
+
       // User role comes from the database via Better Auth's additionalFields config
       const role = session.user.role || "User";
 
