@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Loader2, Activity, Heart, Thermometer, Scale, Save, CheckCircle2, Stethoscope } from "lucide-react";
-import { addClinicalNote, toggleAdmissionStatus } from "../actions";
+import { addClinicalNote, toggleAdmissionStatus, deactivatePatientOpd } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -17,6 +17,18 @@ export function ClinicalDashboard({
 }) {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  async function handleDeactivateOpd() {
+    if (!confirm("Are you sure you want to deactivate this patient from OPD and reset room to null?")) return;
+    setLoading(true);
+    const res = await deactivatePatientOpd({ patientId, visitId: activeVisit?.id });
+    setLoading(false);
+    if (res.error) toast.error(res.error);
+    else {
+      toast.success("Patient deactivated from OPD (reset to null)");
+      router.refresh();
+    }
+  }
 
   async function handleStatusToggle() {
     setLoading(true);
@@ -68,6 +80,20 @@ export function ClinicalDashboard({
           <p className="text-xs text-slate-500">Record patient vitals and SOAP consultation notes</p>
         </div>
         <div className="flex items-center gap-2">
+          {activeVisit?.opdRoom && (
+            <div className="flex items-center gap-1.5 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 px-2.5 py-0.5 rounded-lg text-xs">
+              <span className="font-bold text-blue-700 dark:text-blue-300">OPD {activeVisit.opdRoom}</span>
+              <button
+                type="button"
+                onClick={handleDeactivateOpd}
+                disabled={loading}
+                className="text-[11px] text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 font-semibold ml-1 cursor-pointer"
+                title="Deactivate / Release from OPD (reset to null)"
+              >
+                (Reset to null)
+              </button>
+            </div>
+          )}
           <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
             admissionStatus === "Inpatient" 
               ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800" 

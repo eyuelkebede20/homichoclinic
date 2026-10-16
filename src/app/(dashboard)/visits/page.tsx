@@ -7,6 +7,7 @@ import { VisitForm } from "@/features/clinical/components/visit-form";
 import { VisitStatusActions } from "@/features/clinical/components/visit-status-actions";
 import { OpdSetupModal } from "@/features/clinical/components/opd-setup-modal";
 import { getStartOfDayLocal } from "@/lib/date-utils";
+import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
 
 export default async function VisitsQueuePage() {
   const session = await auth.api.getSession({
@@ -26,6 +27,9 @@ export default async function VisitsQueuePage() {
       </div>
     );
   }
+
+  // Auto-reset any stale un-attended visits older than 1 day (reset to null)
+  await autoResetExpiredOpdVisits();
 
   const canCreateVisit = userPermissions.includes(PERMISSIONS.VISIT_CREATE);
 

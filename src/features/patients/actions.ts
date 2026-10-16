@@ -369,8 +369,9 @@ export const searchPatientsFast = createSafeAction({
       },
       visits: {
         where: {
-          visitDate: { gte: getStartOfDayLocal() },
+          visitDate: { gte: getStartOfDayLocal(), gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
           status: { in: ["scheduled", "in_progress"] },
+          opdRoom: { not: null },
           deletedAt: null
         },
         take: 1,

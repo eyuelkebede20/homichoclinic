@@ -24,7 +24,9 @@ export async function getNotifications() {
         { doctorId: session.user.id },
         ...(room ? [{ opdRoom: room }] : [])
       ],
-      status: "scheduled"
+      status: "scheduled",
+      opdRoom: { not: null },
+      visitDate: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
     };
 
     const [pending, totalCount] = await Promise.all([

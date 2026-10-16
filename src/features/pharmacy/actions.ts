@@ -6,20 +6,39 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { receiveStockSchema, dispensePrescriptionSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 
 export const receiveStock = createSafeAction({
   schema: receiveStockSchema,
   requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
   handler: async (data, ctx) => {
+    let expiryDate: Date;
+    const parsedExp = parseEthiopianDateString(data.expiryDate);
+    if (parsedExp) {
+      expiryDate = ethiopianToGregorian(parsedExp.year, parsedExp.month, parsedExp.day);
+    } else {
+      expiryDate = new Date(data.expiryDate);
+    }
+
+    let dateAddedToStock: Date | undefined;
+    if (data.dateAddedToStock) {
+      const parsedAdded = parseEthiopianDateString(data.dateAddedToStock);
+      if (parsedAdded) {
+        dateAddedToStock = ethiopianToGregorian(parsedAdded.year, parsedAdded.month, parsedAdded.day);
+      } else {
+        dateAddedToStock = new Date(data.dateAddedToStock);
+      }
+    }
+
     const batch = await prisma.$transaction(async (tx) => {
       const newBatch = await tx.stockBatch.create({
         data: {
           drugId: data.drugId,
           batchNumber: data.batchNumber,
-          expiryDate: new Date(data.expiryDate),
+          expiryDate: expiryDate,
           quantity: data.quantity,
           cost: data.cost,
-          dateAddedToStock: data.dateAddedToStock ? new Date(data.dateAddedToStock) : undefined,
+          dateAddedToStock: dateAddedToStock,
           docNo: data.docNo,
         },
       });

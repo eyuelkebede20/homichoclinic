@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export async function POST(request: Request) {
   try {
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
 
     visits.forEach(v => {
       invoiceItems.push({
-        description: `Consultation / Visit on ${v.visitDate.toLocaleDateString()}`,
+        description: `Consultation / Visit on ${formatToEthiopianDate(v.visitDate)}`,
         quantity: 1,
         unitPrice: VISIT_FEE,
         isDiscountable: true,

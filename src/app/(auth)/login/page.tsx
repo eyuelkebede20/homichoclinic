@@ -1,12 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, Eye, EyeOff, User } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="w-full py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-blue-600" /></div>}>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const searchParams = useSearchParams();
   const deactivatedParam = searchParams?.get("error") === "deactivated";
   const [email, setEmail] = useState("");

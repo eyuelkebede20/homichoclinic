@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema, vitalsUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
-import { getStartOfDayLocal } from "@/lib/date-utils";
+import { getStartOfDayLocal, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
 
 /**
@@ -145,7 +145,16 @@ export const createMedicalRecord = createSafeAction({
   schema: medicalRecordCreateSchema,
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
   handler: async (data, ctx) => {
-    const originalDate = data.originalDate ? new Date(data.originalDate) : null;
+    let originalDate: Date | null = null;
+    if (data.originalDate) {
+      const parsedEth = parseEthiopianDateString(data.originalDate);
+      if (parsedEth) {
+        originalDate = ethiopianToGregorian(parsedEth.year, parsedEth.month, parsedEth.day);
+      } else {
+        const d = new Date(data.originalDate);
+        if (!isNaN(d.getTime())) originalDate = d;
+      }
+    }
 
     const record = await prisma.medicalRecord.create({
       data: {
@@ -579,11 +588,16 @@ export const resetOpdQueue = createSafeAction({
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
     const today = getStartOfDayLocal();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // 1. Cancel ALL stale un-attended visits from past days (< today)
+    // 1. Cancel ALL stale un-attended visits from past days (< today or >= 24h)
     const staleWhere: any = {
       status: { in: ["scheduled", "in_progress"] },
-      visitDate: { lt: today },
+      OR: [
+        { visitDate: { lt: today } },
+        { visitDate: { lte: oneDayAgo } },
+        { createdAt: { lte: oneDayAgo } },
+      ],
     };
     if (data.opdRoom) {
       staleWhere.opdRoom = data.opdRoom;
@@ -592,8 +606,9 @@ export const resetOpdQueue = createSafeAction({
     const staleResult = await prisma.visit.updateMany({
       where: staleWhere,
       data: {
+        opdRoom: null, // Reset to null as requested
         status: "cancelled",
-        notes: "Cancelled via OPD queue reset (stale un-attended visit from previous day)",
+        notes: "Cancelled via OPD queue reset (reset to null)",
       },
     });
 
@@ -610,8 +625,9 @@ export const resetOpdQueue = createSafeAction({
       todayResult = await prisma.visit.updateMany({
         where: todayWhere,
         data: {
+          opdRoom: null, // Reset to null as requested
           status: "cancelled",
-          notes: "Cancelled via OPD queue reset (cleared waiting queue)",
+          notes: "Cancelled via OPD queue reset (cleared waiting queue to null)",
         },
       });
     }
@@ -636,6 +652,45 @@ export const resetOpdQueue = createSafeAction({
       totalCleared: staleResult.count + todayResult.count,
       opdRoom: data.opdRoom || null,
     };
+  },
+});
+
+export const deactivatePatientOpd = createSafeAction({
+  schema: z.object({
+    patientId: z.string().min(1, "Patient ID is required"),
+    visitId: z.string().optional(),
+  }),
+  requiredPermission: PERMISSIONS.VISIT_UPDATE,
+  handler: async (data, ctx) => {
+    const whereClause: any = {
+      patientId: data.patientId,
+      status: { in: ["scheduled", "in_progress"] },
+    };
+    if (data.visitId) {
+      whereClause.id = data.visitId;
+    }
+
+    const updated = await prisma.visit.updateMany({
+      where: whereClause,
+      data: {
+        opdRoom: null, // Reset to null as requested
+        status: "cancelled",
+        notes: "Manually deactivated from OPD queue (reset to null)",
+      },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "OPD_DEACTIVATE",
+      newValue: { patientId: data.patientId, count: updated.count },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/patients");
+    revalidatePath("/visits");
+    revalidatePath(`/patients/${data.patientId}`);
+
+    return { success: true, count: updated.count };
   },
 });
 

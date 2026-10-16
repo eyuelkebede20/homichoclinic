@@ -17,6 +17,7 @@ import { PrescriptionHistoryItem } from "@/features/patients/components/prescrip
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
 import { StructuredLabResultView } from "@/features/clinical/components/structured-lab-result-view";
 import { PendingApprovalBanner } from "@/features/patients/components/pending-approval-banner";
+import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
 
 export default async function PatientViewPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = await params;
@@ -40,6 +41,9 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
       </div>
     );
   }
+
+  // Auto-reset any expired OPD visits that reached 1 day (reset to null)
+  await autoResetExpiredOpdVisits(resolvedParams.id);
 
   const patient = await prisma.patient.findUnique({
     where: { id: resolvedParams.id },
@@ -338,7 +342,15 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
           <div className="print:hidden space-y-6">
             {canWriteHistory && (
               <>
-                <ClinicalDashboard patientId={patient.id} admissionStatus={patient.admissionStatus} activeVisit={patient.visits.find(v => v.status === "scheduled" || v.status === "in_progress")} />
+                <ClinicalDashboard 
+                  patientId={patient.id} 
+                  admissionStatus={patient.admissionStatus} 
+                  activeVisit={patient.visits.find(v => 
+                    (v.status === "scheduled" || v.status === "in_progress") && 
+                    v.opdRoom !== null &&
+                    (Date.now() - new Date(v.visitDate).getTime() < 24 * 60 * 60 * 1000)
+                  )} 
+                />
                 <PaperImportForm patientId={patient.id} />
               </>
             )}

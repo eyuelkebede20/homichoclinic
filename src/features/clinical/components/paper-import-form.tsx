@@ -6,6 +6,7 @@ import { Loader2, ScanText } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Tesseract from "tesseract.js";
 import { toast } from "sonner";
+import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 
 interface PaperImportFormProps {
   patientId: string;
@@ -105,13 +106,11 @@ export function PaperImportForm({ patientId }: PaperImportFormProps) {
         {source === "paper_import" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Original Record Date</label>
-              <input 
-                ref={firstInputRef}
+              <EthiopianDatePicker
+                name="originalDate"
+                label="Original Record Date (የታካሚው የመጀመሪያ የህክምና ቀን)"
+                mode="gregorian-iso"
                 required
-                name="originalDate" 
-                type="date" 
-                className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
               />
             </div>
             <div>

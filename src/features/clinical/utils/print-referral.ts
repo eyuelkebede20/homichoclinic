@@ -1,3 +1,5 @@
+import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
+
 export interface ReferralSheetData {
   patient: {
     firstName: string;
@@ -32,20 +34,15 @@ export function generateReferralHtml(data: ReferralSheetData): string {
     logoUrl = `${window.location.origin}${logoUrl.startsWith("/") ? "" : "/"}${logoUrl}`;
   }
 
-  // Calculate age
-  let patientAge = "";
-  if (patient.yob) {
-    const yobNum = typeof patient.yob === "string" ? parseInt(patient.yob, 10) : patient.yob;
-    if (!isNaN(yobNum) && yobNum > 1900 && yobNum <= new Date().getFullYear()) {
-      patientAge = String(new Date().getFullYear() - yobNum);
-    }
-  }
+  // Calculate age strictly based on Ethiopian calendar
+  const ageDisplay = calculateAge(patient.yob);
+  const patientAge = ageDisplay === "Unknown" ? "" : ageDisplay.replace(/\s*yrs?/i, "");
 
   const patientGender = (patient.gender || "").toLowerCase();
   const isMale = patientGender === "male" || patientGender === "m";
   const isFemale = patientGender === "female" || patientGender === "f";
 
-  const todayStr = new Date().toISOString().split("T")[0];
+  const todayStr = formatToEthiopianDate(new Date(), { format: "full" });
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -352,7 +349,7 @@ export function generateReferralHtml(data: ReferralSheetData): string {
       </div>
       <div class="field">
         <label for="date">Date</label>
-        <input type="date" id="date" name="date" value="${todayStr}">
+        <input type="text" id="date" name="date" value="${todayStr}">
       </div>
     </div>
 

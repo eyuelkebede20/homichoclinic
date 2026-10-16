@@ -9,6 +9,8 @@ import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { PatientRow } from "./patient-row";
 import { PatientTableSearch } from "./patient-table-search";
+import { getStartOfDayLocal } from "@/lib/date-utils";
+import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
 
 export default async function PatientsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string; tab?: string }> }) {
   const resolvedParams = await searchParams;
@@ -33,6 +35,8 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
       </div>
     );
   }
+
+  await autoResetExpiredOpdVisits();
 
   const baseWhereClause = tab === "pending" ? { status: "PENDING" } : { status: { not: "PENDING" } };
 
@@ -86,6 +90,22 @@ export default async function PatientsPage({ searchParams }: { searchParams: Pro
   const [patients, totalItems, pendingCount] = await Promise.all([
     prisma.patient.findMany({
       where: whereClause,
+      include: {
+        visits: {
+          where: {
+            status: { in: ["scheduled", "in_progress"] },
+            opdRoom: { not: null },
+            visitDate: { gte: getStartOfDayLocal(), gt: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+            deletedAt: null,
+          },
+          take: 1,
+          select: {
+            id: true,
+            opdRoom: true,
+            status: true,
+          },
+        },
+      },
       orderBy: { createdAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,

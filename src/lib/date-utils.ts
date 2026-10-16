@@ -251,10 +251,12 @@ export function getYearsOfService(permanentSince: string | null | undefined): nu
 /**
  * Calculates patient age based on Year of Birth (YOB) in Ethiopian Calendar.
  */
-export function calculateAge(yob: string | null | undefined): string {
-  if (!yob || yob === "NaN" || yob.trim() === "") return "N/A";
-  const parsedYob = parseInt(yob, 10);
-  if (isNaN(parsedYob)) return yob;
+export function calculateAge(yob: string | number | null | undefined): string {
+  if (yob === null || yob === undefined) return "N/A";
+  const str = typeof yob === "number" ? yob.toString() : yob.trim();
+  if (str === "" || str === "NaN") return "N/A";
+  const parsedYob = parseInt(str, 10);
+  if (isNaN(parsedYob)) return str;
 
   // If user stored age directly (< 130)
   if (parsedYob >= 0 && parsedYob <= 125) {

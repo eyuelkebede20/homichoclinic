@@ -6,6 +6,7 @@ import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal } from "@/lib/date-utils";
+import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
 
 const admitSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
@@ -25,29 +26,21 @@ export const admitPatient = createSafeAction({
       throw new Error("Patient not found.");
     }
 
+    // Auto-cancel and reset any stale visits that reached 1 day (reset to null)
+    await autoResetExpiredOpdVisits(data.patientId);
+
     const today = getStartOfDayLocal();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Auto-cancel any stale un-attended visits from past days
-    await prisma.visit.updateMany({
-      where: {
-        patientId: data.patientId,
-        status: { in: ["scheduled", "in_progress"] },
-        visitDate: { lt: today }
-      },
-      data: {
-        status: "cancelled",
-        notes: "Automatically cancelled: stale un-attended visit from previous day"
-      }
-    });
-
-    // 2. Check if they already have an active visit TODAY
+    // 2. Check if they already have an active visit TODAY (< 1 day old)
     const existingVisit = await prisma.visit.findFirst({
       where: {
         patientId: data.patientId,
         status: {
           in: ["scheduled", "in_progress"]
         },
-        visitDate: { gte: today }
+        opdRoom: { not: null },
+        visitDate: { gte: today, gt: oneDayAgo }
       }
     });
 

@@ -5,9 +5,22 @@ import { useRouter } from "next/navigation";
 import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 import { admitPatient } from "@/features/visits/actions";
 import { approvePatient } from "@/features/patients/actions";
+import { deactivatePatientOpd } from "@/features/clinical/actions";
 import { toast } from "sonner";
 
-export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApprove = false }: { patient: import('@prisma/client').Patient, totalOpdRooms?: number, canAdmit?: boolean, canApprove?: boolean }) {
+export function PatientRow({ 
+  patient, 
+  totalOpdRooms = 5, 
+  canAdmit = true, 
+  canApprove = false,
+  activeVisit = (patient as any).visits?.[0] || null
+}: { 
+  patient: import('@prisma/client').Patient; 
+  totalOpdRooms?: number; 
+  canAdmit?: boolean; 
+  canApprove?: boolean;
+  activeVisit?: { id: string; opdRoom: number | null; status: string } | null;
+}) {
   const router = useRouter();
   const [selectedOpd, setSelectedOpd] = useState<string>("1");
   const [isExecuting, setIsExecuting] = useState(false);
@@ -23,8 +36,23 @@ export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApp
     
     if (result.success) {
       toast.success("Patient admitted to OPD successfully!");
+      router.refresh();
     } else {
       toast.error(result.error || "Failed to admit patient.");
+    }
+  };
+
+  const handleDeactivate = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExecuting(true);
+    const result = await deactivatePatientOpd({ patientId: patient.id, visitId: activeVisit?.id });
+    setIsExecuting(false);
+
+    if (result.success) {
+      toast.success("Patient deactivated from OPD (reset to null)");
+      router.refresh();
+    } else {
+      toast.error(result.error || "Failed to deactivate patient.");
     }
   };
 
@@ -86,6 +114,20 @@ export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApp
               ) : (
                 <span className="text-xs text-amber-600 dark:text-amber-400 font-medium border border-amber-200 dark:border-amber-800 rounded px-2 py-1">Pending Approval</span>
               )
+            ) : activeVisit?.opdRoom ? (
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                  In OPD {activeVisit.opdRoom}
+                </span>
+                <button 
+                  onClick={handleDeactivate}
+                  disabled={isExecuting}
+                  title="Deactivate / Release from OPD (reset to null)"
+                  className="px-2 py-1 bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 rounded text-xs font-semibold disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {isExecuting ? "..." : "Deactivate"}
+                </button>
+              </div>
             ) : (
               <>
                 <select 

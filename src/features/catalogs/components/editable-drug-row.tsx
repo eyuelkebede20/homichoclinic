@@ -6,6 +6,7 @@ import { receiveStock } from "@/features/pharmacy/actions";
 import { Loader2, Edit2, Check, X, Plus, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { formatToEthiopianDate } from "@/lib/date-utils";
+import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 
 export function EditableDrugRow({ drug }: { 
   drug: { 
@@ -238,8 +239,12 @@ export function EditableDrugRow({ drug }: {
                   <input required name="batchNumber" type="text" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="e.g. BATCH-001" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Expiry Date</label>
-                  <input required name="expiryDate" type="date" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
+                  <EthiopianDatePicker
+                    name="expiryDate"
+                    label="Expiry Date (የሚያበቃበት ቀን)"
+                    mode="gregorian-iso"
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Quantity Added</label>
@@ -250,8 +255,11 @@ export function EditableDrugRow({ drug }: {
                   <input required name="cost" type="number" step="0.01" min="0" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" placeholder="50.00" />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-slate-500 mb-1">Date Added (Optional)</label>
-                  <input name="dateAddedToStock" type="date" className="block w-full rounded-md border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
+                  <EthiopianDatePicker
+                    name="dateAddedToStock"
+                    label="Date Added (Optional - የገባበት ቀን)"
+                    mode="gregorian-iso"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-500 mb-1">Doc/Receipt No (Optional)</label>

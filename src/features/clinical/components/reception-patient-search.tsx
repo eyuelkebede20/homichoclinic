@@ -19,10 +19,11 @@ import {
   ChevronRight,
   Clock,
   Sparkles,
-  Hash
+  Hash,
+  RotateCcw
 } from "lucide-react";
 import { searchPatientsFast } from "@/features/patients/actions";
-import { createVisit } from "@/features/clinical/actions";
+import { createVisit, deactivatePatientOpd } from "@/features/clinical/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -69,6 +70,7 @@ export function ReceptionPatientSearch() {
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [admittingId, setAdmittingId] = useState<string | null>(null);
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -126,6 +128,19 @@ export function ReceptionPatientSearch() {
       toast.success("Patient successfully admitted to OPD queue");
       setIsOpen(false);
       setQuery("");
+      router.refresh();
+    }
+  }
+
+  async function handleDeactivate(patientId: string, visitId?: string) {
+    setDeactivatingId(patientId);
+    const res = await deactivatePatientOpd({ patientId, visitId });
+    setDeactivatingId(null);
+    if (res?.error) {
+      toast.error("Failed to deactivate OPD status", { description: res.error });
+    } else {
+      toast.success("Patient deactivated from OPD (reset to null)");
+      performSearch(query, targetRole, filterField);
       router.refresh();
     }
   }
@@ -474,16 +489,36 @@ export function ReceptionPatientSearch() {
                         </div>
                       </div>
 
-                      {/* Action Button: Check-in OPD or View */}
-                      <div className="shrink-0 flex items-center gap-2">
+                      {/* Action Button: Check-in OPD or View / Deactivate */}
+                      <div className="shrink-0 flex items-center gap-1.5">
                         {activeVisit ? (
-                          <Link
-                            href={`/patients/${p.id}`}
-                            className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-colors"
-                          >
-                            <span>View Chart</span>
-                            <ChevronRight className="w-3.5 h-3.5" />
-                          </Link>
+                          <>
+                            <Link
+                              href={`/patients/${p.id}`}
+                              className="bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 px-3 py-1.5 rounded-lg text-xs font-bold inline-flex items-center gap-1 transition-colors"
+                            >
+                              <span>View Chart</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeactivate(p.id, activeVisit.id);
+                              }}
+                              disabled={deactivatingId === p.id}
+                              title="Deactivate / Release from OPD (reset to null)"
+                              className="bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/40 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800/60 px-2 py-1.5 rounded-lg text-xs font-semibold inline-flex items-center gap-1 transition-colors disabled:opacity-50 cursor-pointer"
+                            >
+                              {deactivatingId === p.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <RotateCcw className="w-3.5 h-3.5" />
+                              )}
+                              <span className="hidden sm:inline">Deactivate</span>
+                            </button>
+                          </>
                         ) : (
                           <button
                             type="button"
