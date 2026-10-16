@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { calculateAge } from "@/lib/date-utils";
+import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 import { admitPatient } from "@/features/visits/actions";
 import { approvePatient } from "@/features/patients/actions";
 import { toast } from "sonner";
@@ -63,7 +63,7 @@ export function PatientRow({ patient, totalOpdRooms = 5, canAdmit = true, canApp
       <td className="px-3 py-4 whitespace-nowrap text-sm">
         {isNanSince
           ? <span className="text-red-500 text-xs font-semibold">Missing ⚠</span>
-          : <span className="text-slate-500">{patient.permanentSince || "-"}</span>
+          : <span className="text-slate-500">{patient.permanentSince ? formatToEthiopianDate(patient.permanentSince, { format: "full" }) : "-"}</span>
         }
       </td>
       <td className="px-3 py-4 whitespace-nowrap text-sm text-slate-500">{patient.c_m || "-"}</td>

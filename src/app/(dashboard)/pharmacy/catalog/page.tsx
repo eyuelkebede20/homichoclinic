@@ -77,6 +77,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Unit</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Stock</th>
                 <th className="px-4 py-3 font-medium">Batch No</th>
@@ -93,7 +94,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
               ))}
               {drugs.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-slate-500">
+                  <td colSpan={12} className="p-4 text-center text-slate-500">
                     No drugs found.
                   </td>
                 </tr>

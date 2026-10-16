@@ -5,6 +5,7 @@ import { Loader2, Calendar } from "lucide-react";
 import { createVisit } from "@/features/clinical/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { EthiopianDateTimePicker } from "@/components/ethiopian-date-picker";
 
 export function ScheduleAppointmentForm({ 
   patientId,
@@ -21,21 +22,21 @@ export function ScheduleAppointmentForm({
     setLoading(true);
 
     const fd = new FormData(e.currentTarget);
-    const dateStr = fd.get("visitDate") as string;
-    const timeStr = fd.get("visitTime") as string;
+    const visitDateIso = fd.get("visitDate") as string;
     const docId = fd.get("doctorId") as string;
     const notes = fd.get("notes") as string;
 
-    const [year, month, day] = dateStr.split("-");
-    const [hours, minutes] = timeStr.split(":");
-    
-    const visitDate = new Date(Number(year), Number(month) - 1, Number(day), Number(hours), Number(minutes));
+    if (!visitDateIso) {
+      toast.error("እባክዎ የቀጠሮ ቀን እና ሰዓት ይምረጡ (Please pick appointment date & time)");
+      setLoading(false);
+      return;
+    }
 
     const res = await createVisit({
       patientId,
       doctorId: docId || undefined,
       notes: notes || undefined,
-      visitDate: visitDate.toISOString(),
+      visitDate: visitDateIso,
       status: "scheduled"
     });
 
@@ -52,19 +53,16 @@ export function ScheduleAppointmentForm({
     <div className="bg-white dark:bg-slate-900 shadow rounded-lg border border-slate-200 dark:border-slate-800 p-6 mb-6">
       <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2 mb-4 border-b border-slate-100 dark:border-slate-800 pb-4">
         <Calendar className="w-5 h-5 text-indigo-500" />
-        Schedule Future Appointment
+        Schedule Future Appointment (የቀጠሮ መመዝገቢያ)
       </h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Date</label>
-            <input required type="date" name="visitDate" className="block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-500 mb-1">Time</label>
-            <input required type="time" name="visitTime" className="block w-full rounded border border-slate-300 dark:border-slate-700 bg-transparent px-2 py-1 text-sm" />
-          </div>
+        <div>
+          <EthiopianDateTimePicker
+            name="visitDate"
+            label="የቀጠሮ ቀን እና ሰዓት (Appointment Date & Time - Ethiopian Calendar)"
+            required
+          />
         </div>
 
         <div>

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
+import { parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 
 import Link from "next/link";
 import { FileText } from "lucide-react";
@@ -25,12 +26,29 @@ export default async function DataEncoderPage({ searchParams }: { searchParams: 
   }
 
   const resolvedParams = await searchParams;
-  const fromDate = resolvedParams.from ? new Date(resolvedParams.from) : undefined;
-  const toDate = resolvedParams.to ? new Date(resolvedParams.to) : undefined;
-  
-  if (toDate) {
-    // Include the entire end day
-    toDate.setHours(23, 59, 59, 999);
+  let fromDate: Date | undefined;
+  if (resolvedParams.from) {
+    const eth = parseEthiopianDateString(resolvedParams.from);
+    if (eth) {
+      fromDate = ethiopianToGregorian(eth.year, eth.month, eth.day, 0, 0, 0);
+    } else {
+      const d = new Date(resolvedParams.from);
+      if (!isNaN(d.getTime())) fromDate = d;
+    }
+  }
+
+  let toDate: Date | undefined;
+  if (resolvedParams.to) {
+    const eth = parseEthiopianDateString(resolvedParams.to);
+    if (eth) {
+      toDate = ethiopianToGregorian(eth.year, eth.month, eth.day, 23, 59, 59, 999);
+    } else {
+      const d = new Date(resolvedParams.to);
+      if (!isNaN(d.getTime())) {
+        d.setHours(23, 59, 59, 999);
+        toDate = d;
+      }
+    }
   }
 
   const whereClause: any = {};

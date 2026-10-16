@@ -1,4 +1,5 @@
 import { MedicalRecord } from "@prisma/client";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export function MedicalRecordItem({ record }: { record: MedicalRecord }) {
   const isPaper = record.source === "paper_import";
@@ -12,7 +13,7 @@ export function MedicalRecordItem({ record }: { record: MedicalRecord }) {
           {isPaper ? "Paper Import" : "System Entry"}
         </span>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {record.originalDate ? record.originalDate.toLocaleDateString() : record.createdAt.toLocaleDateString()}
+          {formatToEthiopianDate(record.originalDate || record.createdAt)}
         </span>
       </div>
 

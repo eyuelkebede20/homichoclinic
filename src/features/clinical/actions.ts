@@ -10,36 +10,62 @@ import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal } from "@/lib/date-utils";
 import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
 
+/**
+ * Automatically resets active visits in OPD queue that have reached 1 day (>= 24 hours or past 1 day).
+ * Resets opdRoom to null, marks status as cancelled, and frees the patient.
+ */
+export async function autoResetExpiredOpdVisits(patientId?: string) {
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  const startOfToday = getStartOfDayLocal();
+
+  const staleWhere: any = {
+    status: { in: ["scheduled", "in_progress"] },
+    OR: [
+      { visitDate: { lt: startOfToday } },
+      { visitDate: { lte: oneDayAgo } },
+      { createdAt: { lte: oneDayAgo } },
+    ],
+  };
+
+  if (patientId) {
+    staleWhere.patientId = patientId;
+  }
+
+  const result = await prisma.visit.updateMany({
+    where: staleWhere,
+    data: {
+      opdRoom: null, // Reset to null as requested
+      status: "cancelled",
+      notes: "Auto-reset: 1-day OPD timeout reached (reset to null)",
+    },
+  });
+
+  return result.count;
+}
+
 export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
+    // 1. Auto-reset any stale visits for this patient that reached 1 day (reset to null)
+    await autoResetExpiredOpdVisits(data.patientId);
+
     const today = getStartOfDayLocal();
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // 1. Auto-cancel any stale un-attended visits from past days for this patient
-    await prisma.visit.updateMany({
-      where: {
-        patientId: data.patientId,
-        status: { in: ["scheduled", "in_progress"] },
-        visitDate: { lt: today }
-      },
-      data: {
-        status: "cancelled",
-        notes: "Automatically cancelled: stale un-attended visit from previous day"
-      }
-    });
-
-    // 2. Prevent multiple active visits for the same patient today
+    // 2. Prevent multiple active visits for the same patient today (< 1 day old)
     const existingActiveVisit = await prisma.visit.findFirst({
       where: {
         patientId: data.patientId,
         status: { in: ["scheduled", "in_progress"] },
-        visitDate: { gte: today }
-      }
+        opdRoom: { not: null },
+        visitDate: { gte: today, gt: oneDayAgo },
+      },
     });
 
     if (existingActiveVisit) {
-      throw new Error(`This patient is already currently admitted in today's queue (OPD ${existingActiveVisit.opdRoom || 1}). Complete or cancel their active visit first.`);
+      throw new Error(`This patient is already currently admitted in today's queue (OPD ${existingActiveVisit.opdRoom || 1}). Complete or deactivate their active visit first.`);
     }
 
     let assignedRoom = 1;

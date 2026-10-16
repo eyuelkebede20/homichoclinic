@@ -84,6 +84,7 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Test Name</th>
                 <th className="px-4 py-3 font-medium">Description</th>
+                <th className="px-4 py-3 font-medium">Unit</th>
                 <th className="px-4 py-3 font-medium">Result Options</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium text-right print:hidden">Actions</th>
@@ -95,7 +96,7 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
               ))}
               {labTests.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="p-4 text-center text-sm text-slate-500">
+                  <td colSpan={7} className="p-4 text-center text-sm text-slate-500">
                     No tests found.
                   </td>
                 </tr>

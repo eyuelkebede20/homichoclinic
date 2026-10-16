@@ -6,6 +6,7 @@ import { generateCreditCharge } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/currency";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[], invoices?: any[] }) {
   return (
@@ -63,7 +64,7 @@ export function DataencoderDashboard({ visits, invoices = [] }: { visits: any[],
                 return (
                   <tr key={invoice.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400">
-                      {new Date(invoice.createdAt).toLocaleDateString()} {new Date(invoice.createdAt).toLocaleTimeString()}
+                      {formatToEthiopianDate(invoice.createdAt, { includeTime: true })}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900 dark:text-slate-100">
                       {invoice.patient?.firstName} {invoice.patient?.lastName}

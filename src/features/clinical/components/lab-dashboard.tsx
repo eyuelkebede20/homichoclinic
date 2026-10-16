@@ -10,6 +10,7 @@ import { getLabPanelType, groupPendingLabRequests, GroupedLabRequest } from "../
 import { StoolResultForm } from "./stool-result-form";
 import { UrineResultForm } from "./urine-result-form";
 import { HematologyResultForm } from "./hematology-result-form";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export function LabDashboard({ 
   requests,
@@ -163,7 +164,7 @@ function LabRequestRow({
             {groupedItem.patient.contactNumber && <span className="text-xs text-slate-400 ml-2">({groupedItem.patient.contactNumber})</span>}
           </p>
           <p className="text-xs text-slate-400">
-            Requested {new Date(groupedItem.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {new Date(groupedItem.createdAt).toLocaleDateString()}
+            Requested {new Date(groupedItem.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })} • {formatToEthiopianDate(groupedItem.createdAt)}
           </p>
         </div>
 

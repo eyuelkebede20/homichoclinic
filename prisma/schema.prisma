@@ -200,6 +200,7 @@ model LabTest {
   id            String    @id @default(cuid())
   name          String
   description   String?
+  unit          String?   // Unit of measurement e.g. "mg/dL", "g/dL", "%"
   price         Int       // Integer minor units (cents/santim)
   options       String?   // Predefined result options (e.g., "Positive, Negative", "Clear, Turbid")
   isOperational Boolean   @default(true) // Can be toggled off if machine breaks
@@ -257,6 +258,7 @@ model Drug {
   name          String
   description   String?
   category      String?
+  unit          String?   // Measuring unit e.g. "Tab", "Vial", "Ampoule", "Bottle", "Box"
   price         Int       // Minor units
   amountInStock Int?      // Current total quantity (optional; set via count or import)
   initialStock  Int?      // Initial baseline quantity from Hamle import

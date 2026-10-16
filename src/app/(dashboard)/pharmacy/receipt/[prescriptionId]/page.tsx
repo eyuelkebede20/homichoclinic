@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { PrintActions } from "@/features/pharmacy/components/print-actions";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export default async function PrescriptionReceiptPage({ params }: { params: Promise<{ prescriptionId: string }> }) {
   const resolvedParams = await params;
@@ -42,7 +43,7 @@ export default async function PrescriptionReceiptPage({ params }: { params: Prom
           <p><span className="font-semibold">Contact:</span> {prescription.patient.contactNumber || 'N/A'}</p>
         </div>
         <div className="text-right">
-          <p><span className="font-semibold">Date:</span> {new Date().toLocaleDateString()}</p>
+          <p><span className="font-semibold">Date:</span> {formatToEthiopianDate(prescription.createdAt)}</p>
           <p><span className="font-semibold">Prescription ID:</span> {prescription.id}</p>
           <p><span className="font-semibold">Status:</span> {prescription.status.toUpperCase()}</p>
         </div>

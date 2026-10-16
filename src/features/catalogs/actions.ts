@@ -93,6 +93,7 @@ export const updateDrug = createSafeAction({
           name: data.name,
           description: data.description,
           category: data.category,
+          unit: data.unit,
           price: data.price,
         }
       });
@@ -311,6 +312,7 @@ export const updateLabTest = createSafeAction({
           name: data.name,
           description: data.description,
           options: data.options,
+          unit: data.unit,
           price: data.price,
         }
       });

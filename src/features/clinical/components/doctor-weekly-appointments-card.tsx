@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { User, X, Clock, CheckCircle } from "lucide-react";
-import { calculateAge } from "@/lib/date-utils";
+import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 
 type WeeklyAppointment = {
   id: string;
@@ -85,7 +85,7 @@ export function DoctorWeeklyAppointmentsCard({ appointments, count }: { appointm
                       <tr key={visit.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                            {new Date(visit.visitDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                            {formatToEthiopianDate(visit.visitDate, { format: "full" })}
                           </div>
                           <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                             {new Date(visit.visitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

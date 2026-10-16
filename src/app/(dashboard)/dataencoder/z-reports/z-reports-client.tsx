@@ -4,6 +4,7 @@ import { Printer, Download, Banknote, FileSpreadsheet, LayoutDashboard, Search, 
 import { useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export type InvoiceItemDetail = {
   id: string;
@@ -560,7 +561,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
           <div class="meta-item"><span class="meta-label">Department</span><span class="meta-value">${grp.staffDepartment}</span></div>
           <div class="meta-item"><span class="meta-label">Category / Type</span><span class="meta-value">${grp.staffType}</span></div>
           <div class="meta-item"><span class="meta-label">Total Transactions</span><span class="meta-value">${grp.transactionCount} Approved Invoice(s)</span></div>
-          <div class="meta-item"><span class="meta-label">Statement Date</span><span class="meta-value">${new Date().toLocaleDateString()}</span></div>
+          <div class="meta-item"><span class="meta-label">Statement Date</span><span class="meta-value">${formatToEthiopianDate(new Date())}</span></div>
         </div>
 
         <table>
@@ -798,7 +799,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
       <div className="hidden print:block text-center border-b pb-4 mb-4">
         <h1 className="text-2xl font-bold uppercase tracking-wider">{clinicInfo?.name || "Bure Card Clinic"} - Finance Reconciliation Z-Report</h1>
         <p className="text-xs text-slate-500 mt-1">
-          Date Generated: {new Date().toLocaleDateString()} • Consolidated Staff Credit & Salary Deductions
+          Date Generated: {formatToEthiopianDate(new Date())} • Consolidated Staff Credit & Salary Deductions
         </p>
       </div>
 

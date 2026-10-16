@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 import { LabResultForm } from "@/features/clinical/components/lab-result-form";
 import { Search } from "lucide-react";
 import { NotificationPing } from "@/components/notification-ping";
@@ -143,7 +144,7 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
                       <span className="font-medium text-slate-800 dark:text-slate-200">
                         {req.patient.firstName} {req.patient.lastName}
                       </span>
-                      <span className="text-xs text-slate-500">{req.updatedAt.toLocaleDateString()}</span>
+                      <span className="text-xs text-slate-500">{formatToEthiopianDate(req.updatedAt)}</span>
                     </div>
                     <div className="text-xs text-slate-600 dark:text-slate-400 mb-2">
                       <span className="font-medium text-slate-700 dark:text-slate-300">Test:</span> {req.test.name}

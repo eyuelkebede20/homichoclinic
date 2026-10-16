@@ -109,6 +109,7 @@ export default async function PharmacyDashboardPage({
     id: d.id,
     name: d.name,
     category: d.category,
+    unit: d.unit,
     description: d.description,
     price: d.price,
     initialStock: d.initialStock,

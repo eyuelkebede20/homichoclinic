@@ -5,6 +5,8 @@ import { updatePatient } from "../actions";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { FamilyLinkSelector } from "./family-link-selector";
+import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
+import { getCurrentEthiopianYear, calculateAge } from "@/lib/date-utils";
 
 export function PatientEditForm({ patient }: { 
   patient: { 
@@ -18,12 +20,13 @@ export function PatientEditForm({ patient }: {
   const [error, setError] = useState<string | null>(null);
   const isFamily = patient.patientType === "Civilian Family" || patient.patientType === "Soldier Family";
   const router = useRouter();
+  const currentEthYear = getCurrentEthiopianYear();
 
   let initialAge = "";
   if (patient.yob) {
-    const y = parseInt(patient.yob, 10);
-    if (!isNaN(y)) {
-      initialAge = (2019 - y).toString();
+    const ageVal = calculateAge(patient.yob);
+    if (ageVal !== "N/A") {
+      initialAge = ageVal;
     }
   }
 
@@ -38,8 +41,8 @@ export function PatientEditForm({ patient }: {
     if (yobStr) {
       const num = parseInt(yobStr, 10);
       if (!isNaN(num)) {
-        if (num < 200) {
-          yob = (2019 - num).toString();
+        if (num < 130) {
+          yob = (currentEthYear - num).toString();
         } else {
           yob = num.toString();
         }
@@ -91,15 +94,20 @@ export function PatientEditForm({ patient }: {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Age (or Year of Birth)</label>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+            Age (or Ethiopian YOB / ዕድሜ ወይም የልደት ዓ.ም.)
+          </label>
           <input 
             name="age" 
             type="number" 
             min="0"
             defaultValue={initialAge}
-            placeholder="e.g. 30 (or 1989)"
+            placeholder={`e.g. 30 (ወይም ${currentEthYear - 30} ዓ.ም.)`}
             className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" 
           />
+          <span className="text-[10px] text-slate-400 mt-0.5 block">
+            የአሁኑ ዓመት: {currentEthYear} ዓ.ም. (Current Year: {currentEthYear} E.C.)
+          </span>
         </div>
         <div className="flex flex-col justify-end">
           <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Sex</label>
@@ -119,8 +127,17 @@ export function PatientEditForm({ patient }: {
         </div>
         {patient.patientType === "Civilian Staff" && (
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Permanent Since (Date)</label>
-            <input defaultValue={patient.permanentSince || ""} name="permanentSince" type="date" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              Permanent Since (የቅጥር/የቋሚነት ቀን - በኢትዮጵያ የቀን አቆጣጠር)
+            </label>
+            <EthiopianDatePicker
+              name="permanentSince"
+              defaultValue={patient.permanentSince || ""}
+              placeholder="ቀን ይምረጡ (e.g. 2012-05-10 ዓ.ም.)"
+              minYear={1950}
+              maxYear={currentEthYear}
+              mode="ethiopian-date"
+            />
           </div>
         )}
       </div>

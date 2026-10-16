@@ -7,13 +7,14 @@ import { Loader2, Edit2, Check, X, Tag } from "lucide-react";
 import { toast } from "sonner";
 
 export function EditableLabTestRow({ test }: { 
-  test: { id: string; name: string; description: string | null; options?: string | null; price: number; isOperational?: boolean } 
+  test: { id: string; name: string; description: string | null; options?: string | null; unit?: string | null; price: number; isOperational?: boolean } 
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState(test.name);
   const [description, setDescription] = useState(test.description || "");
   const [options, setOptions] = useState(test.options || "");
+  const [unit, setUnit] = useState(test.unit || "");
   const [priceStr, setPriceStr] = useState((test.price / 100).toFixed(2));
   const [isOperational, setIsOperational] = useState(test.isOperational !== false);
 
@@ -24,6 +25,7 @@ export function EditableLabTestRow({ test }: {
       name,
       description: description || undefined,
       options: options || undefined,
+      unit: unit || undefined,
       price: Math.round(parseFloat(priceStr) * 100)
     });
     setLoading(false);
@@ -59,10 +61,10 @@ export function EditableLabTestRow({ test }: {
   if (isEditing) {
     return (
       <tr className="bg-blue-50 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-800">
-        <td colSpan={6} className="px-4 py-4">
+        <td colSpan={7} className="px-4 py-4">
           <div className="space-y-3 max-w-4xl">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Test Name</label>
                 <input value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
               </div>
@@ -71,20 +73,29 @@ export function EditableLabTestRow({ test }: {
                 <input type="number" step="0.01" value={priceStr} onChange={e => setPriceStr(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
               </div>
             </div>
-            <div className="space-y-2">
-              <div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="md:col-span-2">
                 <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Description</label>
                 <input value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Result Options (comma-separated)</label>
+                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Unit / Measuring Unit</label>
                 <input 
-                  value={options} 
-                  onChange={e => setOptions(e.target.value)} 
-                  placeholder="e.g. Positive, Negative, Inconclusive or A+, A-, B+, B-, O+, O-"
+                  value={unit} 
+                  onChange={e => setUnit(e.target.value)} 
+                  placeholder="e.g. mg/dL, g/dL, %"
                   className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" 
                 />
               </div>
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Result Options (comma-separated)</label>
+              <input 
+                value={options} 
+                onChange={e => setOptions(e.target.value)} 
+                placeholder="e.g. Positive, Negative, Inconclusive or A+, A-, B+, B-, O+, O-"
+                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" 
+              />
             </div>
             <div className="flex justify-end gap-2 mt-2">
               <button onClick={() => setIsEditing(false)} disabled={loading} className="px-3 py-1 text-xs border border-slate-300 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center">
@@ -120,6 +131,13 @@ export function EditableLabTestRow({ test }: {
       </td>
       <td className="px-4 py-3 align-top text-xs text-slate-500 max-w-[200px] truncate" title={test.description || ""}>
         {test.description || <span className="text-slate-400">-</span>}
+      </td>
+      <td className="px-4 py-3 align-top text-xs">
+        {test.unit ? (
+          <span className="inline-flex items-center rounded bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 text-xs font-medium text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+            {test.unit}
+          </span>
+        ) : <span className="text-slate-400">-</span>}
       </td>
       <td className="px-4 py-3 align-top">
         <div className="flex flex-wrap items-center gap-1.5 max-w-[250px]">

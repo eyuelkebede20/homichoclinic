@@ -29,6 +29,7 @@ export interface TrackedDrug {
   id: string;
   name: string;
   category: string | null;
+  unit: string | null;
   description: string | null;
   price: number; // in cents
   initialStock: number | null; // Hamle stock
@@ -266,6 +267,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
       return {
         "No.": index + 1,
         "Medicine Name": d.name,
+        "Unit / Measuring Unit": d.unit || "N/A",
         "Category": d.category || "Uncategorized",
         "Initial in Stock (Hamle)": initial !== null ? initial : "N/A",
         "Current in Stock": current !== null ? current : "Empty",
@@ -284,6 +286,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
     const maxCols = [
       { wch: 6 },
       { wch: 35 },
+      { wch: 22 },
       { wch: 18 },
       { wch: 24 },
       { wch: 18 },
@@ -496,6 +499,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
               <tr>
                 <th className="px-4 py-3.5">Medicine Name</th>
                 <th className="px-4 py-3.5">Category</th>
+                <th className="px-4 py-3.5 text-center">Unit</th>
                 <th className="px-4 py-3.5 text-center">Initial in Stock (Hamle)</th>
                 <th className="px-4 py-3.5 text-center">Current in Stock</th>
                 <th className="px-4 py-3.5 text-center">Variance</th>
@@ -506,7 +510,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {filteredDrugs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-4 py-12 text-center text-slate-400">
+                  <td colSpan={8} className="px-4 py-12 text-center text-slate-400">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Pill className="w-8 h-8 text-slate-300 dark:text-slate-600" />
                       <p className="font-medium text-slate-600 dark:text-slate-400">
@@ -569,7 +573,18 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                         )}
                       </td>
 
-                      {/* 3. Initial in Stock (Hamle Month Baseline) */}
+                      {/* 3. Measuring Unit */}
+                      <td className="px-4 py-3 text-center text-xs">
+                        {drug.unit ? (
+                          <span className="px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800/60 font-semibold font-mono">
+                            {drug.unit}
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 dark:text-slate-600 italic">—</span>
+                        )}
+                      </td>
+
+                      {/* 4. Initial in Stock (Hamle Month Baseline) */}
                       <td className="px-4 py-3 text-center">
                         {initial !== null ? (
                           <span className="inline-flex items-center justify-center font-bold font-mono text-sm px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">

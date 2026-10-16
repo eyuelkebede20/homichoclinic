@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { Pill } from "lucide-react";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 type PrescriptionWithItems = Prisma.PrescriptionGetPayload<{
   include: { items: { include: { drug: true } } }
@@ -14,7 +15,7 @@ export function PrescriptionHistoryItem({ prescription }: { prescription: Prescr
           Medication Ordered
         </span>
         <span className="text-xs text-slate-500 dark:text-slate-400">
-          {prescription.createdAt.toLocaleDateString()}
+          {formatToEthiopianDate(prescription.createdAt)}
         </span>
       </div>
 

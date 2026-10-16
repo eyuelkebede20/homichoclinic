@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { formatCurrency } from "@/lib/currency";
-import { getStartOfDayLocal } from "@/lib/date-utils";
+import { getStartOfDayLocal, formatToEthiopianDate } from "@/lib/date-utils";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { DoctorLabResultsInbox } from "@/features/clinical/components/doctor-lab-results-inbox";
@@ -505,7 +505,7 @@ export default async function DashboardPage() {
     status: v.status,
     opdRoom: v.opdRoom,
     doctorName: v.doctorId ? doctorNameMap.get(v.doctorId) || null : null,
-    visitDate: v.visitDate.toLocaleDateString(),
+    visitDate: formatToEthiopianDate(v.visitDate),
     timeAgo: formatTimeAgo(v.updatedAt || v.visitDate),
   }));
 
@@ -560,7 +560,7 @@ export default async function DashboardPage() {
     category: b.drug.category,
     batchNumber: b.batchNumber,
     quantity: b.quantity,
-    expiryDate: b.expiryDate.toLocaleDateString(),
+    expiryDate: formatToEthiopianDate(b.expiryDate),
     cost: b.cost,
     docNo: b.docNo,
   }));

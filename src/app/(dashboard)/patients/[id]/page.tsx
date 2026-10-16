@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { calculateAge } from "@/lib/date-utils";
+import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
 import { PaperImportForm } from "@/features/clinical/components/paper-import-form";
 import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
@@ -246,8 +246,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
               </div>
               {patient.patientType === "Civilian Staff" && (
                 <div>
-                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since</dt>
-                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince || "N/A"}</dd>
+                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since (ቋሚ የሆነበት ቀን)</dt>
+                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince ? formatToEthiopianDate(patient.permanentSince) : "N/A"}</dd>
                 </div>
               )}
               {patient.department && (
@@ -385,7 +385,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
                           {req.test.name}
                         </span>
                         <span className="text-xs text-slate-400">
-                          • {req.createdAt.toLocaleDateString()}
+                          • {formatToEthiopianDate(req.createdAt)}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">

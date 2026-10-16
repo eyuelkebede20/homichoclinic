@@ -142,6 +142,18 @@ export const importCatalogCSV = createSafeAction({
       const category =
         getField(row, ["category", "dosageform", "form", "type", "class", "group"]) ||
         null;
+      const unit =
+        getField(row, [
+          "unitmeasuringunit",
+          "measuringunit",
+          "unit",
+          "measuring",
+          "unitofmeasurement",
+          "uom",
+          "measurementunit",
+          "packagingunit",
+          "packunit",
+        ]) || null;
       const description =
         getField(row, [
           "description",
@@ -262,6 +274,7 @@ export const importCatalogCSV = createSafeAction({
               name: string;
               price?: number;
               category?: string | null;
+              unit?: string | null;
               description?: string | null;
               initialStock?: number | null;
               amountInStock?: number | null;
@@ -274,6 +287,9 @@ export const importCatalogCSV = createSafeAction({
             }
             if (category) {
               updatePayload.category = category;
+            }
+            if (unit) {
+              updatePayload.unit = unit;
             }
             if (description) {
               updatePayload.description = description;
@@ -298,6 +314,7 @@ export const importCatalogCSV = createSafeAction({
                 name: name.trim(),
                 price: priceCents,
                 category,
+                unit,
                 description,
                 initialStock: parsedInitialStock,
                 amountInStock: parsedCurrentStock,
@@ -364,6 +381,7 @@ export const importCatalogCSV = createSafeAction({
               data: {
                 name: name.trim(),
                 ...(priceCents > 0 ? { price: priceCents } : {}),
+                ...(unit ? { unit } : {}),
                 ...(description ? { description } : {}),
               },
             });
@@ -374,6 +392,7 @@ export const importCatalogCSV = createSafeAction({
                 ...(id ? { id } : {}),
                 name: name.trim(),
                 price: priceCents,
+                unit,
                 description,
               },
             });

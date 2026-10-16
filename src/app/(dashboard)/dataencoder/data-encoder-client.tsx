@@ -8,6 +8,8 @@ import { approveInvoice, disapproveInvoice } from "@/features/dataencoder/action
 import { toast } from "sonner";
 
 import { Check, X, Printer, Download, Search, ArrowUpDown, ArrowUp, ArrowDown, FileSpreadsheet } from "lucide-react";
+import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 type InvoiceDisplay = {
   id: string;
@@ -170,7 +172,7 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
       Number((i.discountAmount / 100).toFixed(2)),
       Number((i.total / 100).toFixed(2)),
       i.status.toUpperCase(),
-      new Date(i.createdAt).toLocaleDateString()
+      formatToEthiopianDate(i.createdAt)
     ];
 
     const computeTotalsRow = (items: InvoiceDisplay[]) => {
@@ -268,19 +270,23 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
         <div className="flex flex-wrap items-center gap-2 pb-4 sm:pb-0 w-full sm:w-auto">
           {activeTab !== "pending" && (
             <div className="flex items-center gap-2 mr-2">
-              <input
-                type="date"
-                value={fromDate}
-                onChange={(e) => handleDateChange("from", e.target.value)}
-                className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              />
+              <div className="w-44">
+                <EthiopianDatePicker
+                  value={fromDate}
+                  onChange={(val) => handleDateChange("from", val)}
+                  placeholder="ከ ቀን (From date)"
+                  mode="ethiopian-date"
+                />
+              </div>
               <span className="text-sm text-slate-500">-</span>
-              <input
-                type="date"
-                value={toDate}
-                onChange={(e) => handleDateChange("to", e.target.value)}
-                className="px-2 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
-              />
+              <div className="w-44">
+                <EthiopianDatePicker
+                  value={toDate}
+                  onChange={(val) => handleDateChange("to", val)}
+                  placeholder="እስከ ቀን (To date)"
+                  mode="ethiopian-date"
+                />
+              </div>
             </div>
           )}
           <div className="relative flex-1 sm:w-48">

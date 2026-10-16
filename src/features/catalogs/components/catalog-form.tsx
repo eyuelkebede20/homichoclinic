@@ -14,11 +14,16 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     
     const formData = new FormData(e.currentTarget);
     const priceDollars = parseFloat(formData.get("price") as string);
+    const unitVal = formData.get("unit") as string;
     const data: Record<string, string | number> = {
       name: formData.get("name") as string,
       description: formData.get("description") as string,
       price: Math.round(priceDollars * 100), // Convert to minor units
     };
+
+    if (unitVal) {
+      data.unit = unitVal.trim();
+    }
 
     if (type === "drug") {
       data.category = formData.get("category") as string;
@@ -51,9 +56,21 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
           <input name="description" type="text" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
         </div>
         {type === "drug" && (
-          <div className="flex-1">
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Category</label>
-            <input name="category" type="text" placeholder="e.g. Antibiotics" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
+          <>
+            <div className="flex-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Category</label>
+              <input name="category" type="text" placeholder="e.g. Antibiotics" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
+            </div>
+            <div className="w-36">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Unit / Measuring</label>
+              <input name="unit" type="text" placeholder="e.g. Tab, Vial, Box" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
+            </div>
+          </>
+        )}
+        {type === "labTest" && (
+          <div className="w-32">
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Measuring Unit</label>
+            <input name="unit" type="text" placeholder="e.g. mg/dL, %" className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm" />
           </div>
         )}
         <div className="w-24">

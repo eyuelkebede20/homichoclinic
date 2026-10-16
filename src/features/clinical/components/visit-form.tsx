@@ -6,24 +6,14 @@ import { Loader2, DoorOpen } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { PatientSearchSelect } from "@/components/patient-search-select";
 import { toast } from "sonner";
+import { EthiopianDateTimePicker } from "@/components/ethiopian-date-picker";
 
 export function VisitForm({ patients, doctors }: { patients: {id: string, name: string}[], doctors: {id: string, name: string, currentOpdRoom?: number | null}[] }) {
   const [loading, setLoading] = useState(false);
   const [assignedRoom, setAssignedRoom] = useState<number | null>(null);
   const [patientId, setPatientId] = useState("");
-  const [visitDate, setVisitDate] = useState(() => {
-    const d = new Date();
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    return d.toISOString().slice(0, 16);
-  });
+  const [visitDate, setVisitDate] = useState(() => new Date().toISOString());
   const router = useRouter();
-
-  const handleQuickDate = (daysToAdd: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + daysToAdd);
-    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
-    setVisitDate(d.toISOString().slice(0, 16));
-  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -106,16 +96,13 @@ export function VisitForm({ patients, doctors }: { patients: {id: string, name: 
             </select>
           </div>
           <div>
-            <div className="flex justify-between items-end mb-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Visit Date & Time</label>
-              <div className="flex gap-1">
-                <button type="button" onClick={() => handleQuickDate(0)} className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Today</button>
-                <button type="button" onClick={() => handleQuickDate(1)} className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">Tmrw</button>
-                <button type="button" onClick={() => handleQuickDate(7)} className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">1Wk</button>
-                <button type="button" onClick={() => handleQuickDate(30)} className="text-[10px] px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded text-slate-600 dark:text-slate-300">1Mo</button>
-              </div>
-            </div>
-            <input required name="visitDate" type="datetime-local" value={visitDate} onChange={e => setVisitDate(e.target.value)} className="block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm" />
+            <EthiopianDateTimePicker
+              name="visitDate"
+              label="የጉብኝት/የቀጠሮ ቀን እና ሰዓት"
+              value={visitDate}
+              onChange={(iso) => setVisitDate(iso)}
+              required
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Reason / Notes</label>

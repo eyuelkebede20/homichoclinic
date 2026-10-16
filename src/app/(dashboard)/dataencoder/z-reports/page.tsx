@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { ZReportsClient } from "./z-reports-client";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export default async function ZReportsPage() {
   const session = await auth.api.getSession({
@@ -102,7 +103,7 @@ export default async function ZReportsPage() {
     return {
       invoiceNumber: inv.id,
       createdAt: inv.createdAt.toISOString(),
-      date: inv.createdAt.toLocaleDateString(),
+      date: formatToEthiopianDate(inv.createdAt),
       time: inv.createdAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
       patientType: inv.patient.patientType,

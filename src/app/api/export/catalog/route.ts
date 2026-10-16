@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       const excelRows = items.map((item) => ({
         "id": item.id,
         "nameOfMed": item.name,
+        "unit / measuring unit": item.unit || "",
         "description": item.description || "",
         "price": item.price / 100,
         "category": item.category || "",
@@ -46,6 +47,7 @@ export async function GET(request: Request) {
       ws["!cols"] = [
         { wch: 28 }, // id
         { wch: 35 }, // nameOfMed
+        { wch: 22 }, // unit / measuring unit
         { wch: 20 }, // description
         { wch: 12 }, // price
         { wch: 18 }, // category
@@ -69,13 +71,14 @@ export async function GET(request: Request) {
       });
     }
 
-    let csvContent = "id,nameOfMed,description,price,category,hamle-input,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo\n";
+    let csvContent = "id,nameOfMed,unit / measuring unit,description,price,category,hamle-input,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo\n";
     for (const item of items) {
       const price = item.price / 100; // to ETB
       const initialStock = item.initialStock ?? "";
       const hamleInput = item.initialStock ?? "";
       const stock = item.amountInStock ?? "";
-      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"${item.category || ""}",${hamleInput},${initialStock},${stock},,,,\n`;
+      const unit = item.unit || "";
+      csvContent += `"${item.id}","${item.name}","${unit}","${item.description || ""}",${price},"${item.category || ""}",${hamleInput},${initialStock},${stock},,,,\n`;
     }
 
     return new Response(csvContent, {
@@ -87,10 +90,46 @@ export async function GET(request: Request) {
     });
   } else if (type === "lab") {
     const items = await prisma.labTest.findMany({ orderBy: { name: "asc" } });
-    let csvContent = "id,nameOfTest,description,price,tat,category\n";
+
+    if (format === "xlsx") {
+      const XLSX = await import("xlsx");
+      const excelRows = items.map((item) => ({
+        "id": item.id,
+        "nameOfTest": item.name,
+        "unit / measuring unit": item.unit || "",
+        "description": item.description || "",
+        "price": item.price / 100,
+        "tat": "",
+        "category": "",
+      }));
+
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(excelRows);
+      ws["!cols"] = [
+        { wch: 28 }, // id
+        { wch: 35 }, // nameOfTest
+        { wch: 22 }, // unit / measuring unit
+        { wch: 25 }, // description
+        { wch: 12 }, // price
+        { wch: 12 }, // tat
+        { wch: 18 }, // category
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, "Lab Catalog");
+      const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+
+      return new Response(buf, {
+        status: 200,
+        headers: {
+          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "Content-Disposition": `attachment; filename="catalog-lab.xlsx"`,
+        },
+      });
+    }
+
+    let csvContent = "id,nameOfTest,unit / measuring unit,description,price,tat,category\n";
     for (const item of items) {
       const price = item.price / 100;
-      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"",""\n`;
+      csvContent += `"${item.id}","${item.name}","${item.unit || ""}","${item.description || ""}",${price},"",""\n`;
     }
 
     return new Response(csvContent, {

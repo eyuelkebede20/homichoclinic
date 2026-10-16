@@ -2,6 +2,7 @@
 
 import React, { Fragment, useState } from "react";
 import { Search, ChevronDown, ChevronRight, Package, Calendar } from "lucide-react";
+import { formatToEthiopianDate } from "@/lib/date-utils";
 
 export function InventoryManager({ drugs }: { 
   drugs: { 
@@ -107,7 +108,7 @@ export function InventoryManager({ drugs }: {
                                     </div>
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-2">
                                       <Calendar className="w-3 h-3" /> 
-                                      Exp: {new Date(b.expiryDate).toLocaleDateString()}
+                                      Exp: {formatToEthiopianDate(b.expiryDate)}
                                     </div>
                                   </div>
                                 ))}
