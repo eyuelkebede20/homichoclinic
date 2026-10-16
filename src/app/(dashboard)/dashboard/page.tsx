@@ -45,6 +45,18 @@ export default async function DashboardPage() {
   if (role === "Reception") {
     const today = getStartOfDayLocal();
 
+    // Automatically cancel stale un-attended visits from previous days so queue stays fresh
+    await prisma.visit.updateMany({
+      where: {
+        status: { in: ["scheduled", "in_progress"] },
+        visitDate: { lt: today }
+      },
+      data: {
+        status: "cancelled",
+        notes: "Auto-cleared stale un-attended visit from previous day"
+      }
+    });
+
     const [sysSetting, totalRoomsSetting, activeVisits, patientsRaw, doctors] = await Promise.all([
       prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } }),
       prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
@@ -78,6 +90,18 @@ export default async function DashboardPage() {
   if (role === "Doctor") {
     const weekStart = startOfWeek(today);
     const weekEnd = endOfWeek(today);
+
+    // Auto-clear stale un-attended visits from previous days
+    await prisma.visit.updateMany({
+      where: {
+        status: { in: ["scheduled", "in_progress"] },
+        visitDate: { lt: today }
+      },
+      data: {
+        status: "cancelled",
+        notes: "Auto-cleared stale un-attended visit from previous day"
+      }
+    });
 
     // Fetch user first because we need currentOpdRoom
     const fullUser = await prisma.user.findUnique({ where: { id: session.user.id } });

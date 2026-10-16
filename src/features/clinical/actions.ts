@@ -14,16 +14,32 @@ export const createVisit = createSafeAction({
   schema: visitCreateSchema,
   requiredPermission: PERMISSIONS.VISIT_CREATE,
   handler: async (data, ctx) => {
-    // 1. Prevent multiple active visits for the same patient
+    const today = getStartOfDayLocal();
+
+    // 1. Auto-cancel any stale un-attended visits from past days for this patient
+    await prisma.visit.updateMany({
+      where: {
+        patientId: data.patientId,
+        status: { in: ["scheduled", "in_progress"] },
+        visitDate: { lt: today }
+      },
+      data: {
+        status: "cancelled",
+        notes: "Automatically cancelled: stale un-attended visit from previous day"
+      }
+    });
+
+    // 2. Prevent multiple active visits for the same patient today
     const existingActiveVisit = await prisma.visit.findFirst({
       where: {
         patientId: data.patientId,
-        status: { in: ["scheduled", "in_progress"] }
+        status: { in: ["scheduled", "in_progress"] },
+        visitDate: { gte: today }
       }
     });
 
     if (existingActiveVisit) {
-      throw new Error("This patient is already currently admitted in the queue. Complete or cancel their active visit first.");
+      throw new Error(`This patient is already currently admitted in today's queue (OPD ${existingActiveVisit.opdRoom || 1}). Complete or cancel their active visit first.`);
     }
 
     let assignedRoom = 1;
@@ -92,6 +108,9 @@ export const createVisit = createSafeAction({
     });
 
     revalidatePath(`/patients/${data.patientId}`);
+    revalidatePath("/dashboard");
+    revalidatePath("/patients");
+    revalidatePath("/visits");
     return visit;
   },
 });
@@ -377,6 +396,8 @@ export const updateVisitStatus = createSafeAction({
     });
 
     revalidatePath("/visits");
+    revalidatePath("/dashboard");
+    revalidatePath("/patients");
     return visit;
   }
 });
@@ -523,6 +544,75 @@ export const toggleOpdRoom = createSafeAction({
     return setting;
   }
 });
+
+export const resetOpdQueue = createSafeAction({
+  schema: z.object({
+    opdRoom: z.number().optional().nullable(),
+    clearWaitingToday: z.boolean().optional(),
+  }),
+  requiredPermission: PERMISSIONS.VISIT_CREATE,
+  handler: async (data, ctx) => {
+    const today = getStartOfDayLocal();
+
+    // 1. Cancel ALL stale un-attended visits from past days (< today)
+    const staleWhere: any = {
+      status: { in: ["scheduled", "in_progress"] },
+      visitDate: { lt: today },
+    };
+    if (data.opdRoom) {
+      staleWhere.opdRoom = data.opdRoom;
+    }
+
+    const staleResult = await prisma.visit.updateMany({
+      where: staleWhere,
+      data: {
+        status: "cancelled",
+        notes: "Cancelled via OPD queue reset (stale un-attended visit from previous day)",
+      },
+    });
+
+    // 2. Optionally cancel today's waiting ('scheduled') visits if requested
+    let todayResult = { count: 0 };
+    if (data.clearWaitingToday) {
+      const todayWhere: any = {
+        status: "scheduled",
+        visitDate: { gte: today },
+      };
+      if (data.opdRoom) {
+        todayWhere.opdRoom = data.opdRoom;
+      }
+      todayResult = await prisma.visit.updateMany({
+        where: todayWhere,
+        data: {
+          status: "cancelled",
+          notes: "Cancelled via OPD queue reset (cleared waiting queue)",
+        },
+      });
+    }
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "OPD_QUEUE_RESET",
+      newValue: {
+        staleCancelled: staleResult.count,
+        todayCancelled: todayResult.count,
+        opdRoom: data.opdRoom || "all",
+      },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/patients");
+    revalidatePath("/visits");
+
+    return {
+      staleCount: staleResult.count,
+      todayCount: todayResult.count,
+      totalCleared: staleResult.count + todayResult.count,
+      opdRoom: data.opdRoom || null,
+    };
+  },
+});
+
 export const enterLabResult = createSafeAction({
   schema: labResultSchema,
   requiredPermission: PERMISSIONS.LAB_RESULT,

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getStartOfDayLocal } from "@/lib/date-utils";
 
 const admitSchema = z.object({
   patientId: z.string().min(1, "Patient ID is required"),
@@ -24,18 +25,34 @@ export const admitPatient = createSafeAction({
       throw new Error("Patient not found.");
     }
 
-    // 2. Check if they already have an active visit (optional, but good practice)
+    const today = getStartOfDayLocal();
+
+    // Auto-cancel any stale un-attended visits from past days
+    await prisma.visit.updateMany({
+      where: {
+        patientId: data.patientId,
+        status: { in: ["scheduled", "in_progress"] },
+        visitDate: { lt: today }
+      },
+      data: {
+        status: "cancelled",
+        notes: "Automatically cancelled: stale un-attended visit from previous day"
+      }
+    });
+
+    // 2. Check if they already have an active visit TODAY
     const existingVisit = await prisma.visit.findFirst({
       where: {
         patientId: data.patientId,
         status: {
           in: ["scheduled", "in_progress"]
-        }
+        },
+        visitDate: { gte: today }
       }
     });
 
     if (existingVisit) {
-      throw new Error(`Patient already has an active visit in OPD ${existingVisit.opdRoom || "Unknown"}`);
+      throw new Error(`Patient already has an active visit in OPD ${existingVisit.opdRoom || "Unknown"} today.`);
     }
 
     // 3. Create the visit
@@ -49,6 +66,7 @@ export const admitPatient = createSafeAction({
 
     revalidatePath("/patients");
     revalidatePath("/dashboard");
+    revalidatePath("/visits");
     
     return visit;
   }
