@@ -45,10 +45,12 @@ export default async function AuthLayout({
         <div className="relative z-10 space-y-8">
           <div>
             {clinicLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clinicLogo} alt="Logo" className="w-16 h-16 object-contain rounded-xl bg-white p-1 mb-6 shadow-sm" />
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-white flex items-center justify-center mb-6 shadow-sm border border-white/30">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={clinicLogo} alt="Logo" className="w-full h-full object-cover rounded-full" />
+              </div>
             ) : (
-              <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30 shadow-sm">
+              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center mb-6 backdrop-blur-sm border border-white/30 shadow-sm">
                 <span className="text-2xl font-bold text-white">✚</span>
               </div>
             )}

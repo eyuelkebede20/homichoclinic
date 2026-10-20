@@ -136,8 +136,10 @@ export function ClinicProfileSettings({
         <div className="flex items-center gap-6 mb-4">
           <div className="p-4 border rounded-md border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/50">
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">Current Logo:</p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={`/icon.png${cacheBuster}`} alt="Current logo" className="h-16 w-16 object-contain rounded bg-white p-1 shadow-sm" />
+            <div className="h-16 w-16 rounded-full overflow-hidden bg-white flex items-center justify-center shadow-sm border border-slate-200 dark:border-slate-800">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`/icon.png${cacheBuster}`} alt="Current logo" className="h-full w-full object-cover rounded-full" />
+            </div>
           </div>
 
           <form

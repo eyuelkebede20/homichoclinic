@@ -133,10 +133,12 @@ export default async function DashboardLayout({
         <div className="min-h-16 py-3 flex items-center justify-between px-6 border-b border-slate-800">
           <div className="flex items-center gap-2 overflow-hidden py-1">
             {clinicLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clinicLogo} alt="Logo" className="h-8 w-8 object-contain rounded bg-white p-0.5 shrink-0" />
+              <div className="h-8 w-8 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow-sm border border-slate-700/60">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={clinicLogo} alt="Logo" className="h-full w-full object-cover rounded-full" />
+              </div>
             ) : (
-              <div className="h-8 w-8 bg-blue-600 rounded-md flex items-center justify-center font-bold text-white shadow shrink-0">
+              <div className="h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white shadow shrink-0">
                 +
               </div>
             )}
