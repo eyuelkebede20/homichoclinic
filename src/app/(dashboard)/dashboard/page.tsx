@@ -506,6 +506,8 @@ export default async function DashboardPage() {
         .reduce((sum, b) => sum + b.quantity, 0);
     } else if (drug.amountInStock != null) {
       drugStock = drug.amountInStock;
+    } else if (drug.initialStock != null) {
+      drugStock = drug.initialStock;
     }
 
     totalUnitsInStock += drugStock;
