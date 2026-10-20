@@ -29,17 +29,16 @@ export async function GET(request: Request) {
       const excelRows = items.map((item) => ({
         "id": item.id,
         "nameOfMed": item.name,
-        "unit / measuring unit": item.unit || "",
         "description": item.description || "",
         "price": item.price / 100,
         "category": item.category || "",
-        "hamle-input": item.initialStock ?? "",
         "initialStock": item.initialStock ?? "",
         "amountInStock": item.amountInStock ?? "",
         "batchNumber": "",
         "expiryDate": "",
         "dateAddedToStock": "",
         "docNo": "",
+        "units": item.unit || "",
       }));
 
       const wb = XLSX.utils.book_new();
@@ -47,17 +46,16 @@ export async function GET(request: Request) {
       ws["!cols"] = [
         { wch: 28 }, // id
         { wch: 35 }, // nameOfMed
-        { wch: 22 }, // unit / measuring unit
-        { wch: 20 }, // description
+        { wch: 25 }, // description
         { wch: 12 }, // price
         { wch: 18 }, // category
-        { wch: 14 }, // hamle-input
         { wch: 14 }, // initialStock
         { wch: 14 }, // amountInStock
         { wch: 16 }, // batchNumber
         { wch: 14 }, // expiryDate
         { wch: 16 }, // dateAddedToStock
         { wch: 14 }, // docNo
+        { wch: 14 }, // units
       ];
       XLSX.utils.book_append_sheet(wb, ws, "Pharmacy Catalog");
       const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
@@ -71,14 +69,13 @@ export async function GET(request: Request) {
       });
     }
 
-    let csvContent = "id,nameOfMed,unit / measuring unit,description,price,category,hamle-input,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo\n";
+    let csvContent = "id,nameOfMed,description,price,category,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo,units\n";
     for (const item of items) {
       const price = item.price / 100; // to ETB
       const initialStock = item.initialStock ?? "";
-      const hamleInput = item.initialStock ?? "";
       const stock = item.amountInStock ?? "";
       const unit = item.unit || "";
-      csvContent += `"${item.id}","${item.name}","${unit}","${item.description || ""}",${price},"${item.category || ""}",${hamleInput},${initialStock},${stock},,,,\n`;
+      csvContent += `"${item.id}","${item.name}","${item.description || ""}",${price},"${item.category || ""}",${initialStock},${stock},,,,,"${unit}"\n`;
     }
 
     return new Response(csvContent, {

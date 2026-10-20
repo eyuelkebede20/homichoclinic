@@ -10,6 +10,7 @@ export function InventoryManager({ drugs }: {
     name: string; 
     description: string | null;
     amountInStock?: number | null;
+    initialStock?: number | null;
     batches: { id: string; batchNumber: string; quantity: number; expiryDate: Date; createdAt: Date }[] 
   }[] 
 }) {
@@ -59,7 +60,8 @@ export function InventoryManager({ drugs }: {
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {filteredDrugs.map(drug => {
               const totalBatches = drug.batches.reduce((sum, b) => sum + b.quantity, 0);
-              const totalStock = drug.batches.length > 0 ? totalBatches : (drug.amountInStock ?? 0);
+              const effectiveStock = drug.batches.length > 0 ? totalBatches : (drug.amountInStock ?? drug.initialStock ?? 0);
+              const isPendingHamleUpdate = drug.amountInStock == null && (drug.initialStock ?? 0) > 0;
               const isExpanded = expandedDrug === drug.id;
 
               return (
@@ -80,10 +82,20 @@ export function InventoryManager({ drugs }: {
                       {drug.description && <span className="text-xs text-slate-500 ml-2 font-normal truncate block sm:inline">{drug.description}</span>}
                     </td>
                     <td className="py-3 text-sm text-right text-slate-600 dark:text-slate-400 pr-4">
-                      {totalStock > 0 ? (
-                        <span className="font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full text-xs">
-                          {totalStock} in stock
-                        </span>
+                      {effectiveStock > 0 ? (
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <span className="font-semibold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full text-xs">
+                            {effectiveStock} in stock
+                          </span>
+                          {isPendingHamleUpdate && (
+                            <span 
+                              className="inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                              title="Primary stock active from initial Hamle input. Physical count pending in Temporary Hamle Tracking."
+                            >
+                              ⚠️ Needs Update
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-red-500 font-bold text-xs bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded">Out of Stock</span>
                       )}

@@ -94,12 +94,14 @@ export default async function PharmacyDashboardPage({
 
   const outOfStockCount = drugs.filter((d) => {
     const totalBatches = d.batches.reduce((s, b) => s + b.quantity, 0);
-    return totalBatches === 0 && d.amountInStock === 0;
+    const available = totalBatches > 0 ? totalBatches : (d.amountInStock ?? d.initialStock ?? 0);
+    return available === 0;
   }).length;
 
   const lowStockCount = drugs.filter((d) => {
-    const total = d.batches.reduce((s, b) => s + b.quantity, 0);
-    return total > 0 && total <= 10;
+    const totalBatches = d.batches.reduce((s, b) => s + b.quantity, 0);
+    const available = totalBatches > 0 ? totalBatches : (d.amountInStock ?? d.initialStock ?? 0);
+    return available > 0 && available <= 10;
   }).length;
 
   const uncountedDrugsCount = drugs.filter((d) => d.amountInStock === null).length;

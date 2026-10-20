@@ -55,12 +55,18 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
     let discrepancies = 0;
 
     drugs.forEach((d) => {
-      if (d.amountInStock === null) {
+      const effectiveAvailable = d.amountInStock !== null ? d.amountInStock : (d.initialStock ?? 0);
+      const isUncounted = d.amountInStock === null;
+
+      if (isUncounted) {
         uncounted++;
-      } else if (d.amountInStock === 0) {
-        outOfStock++;
-      } else {
+      }
+
+      // If initial input exists, it must not be out of stock but counted as available in-stock
+      if (effectiveAvailable > 0) {
         inStock++;
+      } else {
+        outOfStock++;
       }
 
       if (
@@ -97,10 +103,12 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
         return drug.amountInStock === null;
       }
       if (filterMode === "instock") {
-        return drug.amountInStock !== null && drug.amountInStock > 0;
+        const available = drug.amountInStock !== null ? drug.amountInStock : (drug.initialStock ?? 0);
+        return available > 0;
       }
       if (filterMode === "outofstock") {
-        return drug.amountInStock === 0;
+        const available = drug.amountInStock !== null ? drug.amountInStock : (drug.initialStock ?? 0);
+        return available === 0;
       }
       if (filterMode === "discrepancy") {
         return (
@@ -262,7 +270,8 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
 
       let status = "Not Counted";
       if (current === 0) status = "Out of Stock";
-      else if (current !== null && current > 0) status = "In Stock";
+      else if (current !== null && current > 0) status = `In Stock (${current})`;
+      else if (current === null && initial !== null && initial > 0) status = `Available (${initial}) - Needs Hamle Update`;
 
       return {
         "No.": index + 1,
@@ -270,7 +279,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
         "Unit / Measuring Unit": d.unit || "N/A",
         "Category": d.category || "Uncategorized",
         "Initial in Stock (Hamle)": initial !== null ? initial : "N/A",
-        "Current in Stock": current !== null ? current : "Empty",
+        "Current in Stock (Hamle Input)": current !== null ? current : initial !== null && initial > 0 ? `${initial} (baseline)` : "Empty",
         "Variance / Discrepancy": varianceStr,
         "Status": status,
         "Unit Price (ETB)": (d.price / 100).toFixed(2),
@@ -333,13 +342,13 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
           }`}
         >
           <div className="flex items-center justify-between text-amber-600 dark:text-amber-400">
-            <span className="text-xs font-semibold uppercase tracking-wider">Needs Count</span>
+            <span className="text-xs font-semibold uppercase tracking-wider">Needs Hamle Update</span>
             <AlertTriangle className="w-4 h-4" />
           </div>
           <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
             {stats.uncounted}
           </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Empty current stock</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Pending physical count</p>
         </button>
 
         <button
@@ -357,7 +366,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
           <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
             {stats.inStock}
           </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Physical count &gt; 0</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Available stock &gt; 0</p>
         </button>
 
         <button
@@ -375,7 +384,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
           <p className="text-2xl font-bold text-rose-600 dark:text-rose-400 mt-1">
             {stats.outOfStock}
           </p>
-          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">Count set to 0</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">0 units available</p>
         </button>
 
         <button
@@ -465,6 +474,14 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
         </div>
       </div>
 
+      {/* ── Information Alert ── */}
+      <div className="p-3.5 rounded-xl bg-blue-50/80 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800/60 text-xs text-blue-950 dark:text-blue-200 flex items-start gap-2.5 shadow-xs">
+        <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+        <div className="leading-relaxed">
+          <span className="font-semibold text-blue-900 dark:text-blue-100">Hamle Baseline & Temporary Input Rule:</span> When medicines are imported with an initial stock input, they are active as primary available stock for dispensing and are not marked out of stock. A warning indicates verification is required until the confirmed physical count is entered into the <span className="font-semibold underline">Temporary Hamle Input</span>, which updates and sets <code className="px-1 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 font-mono text-[11px]">amountInStock</code>.
+        </div>
+      </div>
+
       {/* ── Filter Pills ── */}
       <div className="flex flex-wrap items-center gap-1.5 text-xs">
         <span className="text-slate-400 font-medium flex items-center gap-1 mr-1">
@@ -472,7 +489,7 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
         </span>
         {[
           { id: "all", label: "All Items", count: stats.total },
-          { id: "uncounted", label: "Needs Count", count: stats.uncounted },
+          { id: "uncounted", label: "Needs Hamle Update", count: stats.uncounted },
           { id: "instock", label: "In Stock", count: stats.inStock },
           { id: "outofstock", label: "Out of Stock", count: stats.outOfStock },
           { id: "discrepancy", label: "Discrepancy", count: stats.discrepancies },
@@ -501,7 +518,10 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                 <th className="px-4 py-3.5">Category</th>
                 <th className="px-4 py-3.5 text-center">Unit</th>
                 <th className="px-4 py-3.5 text-center">Initial in Stock (Hamle)</th>
-                <th className="px-4 py-3.5 text-center">Current in Stock</th>
+                <th className="px-4 py-3.5 text-center">
+                  Temporary Hamle Input
+                  <span className="block text-[10px] text-slate-400 font-normal lowercase">(sets amountInStock)</span>
+                </th>
                 <th className="px-4 py-3.5 text-center">Variance</th>
                 <th className="px-4 py-3.5 text-center">Status</th>
                 <th className="px-4 py-3.5 text-right">Actions</th>
@@ -595,14 +615,20 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                         )}
                       </td>
 
-                      {/* 4. Current in Stock (Editable Input & Direct Save) */}
+                      {/* 5. Temporary Hamle Input (Sets amountInStock & Syncs Batches) */}
                       <td className="px-4 py-3 text-center">
-                        <div className="inline-flex items-center justify-center gap-1">
+                        <div className="inline-flex items-center justify-center gap-1.5">
                           <div className="relative">
                             <input
                               type="number"
                               min={0}
-                              placeholder={current !== null ? String(current) : "Empty"}
+                              placeholder={
+                                current !== null
+                                  ? String(current)
+                                  : initial !== null && initial > 0
+                                  ? `${initial} (baseline)`
+                                  : "Empty"
+                              }
                               value={hasDraft ? editValue : current !== null ? current : ""}
                               disabled={isSaving}
                               onChange={(e) => {
@@ -618,9 +644,11 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                                   handleSaveStock(drug.id);
                                 }
                               }}
-                              className={`w-24 px-2.5 py-1.5 text-center font-bold font-mono text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
+                              className={`w-28 px-2.5 py-1.5 text-center font-bold font-mono text-sm rounded-lg border focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all ${
                                 current === null
-                                  ? "bg-amber-50/60 dark:bg-amber-950/20 border-amber-300 dark:border-amber-700 text-amber-800 dark:text-amber-200 placeholder-amber-400"
+                                  ? initial !== null && initial > 0
+                                    ? "bg-amber-50/80 dark:bg-amber-950/30 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-100 placeholder-amber-600/70 dark:placeholder-amber-400"
+                                    : "bg-slate-50 dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-500 placeholder-slate-400"
                                   : current === 0
                                   ? "bg-rose-50/60 dark:bg-rose-950/20 border-rose-300 dark:border-rose-700 text-rose-700 dark:text-rose-300"
                                   : "bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100"
@@ -638,23 +666,35 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                             <button
                               onClick={() => handleSaveStock(drug.id)}
                               disabled={isSaving}
-                              title="Save Count (or press Enter)"
+                              title="Save Count to amountInStock (or press Enter)"
                               className="p-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-colors"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
                           )}
+
+                          {/* Quick button to confirm baseline as verified count */}
+                          {current === null && initial !== null && initial > 0 && !hasDraft && (
+                            <button
+                              onClick={() => handleSaveStock(drug.id, initial)}
+                              disabled={isSaving}
+                              title={`Confirm baseline (${initial}) as verified amountInStock`}
+                              className="px-2 py-1 rounded-md text-[11px] font-semibold bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/50 dark:hover:bg-amber-900/80 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700 transition-colors whitespace-nowrap"
+                            >
+                              Use {initial}
+                            </button>
+                          )}
                         </div>
                       </td>
 
-                      {/* 5. Variance / Discrepancy */}
+                      {/* 6. Variance / Discrepancy */}
                       <td className="px-4 py-3 text-center">
-                        {variance !== null ? (
+                        {current !== null && initial !== null ? (
                           variance === 0 ? (
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
                               0 (Match)
                             </span>
-                          ) : variance < 0 ? (
+                          ) : variance !== null && variance < 0 ? (
                             <span className="inline-flex items-center gap-1 text-xs font-bold font-mono px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300">
                               <TrendingDown className="w-3 h-3" />
                               {variance}
@@ -665,6 +705,10 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                               +{variance}
                             </span>
                           )
+                        ) : current === null && initial !== null && initial > 0 ? (
+                          <span className="text-[11px] font-medium text-amber-600 dark:text-amber-400">
+                            Pending count
+                          </span>
                         ) : (
                           <span className="text-xs text-slate-300 dark:text-slate-600 italic">
                             —
@@ -672,22 +716,34 @@ export function TemporaryTrackingTable({ initialDrugs }: { initialDrugs: Tracked
                         )}
                       </td>
 
-                      {/* 6. Status Badge */}
+                      {/* 7. Status Badge */}
                       <td className="px-4 py-3 text-center">
                         {current === null ? (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 inline-flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-amber-500" />
-                            Uncounted
-                          </span>
+                          initial !== null && initial > 0 ? (
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-200 inline-flex items-center gap-1 border border-amber-300 dark:border-amber-700 shadow-xs">
+                                <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 shrink-0" />
+                                {initial.toLocaleString()} Avail (Needs Update)
+                              </span>
+                              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-medium">
+                                Temporary Hamle baseline active
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 inline-flex items-center gap-1">
+                              <AlertTriangle className="w-3 h-3 text-slate-400" />
+                              Uncounted
+                            </span>
+                          )
                         ) : current === 0 ? (
-                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 inline-flex items-center gap-1">
+                          <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 inline-flex items-center gap-1 border border-rose-200 dark:border-rose-800">
                             <Ban className="w-3 h-3" />
                             Out of Stock
                           </span>
                         ) : (
-                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1">
+                          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 inline-flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
                             <CheckCircle2 className="w-3 h-3" />
-                            In Stock
+                            {current.toLocaleString()} In Stock
                           </span>
                         )}
                       </td>

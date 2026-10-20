@@ -17,6 +17,8 @@ export function EditableDrugRow({ drug }: {
     unit?: string | null;
     price: number; 
     isOperational?: boolean;
+    initialStock?: number | null;
+    amountInStock?: number | null;
     batches?: any[];
   } 
 }) {
@@ -77,7 +79,9 @@ export function EditableDrugRow({ drug }: {
   }
 
   const batches = drug.batches && drug.batches.length > 0 ? drug.batches : [];
-  const totalStock = batches.reduce((sum, b) => sum + b.quantity, 0);
+  const totalBatches = batches.reduce((sum, b) => sum + b.quantity, 0);
+  const totalStock = batches.length > 0 ? totalBatches : (drug.amountInStock ?? drug.initialStock ?? 0);
+  const isPendingHamleUpdate = drug.amountInStock == null && (drug.initialStock ?? 0) > 0;
   const latestBatch = batches[0]; // Assuming ordered by date desc
   const previousBatches = batches.slice(1);
 
@@ -179,7 +183,17 @@ export function EditableDrugRow({ drug }: {
 
         <td className="px-4 py-3 align-top whitespace-nowrap">
           {totalStock > 0 ? (
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{totalStock}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">{totalStock}</span>
+              {isPendingHamleUpdate && (
+                <span 
+                  className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-300 dark:border-amber-700"
+                  title="Primary stock active from initial Hamle input. Physical count pending in Temporary Hamle Tracking."
+                >
+                  ⚠️ Needs Update
+                </span>
+              )}
+            </div>
           ) : (
             <span className="text-red-500 font-medium text-xs">Out of Stock</span>
           )}

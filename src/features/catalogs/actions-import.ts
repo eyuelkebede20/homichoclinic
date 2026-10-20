@@ -144,9 +144,10 @@ export const importCatalogCSV = createSafeAction({
         null;
       const unit =
         getField(row, [
+          "units",
+          "unit",
           "unitmeasuringunit",
           "measuringunit",
-          "unit",
           "measuring",
           "unitofmeasurement",
           "uom",
@@ -165,12 +166,13 @@ export const importCatalogCSV = createSafeAction({
           "note",
         ]) || null;
 
-      // Initial Stock (Hamle baseline)
+      // Initial Stock (Hamle baseline / initial input)
       const initialStockRaw = getField(row, [
+        "initialstock",
+        "initialinput",
         "hamleinput",
         "hamle",
         "hamlestock",
-        "initialstock",
         "initialinstock",
         "startingstock",
         "openingstock",
@@ -178,8 +180,10 @@ export const importCatalogCSV = createSafeAction({
         "initial",
       ]);
 
-      // Current Stock (counted quantity)
+      // Current Stock / amountInStock (counted quantity / temporary hamle input)
       const currentStockRaw = getField(row, [
+        "amountinstock",
+        "amountin_stock",
         "currentstock",
         "currentinstock",
         "physicalcount",
@@ -187,9 +191,8 @@ export const importCatalogCSV = createSafeAction({
         "actualstock",
       ]);
 
-      // Generic Stock column (e.g. "Stock", "Quantity", "AmountInStock")
+      // Generic Stock column (e.g. "Stock", "Quantity")
       const genericStockRaw = getField(row, [
-        "amountinstock",
         "stock",
         "quantity",
         "qty",
@@ -210,9 +213,9 @@ export const importCatalogCSV = createSafeAction({
         if (!isNaN(parsed)) parsedCurrentStock = parsed;
       }
 
-      // If initial stock was not explicitly named, but a generic stock column is present:
-      // In baseline inventory imports, map generic stock to initialStock!
-      if (parsedInitialStock === null && genericStockRaw !== "") {
+      // If initial stock and current stock were not explicitly named, but a generic stock column is present:
+      // Map generic stock to initialStock!
+      if (parsedInitialStock === null && parsedCurrentStock === null && genericStockRaw !== "") {
         const parsed = parseInt(genericStockRaw, 10);
         if (!isNaN(parsed)) {
           parsedInitialStock = parsed;
@@ -323,37 +326,52 @@ export const importCatalogCSV = createSafeAction({
             createdCount++;
           }
 
-          // Upsert stock batch so dispensing and inventory manager immediately reflect the stock
+          // Synchronize physical in-stock batches with effective stock
+          // If there is an initial input, use it as primary stock available (not out of stock!)
           const effectiveStock = parsedCurrentStock ?? parsedInitialStock;
-          if (effectiveStock !== null && effectiveStock > 0) {
-            const bNum = batchNumber || `HAMLE-${new Date().getFullYear()}`;
-            const existingBatch = await prisma.stockBatch.findFirst({
-              where: { drugId: drug.id, ...(batchNumber ? { batchNumber } : {}) },
-              orderBy: { createdAt: "desc" },
-            });
-
-            if (existingBatch) {
-              await prisma.stockBatch.update({
-                where: { id: existingBatch.id },
-                data: {
-                  quantity: effectiveStock,
-                  expiryDate: validExpiry,
-                  dateAddedToStock: validDateAdded,
-                  docNo: docNo || "HAMLE-BASELINE-IMPORT",
-                },
+          if (effectiveStock !== null) {
+            if (effectiveStock === 0) {
+              await prisma.stockBatch.updateMany({
+                where: { drugId: drug.id },
+                data: { quantity: 0 },
               });
             } else {
-              await prisma.stockBatch.create({
-                data: {
-                  drugId: drug.id,
-                  batchNumber: bNum,
-                  expiryDate: validExpiry,
-                  quantity: effectiveStock,
-                  cost: priceCents || 0,
-                  dateAddedToStock: validDateAdded || new Date(),
-                  docNo: docNo || "HAMLE-BASELINE-IMPORT",
-                },
+              const bNum = batchNumber || `HAMLE-${new Date().getFullYear()}`;
+              const existingBatches = await prisma.stockBatch.findMany({
+                where: { drugId: drug.id, ...(batchNumber ? { batchNumber } : {}) },
+                orderBy: { createdAt: "desc" },
               });
+
+              if (existingBatches.length > 0) {
+                await prisma.stockBatch.update({
+                  where: { id: existingBatches[0].id },
+                  data: {
+                    quantity: effectiveStock,
+                    expiryDate: validExpiry,
+                    dateAddedToStock: validDateAdded,
+                    docNo: docNo || "HAMLE-BASELINE-IMPORT",
+                  },
+                });
+                if (existingBatches.length > 1) {
+                  const olderBatchIds = existingBatches.slice(1).map((b) => b.id);
+                  await prisma.stockBatch.updateMany({
+                    where: { id: { in: olderBatchIds } },
+                    data: { quantity: 0 },
+                  });
+                }
+              } else {
+                await prisma.stockBatch.create({
+                  data: {
+                    drugId: drug.id,
+                    batchNumber: bNum,
+                    expiryDate: validExpiry,
+                    quantity: effectiveStock,
+                    cost: priceCents || 0,
+                    dateAddedToStock: validDateAdded || new Date(),
+                    docNo: docNo || "HAMLE-BASELINE-IMPORT",
+                  },
+                });
+              }
             }
           }
 

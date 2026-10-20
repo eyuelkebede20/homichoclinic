@@ -1,149 +1,149 @@
-id,nameOfMed,description,price,category,hamle-input,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo
-"cmv0tup7l007pl908gvs1hgx1","Acyclovir Cream","",132,"",,,,,,,
-"cmv0tup7p007ql908gorh86yx","Adrenaline 0.1% 1ml","",31.76,"",,,20,,,,
-"cmv0tup7w007tl908pily06e7","Albendazole 100mg/5ml","",76.8,"",,,,,,,
-"cmv0tup7z007ul9087m7o23gw","Allopurinol 100mg","",8.58,"",,,5,,,,
-"cmv0tup84007xl908rsgtin7s","Aminophylline 250mg/10ml","",68.33,"",,,,,,,
-"cmv0tup87007yl908l3gygyj2","Amitriptyline 25mg","",3.24,"",,,,,,,
-"cmv0tup89007zl90810wtt9hm","Amoxicillin 125mg/5ml","",85.8,"",,,240,,,,
-"cmv0tup8e0082l9087o14uz9v","Amoxicillin 250mg","",2.84,"",,,,,,,
-"cmv0tup8h0083l908jl1gjgcv","Amoxicillin 250mg/5ml","",167.86,"",,,,,,,
-"cmv0tup8k0084l9080j9ia2tv","Amoxicillin 500mg","",7.5,"",,,60,,,,
-"cmv0tup8p0087l9089qso97uy","Amoxicillin 500mg","",15,"",,,,,,,
-"cmv0tup8s0088l9084nfmfaz3","Antacid Syrup","",144.92,"",,,320,,,,
-"cmv0tup94008bl908pok9jqg8","Anti-Rho(D) Immunoglobulin","",4228.8,"",,,30,,,,
-"cmv0tup9b008el9081sibj6r3","Anti-Snake Venom","",5136,"",,,,,,,
-"cmv0tup9f008fl908uxlsj0bj","Antihemorrhoidal Ointment","",206.1,"",,,100,,,,
-"cmv0tup9l008il908tbxevmud","Antihemorrhoidal Suppository","",298.44,"",,,100,,,,
-"cmv0tup9r008ll908my4sxwts","ASA 81mg","",2.11,"",,,,,,,
-"cmv0tup9u008ml908fsq55v51","Atorvastatin 20mg","",5.94,"",,,20,,,,
-"cmv0tup9y008pl90845bvfdeu","Atropine Eye Drops","",379.2,"",,,,,,,
-"cmv0tupa1008ql908mxxz1ru4","Augmentin 156mg/5ml","",185.4,"",,,60,,,,
-"cmv0tupa6008tl908nsxg274u","Augmentin 228mg/5ml","",528,"",,,,,,,
-"cmv0tupa8008ul908rvtnismy","Augmentin 457mg/5ml","",300,"",,,60,,,,
-"cmv0tupad008xl9086k5irtvo","Augmentin 625mg","",26.72,"",,,,,,,
-"cmv0tupag008yl908h1tl90ej","Azithromycin 200mg/5ml","",85.4,"",,,200,,,,
-"cmv0tupak0091l908ncyvftxv","Azithromycin 500mg","",26.53,"",,,30,,,,
-"cmv0tupap0094l908dalrg1hi","Bisacodyl 5mg","",4.26,"",,,10,,,,
-"cmv0tupav0097l908mi1tnt14","Carbamazepine 200mg","",9.36,"",,,,,,,
-"cmv0tupay0098l908iixj5sm9","Catgut No. 2/0","",50.26,"Dressing",,,10,,,,
-"cmv0tupb3009bl908qdpj2xvq","Ceftazidime 1gm","",64.82,"",,,,,,,
-"cmv0tupb5009cl908au75dq7y","Ceftriaxone 0.5gm","",50.28,"",,,100,,,,
-"cmv0tupba009fl9080tzfiajh","Ceftriaxone 1gm","",78,"",,,552,,,,
-"cmv0tupbf009il9085kjlxvz2","Cephalexin 250mg/5ml","",159,"",,,90,,,,
-"cmv0tupbk009ll908uol5ovl9","Cephalexin 500mg","",10.36,"",,,,,,,
-"cmv0tupbm009ml9084ebe2dub","Chlorpheniramine 4mg","",3.84,"",,,,,,,
-"cmv0tupbo009nl908h8v7jn0n","Chlorpheniramine Syrup","",222,"",,,,,,,
-"cmv0tupbr009ol908n7000gyf","Cimetidine 400mg","",11,"",,,,,,,
-"cmv0tupbt009pl908r38ltbvf","Ciprofloxacin 250mg","",2.88,"",,,,,,,
-"cmv0tupbv009ql908vue0lw7e","Ciprofloxacin 500mg","",5.4,"",,,100,,,,
-"cmv0tupc1009tl908wzddpraa","Ciprofloxacin Eye Drops","",88.68,"",,,50,,,,
-"cmv0tupc6009wl908ztinypns","Clotrimazole 1% Cream","",78.86,"",,,,,,,
-"cmv0tupc8009xl90885xxrbv5","Clotrimazole Vaginal","",11.5,"",,,100,,,,
-"cmv0tupce00a0l908h924c0uw","Cloxacillin 250mg/5ml","",165.6,"",,,100,,,,
-"cmv0tupcj00a3l9083b7ho79e","Cloxacillin 500mg","",7.84,"",,,5,,,,
-"cmv0tupco00a6l908yn0rx3ke","Co-trimoxazole 240mg/5ml","",172.8,"",,,,,,,
-"cmv0tupcq00a7l9085vb53c8x","Co-trimoxazole 480mg","",1.56,"",,,,,,,
-"cmv0tupcs00a8l9086jfuzga0","Co-trimoxazole 960mg","",2.12,"",,,,,,,
-"cmv0tupcv00a9l908x9ikcuhj","Cotton 100gm","",180,"Dressing",,,,,,,
-"cmv0tupcx00aal908tywy0y5k","Dexamethasone 4mg/2ml","",27.8,"",,,100,,,,
-"cmv0tupd200adl908weqxmrzk","Dexamethasone Eye Drops","",68.91,"",,,200,,,,
-"cmv0tupd700agl908cp6ukdn2","Dextromethorphan Syrup","",188.38,"",,,,,,,
-"cmv0tupd900ahl908jzlllm1q","Dextrose 40%","",67.2,"",,,,,,,
-"cmv0tupdc00ail90824n47yip","Dextrose 5% 100ml","",198.96,"",,,,,,,
-"cmv0tupde00ajl908p7ekod76","Diazepam 5mg","",2.4,"",,,,,,,
-"cmv0tupdg00akl908tlt0sps4","Diazepam 5mg/2ml","",73.14,"",,,20,,,,
-"cmv0tupdm00anl908efcwtx45","Diclofenac 100mg Suppository","",73.32,"",,,,,,,
-"cmv0tupdo00aol90833foysik","Diclofenac 50mg","",1.68,"",,,,,,,
-"cmv0tupdq00apl908j4rjt9v8","Diclofenac 75mg/3ml","",7.95,"",,,54,,,,
-"cmv0tupdw00asl9083fjvkxio","Diphenhydramine Syrup","",153.6,"",,,,,,,
-"cmv0tupdy00atl9087c6tvkzy","DNS 1000ml","",190.62,"",,,,,,,
-"cmv0tupe000aul908rmuptwr4","Doxycycline 100mg","",3.84,"",,,15,,,,
-"cmv0tupe500axl908j8a26omi","Elastic Bandage","",90.86,"Dressing",,,,,,,
-"cmv0tupe700ayl9083j9k4mjc","Enalapril 10mg","",3.36,"",,,,,,,
-"cmv0tupea00azl908t658pygx","Examination Glove","",32.16,"Dressing",,,50,,,,
-"cmv0tupee00b2l908gg9ela3j","Ferrous Sulphate 300mg","",1.5,"",,,,,,,
-"cmv0tupeh00b3l908j808nwii","Fluconazole Topical","",82.56,"",,,,,,,
-"cmv0tupej00b4l908f3ykbtht","Folic Acid 5mg","",1.71,"",,,,,,,
-"cmv0tupem00b5l908zcfkpcoc","Furosemide 20mg/2ml","",10.62,"",,,,,,,
-"cmv0tupeo00b6l908s56w53cu","Furosemide 40mg","",1.32,"",,,,,,,
-"cmv0tupeq00b7l908wcof8j4x","Gentamicin 50mg/2ml","",9.42,"",,,,,,,
-"cmv0tupes00b8l908f1g9enbn","Gentamicin Eye Drops","",56.38,"",,,100,,,,
-"cmv0tupey00bbl908u4rvbxk8","Glibenclamide 5mg","",1.14,"",,,,,,,
-"cmv0tupf000bcl908sxiceuf9","Griseofulvin 250mg","",3.12,"",,,,,,,
-"cmv0tupf300bdl908jirabeq5","Griseofulvin 250mg/5ml","",380.64,"",,,,,,,
-"cmv0tupf600bel908r1tvx12n","HCT 25mg","",0.9,"",,,,,,,
-"cmv0tupf800bfl908est1grz5","Hydralazine 20mg/ml","",18.61,"",,,30,,,,
-"cmv0tupfd00bil908eji52kgs","Hydrocortisone 100mg/2ml","",168,"",,,,,,,
-"cmv0tupfg00bjl908sqrmdnt0","Hydrocortisone 100mg/2ml","",168,"",,,,,,,
-"cmv0tupfl00bkl9085k95qtm8","Hydrocortisone Topical","",89.14,"",,,,,,,
-"cmv0tupfp00bll908isvr70kb","Hyoscine 10mg","",5.09,"",,,20,,,,
-"cmv0tupfv00bol9084im37m7i","Hyoscine 20mg/ml","",34.5,"",,,20,,,,
-"cmv0tupg100brl908tlzm8s1n","Ibuprofen 100mg/5ml","",78.8,"",,,100,,,,
-"cmv0tupgb00bul908bm9kd2gq","Ibuprofen 400mg","",3.38,"",,,50,,,,
-"cmv0tupgg00bxl908dvoizgpf","Ibuprofen 400mg","",8,"",,,,,,,
-"cmv0tupgi00byl908veld4h8w","Indomethacin 25mg","",1.7,"",,,10,,,,
-"cmv0tupgn00c1l908aa50fdwu","Insulin 70/30 100IU/ml","",401.85,"",,,,,,,
-"cmv0tupgp00c2l908z482fpni","Insulin Soluble 100IU/ml","",343.85,"",,,,,,,
-"cmv0tupgr00c3l908pi7yaue2","Insulin Syringe with Needle","",7.2,"",,,,,,,
-"cmv0tupgu00c4l908j16tcmfz","Insulin Zinc 100IU/ml","",354.87,"",,,,,,,
-"cmv0tupgw00c5l908txipttak","IV Cannula 18G","",20.28,"Dressing",,,,,,,
-"cmv0tupgy00c6l9087hkq7o0o","IV Cannula 20G","",20.94,"Dressing",,,,,,,
-"cmv0tuph000c7l908ufxqypsk","IV Cannula No. 22","",23.84,"Dressing",,,,,,,
-"cmv0tuph300c8l908n061eqox","Ketoconazole 200mg","",8.8,"",,,,,,,
-"cmv0tuph500c9l908bu45oybv","Ketoconazole Cream","",68.8,"",,,100,,,,
-"cmv0tupha00ccl908irq4o1ge","Ketoconazole Shampoo","",504,"",,,,,,,
-"cmv0tuphc00cdl908bc7sam6q","Loratadine 10mg","",5.28,"",,,,,,,
-"cmv0tuphf00cel9082hxq90m2","Loratadine 5mg/5ml","",360,"",,,,,,,
-"cmv0tuphh00cfl908uuem0b1l","Mebendazole 100mg","",1.68,"",,,,,,,
-"cmv0tuphj00cgl908mme28fp7","Mebendazole 100mg/5ml","",55.8,"",,,,,,,
-"cmv0tuphm00chl90818mkhjn8","Metformin 500mg","",0.94,"",,,,,,,
-"cmv0tupho00cil908no1v487q","Methyldopa 250mg","",5.52,"",,,2,,,,
-"cmv0tupht00cll908zrmmu70a","Metoclopramide 100mg","",4.68,"",,,,,,,
-"cmv0tuphv00cml908lkc74on8","Metoclopramide Drops","",300,"",,,,,,,
-"cmv0tuphy00cnl9087oeywzq0","Metoclopramide Injection","",14.8,"",,,200,,,,
-"cmv0tupi300cql9082308c94x","Metronidazole 125mg/5ml","",237.6,"",,,,,,,
-"cmv0tupi500crl908wmowppaw","Metronidazole 250mg","",3.86,"",,,,,,,
-"cmv0tupi800csl9085t1ftdui","Miconazole Oral Gel","",485.44,"",,,50,,,,
-"cmv0tupid00cvl9087qos8jhf","Multivitamin","",4.68,"",,,,,,,
-"cmv0tupif00cwl908u5dakyh3","Nifedipine 20mg","",2.32,"",,,20,,,,
-"cmv0tupil00czl908gul3a9e6","Nitrofurazone Ointment","",288,"",,,,,,,
-"cmv0tupin00d0l90837vrghjn","Norfloxacin 400mg","",3.9,"",,,,,,,
-"cmv0tupip00d1l908dxkipxnz","Normal Saline 0.9%","",199.56,"",,,,,,,
-"cmv0tupis00d2l9081lgokr1u","Omeprazole 20mg","",2.88,"",,,33,,,,
-"cmv0tupix00d5l908p4yynxh8","ORS","",17.8,"",,,,,,,
-"cmv0tupj000d6l908eo22djbz","Pantoprazole 40mg","",7.92,"",,,,,,,
-"cmv0tupj300d7l90842htpsme","Paracetamol 125mg Suppository","",14.85,"",,,,,,,
-"cmv0tupj500d8l908ffa33pde","Paracetamol 500mg","",1.29,"",,,,,,,
-"cmv0tupj700d9l9084j6qmml4","Paracetamol 500mg","",5,"",,,,,,,
-"cmv0tupj900dal9080zu6kdix","Pethidine 50mg/ml","",67.53,"",,,10,,,,
-"cmv0tupjf00ddl908nkudv5im","Phenobarbitone 100mg","",4.31,"",,,,,,,
-"cmv0tupjh00del9080f91lnhi","Phenobarbitone 30mg","",1.98,"",,,,,,,
-"cmv0tupjj00dfl908m9464boy","PPF 4MIU","",67.92,"",,,,,,,
-"cmv0tupjl00dgl908q6cx27xw","Praziquantel 600mg","",28.3,"",,,10,,,,
-"cmv0tupjq00djl908seb2ffsf","Prednisolone 5mg","",1.6,"",,,10,,,,
-"cmv0tupjv00dml908hsskd3w4","R/L 1000ml","",201.6,"",,,,,,,
-"cmv0tupjy00dnl9088cf4jfxp","Salbutamol 2mg/5ml","",70.56,"",,,,,,,
-"cmv0tupk000dol908wlwqjzb1","Salbutamol 4mg","",1.2,"",,,,,,,
-"cmv0tupk200dpl908w8uyb5ie","Salbutamol Inhaler","",456,"",,,,,,,
-"cmv0tupk500dql9083yuzizce","Silk No. 2","",98.53,"Dressing",,,2,,,,
-"cmv0tupka00dtl908v6xsblpy","Sulphur Ointment","",138.64,"",,,,,,,
-"cmv0tupkc00dul908t7u39dpp","Surgical Blade No. 23","",44.8,"Dressing",,,,,,,
-"cmv0tupke00dvl908mrjqm2ku","Surgical Blade No. 24","",45.34,"Dressing",,,10,,,,
-"cmv0tupkj00dyl9083d2djwxk","Surgical Glove No. 7","",58.84,"Dressing",,,,,,,
-"cmv0tupkm00dzl908flsrnu1f","Syringe with Needle 10cc","",5.2,"Dressing",,,,,,,
-"cmv0tupko00e0l908xlt5bmd9","Syringe with Needle 20cc","",15.4,"Dressing",,,,,,,
-"cmv0tupkq00e1l908urxlyi3r","Syringe with Needle 3cc","",2.86,"Dressing",,,,,,,
-"cmv0tupkt00e2l908vgqco40z","Syringe with Needle 5cc","",4.12,"Dressing",,,,,,,
-"cmv0tupkv00e3l908lt8sl7ew","TAT 1500IU","",430.8,"",,,,,,,
-"cmv0tupkx00e4l908wbr534a9","Tinidazole 500mg","",3.3,"",,,,,,,
-"cmv0tupl000e5l908h2qq2j17","Tramadol 50mg","",3.27,"",,,30,,,,
-"cmv0tupl500e8l908xz2vquzb","Tramadol 50mg/2ml","",18.84,"",,,300,,,,
-"cmv0tupl900ebl908979x3gxu","Triangular Bandage","",150,"Dressing",,,,,,,
-"cmv0tuplc00ecl908q0xgeoit","TTC 1% Eye Ointment","",27.42,"",,,,,,,
-"cmv0tuple00edl908nm6b65lq","TTC Skin Ointment","",150.8,"",,,,,,,
-"cmv0tuplg00eel908wpulit52","Vancomycin 1gm","",240.51,"",,,,,,,
-"cmv0tupli00efl9080tjaiiuu","Vicryl No. 2/0","",52.88,"Dressing",,,,,,,
-"cmv0tupll00egl908qn8frepx","Vitamin B1, B6, B12 400mg","",10.56,"",,,,,,,
-"cmv0tupln00ehl908l5ye0nqp","Vitamin B1, B6, B12 Injection","",32.76,"",,,70,,,,
-"cmv0tupls00ekl908pacr5et9","Xylometazoline Nasal Drops","",122.52,"",,,50,,,,
+id,nameOfMed,description,price,category,initialStock,amountInStock,batchNumber,expiryDate,dateAddedToStock,docNo,units
+"cmv0tup7l007pl908gvs1hgx1","Acyclovir Cream","",132,"",,,,,,,""
+"cmv0tup7p007ql908gorh86yx","Adrenaline 0.1% 1ml","",31.76,"",,20,,,,,""
+"cmv0tup7w007tl908pily06e7","Albendazole 100mg/5ml","",76.8,"",,,,,,,""
+"cmv0tup7z007ul9087m7o23gw","Allopurinol 100mg","",8.58,"",,5,,,,,""
+"cmv0tup84007xl908rsgtin7s","Aminophylline 250mg/10ml","",68.33,"",,,,,,,""
+"cmv0tup87007yl908l3gygyj2","Amitriptyline 25mg","",3.24,"",,,,,,,""
+"cmv0tup89007zl90810wtt9hm","Amoxicillin 125mg/5ml","",85.8,"",,240,,,,,""
+"cmv0tup8e0082l9087o14uz9v","Amoxicillin 250mg","",2.84,"",,,,,,,""
+"cmv0tup8h0083l908jl1gjgcv","Amoxicillin 250mg/5ml","",167.86,"",,,,,,,""
+"cmv0tup8k0084l9080j9ia2tv","Amoxicillin 500mg","",7.5,"",,60,,,,,""
+"cmv0tup8p0087l9089qso97uy","Amoxicillin 500mg","",15,"",,,,,,,""
+"cmv0tup8s0088l9084nfmfaz3","Antacid Syrup","",144.92,"",,320,,,,,""
+"cmv0tup94008bl908pok9jqg8","Anti-Rho(D) Immunoglobulin","",4228.8,"",,30,,,,,""
+"cmv0tup9b008el9081sibj6r3","Anti-Snake Venom","",5136,"",,,,,,,""
+"cmv0tup9f008fl908uxlsj0bj","Antihemorrhoidal Ointment","",206.1,"",,100,,,,,""
+"cmv0tup9l008il908tbxevmud","Antihemorrhoidal Suppository","",298.44,"",,100,,,,,""
+"cmv0tup9r008ll908my4sxwts","ASA 81mg","",2.11,"",,,,,,,""
+"cmv0tup9u008ml908fsq55v51","Atorvastatin 20mg","",5.94,"",,20,,,,,""
+"cmv0tup9y008pl90845bvfdeu","Atropine Eye Drops","",379.2,"",,,,,,,""
+"cmv0tupa1008ql908mxxz1ru4","Augmentin 156mg/5ml","",185.4,"",,60,,,,,""
+"cmv0tupa6008tl908nsxg274u","Augmentin 228mg/5ml","",528,"",,,,,,,""
+"cmv0tupa8008ul908rvtnismy","Augmentin 457mg/5ml","",300,"",,60,,,,,""
+"cmv0tupad008xl9086k5irtvo","Augmentin 625mg","",26.72,"",,,,,,,""
+"cmv0tupag008yl908h1tl90ej","Azithromycin 200mg/5ml","",85.4,"",,200,,,,,""
+"cmv0tupak0091l908ncyvftxv","Azithromycin 500mg","",26.53,"",,30,,,,,""
+"cmv0tupap0094l908dalrg1hi","Bisacodyl 5mg","",4.26,"",,10,,,,,""
+"cmv0tupav0097l908mi1tnt14","Carbamazepine 200mg","",9.36,"",,,,,,,""
+"cmv0tupay0098l908iixj5sm9","Catgut No. 2/0","",50.26,"Dressing",,10,,,,,""
+"cmv0tupb3009bl908qdpj2xvq","Ceftazidime 1gm","",64.82,"",,,,,,,""
+"cmv0tupb5009cl908au75dq7y","Ceftriaxone 0.5gm","",50.28,"",,100,,,,,""
+"cmv0tupba009fl9080tzfiajh","Ceftriaxone 1gm","",78,"",,552,,,,,""
+"cmv0tupbf009il9085kjlxvz2","Cephalexin 250mg/5ml","",159,"",,90,,,,,""
+"cmv0tupbk009ll908uol5ovl9","Cephalexin 500mg","",10.36,"",,,,,,,""
+"cmv0tupbm009ml9084ebe2dub","Chlorpheniramine 4mg","",3.84,"",,,,,,,""
+"cmv0tupbo009nl908h8v7jn0n","Chlorpheniramine Syrup","",222,"",,,,,,,""
+"cmv0tupbr009ol908n7000gyf","Cimetidine 400mg","",11,"",,,,,,,""
+"cmv0tupbt009pl908r38ltbvf","Ciprofloxacin 250mg","",2.88,"",,,,,,,""
+"cmv0tupbv009ql908vue0lw7e","Ciprofloxacin 500mg","",5.4,"",,100,,,,,""
+"cmv0tupc1009tl908wzddpraa","Ciprofloxacin Eye Drops","",88.68,"",,50,,,,,""
+"cmv0tupc6009wl908ztinypns","Clotrimazole 1% Cream","",78.86,"",,,,,,,""
+"cmv0tupc8009xl90885xxrbv5","Clotrimazole Vaginal","",11.5,"",,100,,,,,""
+"cmv0tupce00a0l908h924c0uw","Cloxacillin 250mg/5ml","",165.6,"",,100,,,,,""
+"cmv0tupcj00a3l9083b7ho79e","Cloxacillin 500mg","",7.84,"",,5,,,,,""
+"cmv0tupco00a6l908yn0rx3ke","Co-trimoxazole 240mg/5ml","",172.8,"",,,,,,,""
+"cmv0tupcq00a7l9085vb53c8x","Co-trimoxazole 480mg","",1.56,"",,,,,,,""
+"cmv0tupcs00a8l9086jfuzga0","Co-trimoxazole 960mg","",2.12,"",,,,,,,""
+"cmv0tupcv00a9l908x9ikcuhj","Cotton 100gm","",180,"Dressing",,,,,,,""
+"cmv0tupcx00aal908tywy0y5k","Dexamethasone 4mg/2ml","",27.8,"",,100,,,,,""
+"cmv0tupd200adl908weqxmrzk","Dexamethasone Eye Drops","",68.91,"",,200,,,,,""
+"cmv0tupd700agl908cp6ukdn2","Dextromethorphan Syrup","",188.38,"",,,,,,,""
+"cmv0tupd900ahl908jzlllm1q","Dextrose 40%","",67.2,"",,,,,,,""
+"cmv0tupdc00ail90824n47yip","Dextrose 5% 100ml","",198.96,"",,,,,,,""
+"cmv0tupde00ajl908p7ekod76","Diazepam 5mg","",2.4,"",,,,,,,""
+"cmv0tupdg00akl908tlt0sps4","Diazepam 5mg/2ml","",73.14,"",,20,,,,,""
+"cmv0tupdm00anl908efcwtx45","Diclofenac 100mg Suppository","",73.32,"",,,,,,,""
+"cmv0tupdo00aol90833foysik","Diclofenac 50mg","",1.68,"",,,,,,,""
+"cmv0tupdq00apl908j4rjt9v8","Diclofenac 75mg/3ml","",7.95,"",,54,,,,,""
+"cmv0tupdw00asl9083fjvkxio","Diphenhydramine Syrup","",153.6,"",,,,,,,""
+"cmv0tupdy00atl9087c6tvkzy","DNS 1000ml","",190.62,"",,,,,,,""
+"cmv0tupe000aul908rmuptwr4","Doxycycline 100mg","",3.84,"",,15,,,,,""
+"cmv0tupe500axl908j8a26omi","Elastic Bandage","",90.86,"Dressing",,,,,,,""
+"cmv0tupe700ayl9083j9k4mjc","Enalapril 10mg","",3.36,"",,,,,,,""
+"cmv0tupea00azl908t658pygx","Examination Glove","",32.16,"Dressing",,50,,,,,""
+"cmv0tupee00b2l908gg9ela3j","Ferrous Sulphate 300mg","",1.5,"",,,,,,,""
+"cmv0tupeh00b3l908j808nwii","Fluconazole Topical","",82.56,"",,,,,,,""
+"cmv0tupej00b4l908f3ykbtht","Folic Acid 5mg","",1.71,"",,,,,,,""
+"cmv0tupem00b5l908zcfkpcoc","Furosemide 20mg/2ml","",10.62,"",,,,,,,""
+"cmv0tupeo00b6l908s56w53cu","Furosemide 40mg","",1.32,"",,,,,,,""
+"cmv0tupeq00b7l908wcof8j4x","Gentamicin 50mg/2ml","",9.42,"",,,,,,,""
+"cmv0tupes00b8l908f1g9enbn","Gentamicin Eye Drops","",56.38,"",,100,,,,,""
+"cmv0tupey00bbl908u4rvbxk8","Glibenclamide 5mg","",1.14,"",,,,,,,""
+"cmv0tupf000bcl908sxiceuf9","Griseofulvin 250mg","",3.12,"",,,,,,,""
+"cmv0tupf300bdl908jirabeq5","Griseofulvin 250mg/5ml","",380.64,"",,,,,,,""
+"cmv0tupf600bel908r1tvx12n","HCT 25mg","",0.9,"",,,,,,,""
+"cmv0tupf800bfl908est1grz5","Hydralazine 20mg/ml","",18.61,"",,30,,,,,""
+"cmv0tupfd00bil908eji52kgs","Hydrocortisone 100mg/2ml","",168,"",,,,,,,""
+"cmv0tupfg00bjl908sqrmdnt0","Hydrocortisone 100mg/2ml","",168,"",,,,,,,""
+"cmv0tupfl00bkl9085k95qtm8","Hydrocortisone Topical","",89.14,"",,,,,,,""
+"cmv0tupfp00bll908isvr70kb","Hyoscine 10mg","",5.09,"",,20,,,,,""
+"cmv0tupfv00bol9084im37m7i","Hyoscine 20mg/ml","",34.5,"",,20,,,,,""
+"cmv0tupg100brl908tlzm8s1n","Ibuprofen 100mg/5ml","",78.8,"",,100,,,,,""
+"cmv0tupgb00bul908bm9kd2gq","Ibuprofen 400mg","",3.38,"",,50,,,,,""
+"cmv0tupgg00bxl908dvoizgpf","Ibuprofen 400mg","",8,"",,,,,,,""
+"cmv0tupgi00byl908veld4h8w","Indomethacin 25mg","",1.7,"",,10,,,,,""
+"cmv0tupgn00c1l908aa50fdwu","Insulin 70/30 100IU/ml","",401.85,"",,,,,,,""
+"cmv0tupgp00c2l908z482fpni","Insulin Soluble 100IU/ml","",343.85,"",,,,,,,""
+"cmv0tupgr00c3l908pi7yaue2","Insulin Syringe with Needle","",7.2,"",,,,,,,""
+"cmv0tupgu00c4l908j16tcmfz","Insulin Zinc 100IU/ml","",354.87,"",,,,,,,""
+"cmv0tupgw00c5l908txipttak","IV Cannula 18G","",20.28,"Dressing",,,,,,,""
+"cmv0tupgy00c6l9087hkq7o0o","IV Cannula 20G","",20.94,"Dressing",,,,,,,""
+"cmv0tuph000c7l908ufxqypsk","IV Cannula No. 22","",23.84,"Dressing",,,,,,,""
+"cmv0tuph300c8l908n061eqox","Ketoconazole 200mg","",8.8,"",,,,,,,""
+"cmv0tuph500c9l908bu45oybv","Ketoconazole Cream","",68.8,"",,100,,,,,""
+"cmv0tupha00ccl908irq4o1ge","Ketoconazole Shampoo","",504,"",,,,,,,""
+"cmv0tuphc00cdl908bc7sam6q","Loratadine 10mg","",5.28,"",,,,,,,""
+"cmv0tuphf00cel9082hxq90m2","Loratadine 5mg/5ml","",360,"",,,,,,,""
+"cmv0tuphh00cfl908uuem0b1l","Mebendazole 100mg","",1.68,"",,,,,,,""
+"cmv0tuphj00cgl908mme28fp7","Mebendazole 100mg/5ml","",55.8,"",,,,,,,""
+"cmv0tuphm00chl90818mkhjn8","Metformin 500mg","",0.94,"",,,,,,,""
+"cmv0tupho00cil908no1v487q","Methyldopa 250mg","",5.52,"",,2,,,,,""
+"cmv0tupht00cll908zrmmu70a","Metoclopramide 100mg","",4.68,"",,,,,,,""
+"cmv0tuphv00cml908lkc74on8","Metoclopramide Drops","",300,"",,,,,,,""
+"cmv0tuphy00cnl9087oeywzq0","Metoclopramide Injection","",14.8,"",,200,,,,,""
+"cmv0tupi300cql9082308c94x","Metronidazole 125mg/5ml","",237.6,"",,,,,,,""
+"cmv0tupi500crl908wmowppaw","Metronidazole 250mg","",3.86,"",,,,,,,""
+"cmv0tupi800csl9085t1ftdui","Miconazole Oral Gel","",485.44,"",,50,,,,,""
+"cmv0tupid00cvl9087qos8jhf","Multivitamin","",4.68,"",,,,,,,""
+"cmv0tupif00cwl908u5dakyh3","Nifedipine 20mg","",2.32,"",,20,,,,,""
+"cmv0tupil00czl908gul3a9e6","Nitrofurazone Ointment","",288,"",,,,,,,""
+"cmv0tupin00d0l90837vrghjn","Norfloxacin 400mg","",3.9,"",,,,,,,""
+"cmv0tupip00d1l908dxkipxnz","Normal Saline 0.9%","",199.56,"",,,,,,,""
+"cmv0tupis00d2l9081lgokr1u","Omeprazole 20mg","",2.88,"",,33,,,,,""
+"cmv0tupix00d5l908p4yynxh8","ORS","",17.8,"",,,,,,,""
+"cmv0tupj000d6l908eo22djbz","Pantoprazole 40mg","",7.92,"",,,,,,,""
+"cmv0tupj300d7l90842htpsme","Paracetamol 125mg Suppository","",14.85,"",,,,,,,""
+"cmv0tupj500d8l908ffa33pde","Paracetamol 500mg","",1.29,"",,,,,,,""
+"cmv0tupj700d9l9084j6qmml4","Paracetamol 500mg","",5,"",,,,,,,""
+"cmv0tupj900dal9080zu6kdix","Pethidine 50mg/ml","",67.53,"",,10,,,,,""
+"cmv0tupjf00ddl908nkudv5im","Phenobarbitone 100mg","",4.31,"",,,,,,,""
+"cmv0tupjh00del9080f91lnhi","Phenobarbitone 30mg","",1.98,"",,,,,,,""
+"cmv0tupjj00dfl908m9464boy","PPF 4MIU","",67.92,"",,,,,,,""
+"cmv0tupjl00dgl908q6cx27xw","Praziquantel 600mg","",28.3,"",,10,,,,,""
+"cmv0tupjq00djl908seb2ffsf","Prednisolone 5mg","",1.6,"",,10,,,,,""
+"cmv0tupjv00dml908hsskd3w4","R/L 1000ml","",201.6,"",,,,,,,""
+"cmv0tupjy00dnl9088cf4jfxp","Salbutamol 2mg/5ml","",70.56,"",,,,,,,""
+"cmv0tupk000dol908wlwqjzb1","Salbutamol 4mg","",1.2,"",,,,,,,""
+"cmv0tupk200dpl908w8uyb5ie","Salbutamol Inhaler","",456,"",,,,,,,""
+"cmv0tupk500dql9083yuzizce","Silk No. 2","",98.53,"Dressing",,2,,,,,""
+"cmv0tupka00dtl908v6xsblpy","Sulphur Ointment","",138.64,"",,,,,,,""
+"cmv0tupkc00dul908t7u39dpp","Surgical Blade No. 23","",44.8,"Dressing",,,,,,,""
+"cmv0tupke00dvl908mrjqm2ku","Surgical Blade No. 24","",45.34,"Dressing",,10,,,,,""
+"cmv0tupkj00dyl9083d2djwxk","Surgical Glove No. 7","",58.84,"Dressing",,,,,,,""
+"cmv0tupkm00dzl908flsrnu1f","Syringe with Needle 10cc","",5.2,"Dressing",,,,,,,""
+"cmv0tupko00e0l908xlt5bmd9","Syringe with Needle 20cc","",15.4,"Dressing",,,,,,,""
+"cmv0tupkq00e1l908urxlyi3r","Syringe with Needle 3cc","",2.86,"Dressing",,,,,,,""
+"cmv0tupkt00e2l908vgqco40z","Syringe with Needle 5cc","",4.12,"Dressing",,,,,,,""
+"cmv0tupkv00e3l908lt8sl7ew","TAT 1500IU","",430.8,"",,,,,,,""
+"cmv0tupkx00e4l908wbr534a9","Tinidazole 500mg","",3.3,"",,,,,,,""
+"cmv0tupl000e5l908h2qq2j17","Tramadol 50mg","",3.27,"",,30,,,,,""
+"cmv0tupl500e8l908xz2vquzb","Tramadol 50mg/2ml","",18.84,"",,300,,,,,""
+"cmv0tupl900ebl908979x3gxu","Triangular Bandage","",150,"Dressing",,,,,,,""
+"cmv0tuplc00ecl908q0xgeoit","TTC 1% Eye Ointment","",27.42,"",,,,,,,""
+"cmv0tuple00edl908nm6b65lq","TTC Skin Ointment","",150.8,"",,,,,,,""
+"cmv0tuplg00eel908wpulit52","Vancomycin 1gm","",240.51,"",,,,,,,""
+"cmv0tupli00efl9080tjaiiuu","Vicryl No. 2/0","",52.88,"Dressing",,,,,,,""
+"cmv0tupll00egl908qn8frepx","Vitamin B1, B6, B12 400mg","",10.56,"",,,,,,,""
+"cmv0tupln00ehl908l5ye0nqp","Vitamin B1, B6, B12 Injection","",32.76,"",,70,,,,,""
+"cmv0tupls00ekl908pacr5et9","Xylometazoline Nasal Drops","",122.52,"",,50,,,,,""
