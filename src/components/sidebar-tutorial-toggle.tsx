@@ -3,14 +3,14 @@
 import { HelpCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { TUTORIALS } from "@/lib/tutorials";
+import { getTutorialsForRole } from "@/lib/tutorials";
 
 export function SidebarTutorialToggle({ role }: { role: string }) {
   const pathname = usePathname();
   const [hasTutorial, setHasTutorial] = useState(false);
 
   useEffect(() => {
-    const roleTutorials = TUTORIALS[role];
+    const roleTutorials = getTutorialsForRole(role);
     if (!roleTutorials) {
       setHasTutorial(false);
       return;

@@ -1,8 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { TUTORIALS, TutorialStep } from "@/lib/tutorials";
+import { getTutorialsForRole, TutorialStep } from "@/lib/tutorials";
 import { X, ChevronRight, ChevronLeft, Check, HelpCircle } from "lucide-react";
 
 export function TutorialManager({ role }: { role: string }) {
@@ -28,7 +28,7 @@ export function TutorialManager({ role }: { role: string }) {
 
   // Load steps for the current route -- NEVER auto-open
   useEffect(() => {
-    const roleTutorials = TUTORIALS[role];
+    const roleTutorials = getTutorialsForRole(role);
     if (!roleTutorials) {
       setSteps([]);
       setIsOpen(false);

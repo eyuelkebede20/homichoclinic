@@ -322,11 +322,11 @@ export const triggerSystemUpdate = createSafeAction({
       const flagPath = "/run/updater/update.request";
       const statusPath = "/run/updater/update.status";
       try {
-        fs.writeFileSync(statusPath, "=== Update requested ===\n[0/5] Waiting for updater...\n");
+        fs.writeFileSync(statusPath, "=== Update requested ===\n[0/5] Waiting for updater...\n", { mode: 0o666 });
       } catch {}
       try {
         fs.mkdirSync(path.dirname(flagPath), { recursive: true });
-        fs.writeFileSync(flagPath, "");
+        fs.writeFileSync(flagPath, "", { mode: 0o666 });
       } catch (error: any) {
         throw new Error(
           `Could not write update flag: ${error.message}. ` +

@@ -440,28 +440,18 @@ done
 ok ".env present and configured."
 
 # ------------------------------------------------------------
-#  4. Update watcher (systemd path unit)
+#  4. Update watcher (systemd path unit or background daemon)
 #     Watches run/update.request, which the admin Update button
-#     creates, and then runs update.sh. Installed once.
+#     creates, and then runs update.sh.
 # ------------------------------------------------------------
 step 4 "Checking update watcher"
 
 chmod +x update.sh deploy/*.sh 2>/dev/null || true
 
-if ! command -v systemctl >/dev/null 2>&1; then
-  if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
-    ok "Update watcher (clinic-watcher.sh) already running in background."
-  else
-    info "systemd not found - starting deploy/clinic-watcher.sh in background..."
-    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
-    ok "clinic-watcher.sh started in background."
-  fi
-elif systemctl is-enabled --quiet clinic-update.path 2>/dev/null; then
-  ok "Update watcher already installed."
-elif [ ! -f update.sh ]; then
-  warn "update.sh was not found - the admin Update button will not work."
-else
-  info "Installing the update watcher (needs sudo once)..."
+WATCHER_ACTIVE=0
+
+# Try systemd if systemctl is available
+if command -v systemctl >/dev/null 2>&1; then
   RUN_USER="${SUDO_USER:-$(id -un)}"
   tmp=$(mktemp -d)
   cat > "$tmp/clinic-update.path" <<UNIT
@@ -475,6 +465,7 @@ Unit=clinic-update.service
 [Install]
 WantedBy=multi-user.target
 UNIT
+
   cat > "$tmp/clinic-update.service" <<UNIT
 [Unit]
 Description=Run the clinic update
@@ -485,21 +476,40 @@ User=$RUN_USER
 WorkingDirectory=$ROOT
 SupplementaryGroups=docker
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-# remove the flag FIRST (as root) so a failed update cannot retrigger forever
 ExecStartPre=+/bin/rm -f $ROOT/run/update.request
-ExecStart=$ROOT/update.sh
+ExecStart=/bin/bash $ROOT/update.sh
 UNIT
-  if sudo install -m 644 "$tmp/clinic-update.path" "$tmp/clinic-update.service" /etc/systemd/system/ \
-     && sudo systemctl daemon-reload \
+
+  # Install / update the unit definitions
+  if sudo install -m 644 "$tmp/clinic-update.path" "$tmp/clinic-update.service" /etc/systemd/system/ 2>/dev/null \
+     && sudo systemctl daemon-reload 2>/dev/null \
      && sudo systemctl enable --now clinic-update.path >/dev/null 2>&1; then
-    ok "Update watcher installed."
-  else
-    warn "Could not install the systemd update watcher."
-    echo "      Starting deploy/clinic-watcher.sh in background instead..."
-    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
-    ok "clinic-watcher.sh started in background."
+    if systemctl is-active --quiet clinic-update.path 2>/dev/null; then
+      ok "Update watcher (systemd clinic-update.path) is active."
+      WATCHER_ACTIVE=1
+    fi
+  elif systemctl is-active --quiet clinic-update.path 2>/dev/null; then
+    ok "Update watcher (systemd clinic-update.path) is active."
+    WATCHER_ACTIVE=1
   fi
   rm -rf "$tmp"
+fi
+
+# Fallback: if systemd path unit is not active, run clinic-watcher.sh in background
+if [ "$WATCHER_ACTIVE" -eq 0 ]; then
+  if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
+    ok "Update watcher (clinic-watcher.sh) running in background."
+  else
+    info "Starting deploy/clinic-watcher.sh in background daemon mode..."
+    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
+    sleep 1
+    if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
+      ok "clinic-watcher.sh started in background."
+    else
+      warn "Could not start clinic-watcher.sh automatically."
+      echo "      Run manually: nohup ./deploy/clinic-watcher.sh >/dev/null 2>&1 &"
+    fi
+  fi
 fi
 
 # ------------------------------------------------------------
