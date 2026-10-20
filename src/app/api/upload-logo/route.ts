@@ -16,25 +16,38 @@ export async function POST(request: Request) {
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
-    // Save as icon.png (we keep the name icon.png for consistency, or we could save the actual extension)
-    // Next.js metadata uses /icon.png by default, so we overwrite it regardless of format.
+    // Save as icon.png in public directory
     const destination = path.join(process.cwd(), 'public', 'icon.png');
     await fs.writeFile(destination, buffer);
     
-    // Also save this path to the DB so the layouts know to use it
+    const timestamp = Date.now();
+    const versionedLogo = `/icon.png?v=${timestamp}`;
+
+    // Also save this path with timestamp to the DB so layouts and client components immediately bust cache
     const { prisma } = await import('@/lib/prisma');
     await prisma.systemSetting.upsert({
       where: { key: 'clinicLogo' },
-      update: { value: '/icon.png' },
-      create: { key: 'clinicLogo', value: '/icon.png' }
+      update: { value: versionedLogo },
+      create: { key: 'clinicLogo', value: versionedLogo }
     });
+
+    // Invalidate Next.js Server Component caches across layouts
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/', 'layout');
+    revalidatePath('/(dashboard)', 'layout');
+    revalidatePath('/admin');
+
+    const accept = request.headers.get('accept') || '';
+    if (accept.includes('application/json')) {
+      return NextResponse.json({ success: true, logoUrl: versionedLogo });
+    }
 
     // Fix the redirect URL (avoid 0.0.0.0 from request.url in Docker)
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host');
     const proto = request.headers.get('x-forwarded-proto') || 'http';
     const baseUrl = host ? `${proto}://${host}` : request.url;
 
-    return NextResponse.redirect(new URL('/admin?tab=clinic', baseUrl), 303);
+    return NextResponse.redirect(new URL(`/admin?tab=clinic&t=${timestamp}`, baseUrl), 303);
   } catch (error) {
     console.error('Upload error:', error);
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host');

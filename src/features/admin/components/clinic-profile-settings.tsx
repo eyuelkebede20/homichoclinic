@@ -18,6 +18,41 @@ export function ClinicProfileSettings({
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [cacheBuster, setCacheBuster] = useState("");
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const handleLogoUpload = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const file = formData.get("logo");
+    if (!file || (file instanceof File && file.size === 0)) {
+      setError("Please select a valid image file.");
+      return;
+    }
+    setUploadingLogo(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const res = await fetch("/api/upload-logo", {
+        method: "POST",
+        body: formData,
+        headers: { Accept: "application/json" },
+      });
+      if (res.ok) {
+        setMessage("Clinic logo updated successfully! Reloading to apply changes everywhere...");
+        const t = Date.now();
+        setCacheBuster(`?t=${t}`);
+        window.location.href = `/admin?tab=clinic&t=${t}`;
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to upload logo.");
+        setUploadingLogo(false);
+      }
+    } catch {
+      form.submit();
+    }
+  };
 
   useEffect(() => {
     // Only generate the timestamp on the client to prevent SSR hydration mismatches
@@ -109,6 +144,7 @@ export function ClinicProfileSettings({
             action="/api/upload-logo"
             method="POST"
             encType="multipart/form-data"
+            onSubmit={handleLogoUpload}
             className="flex flex-col gap-3"
           >
             <input 
@@ -116,16 +152,18 @@ export function ClinicProfileSettings({
               name="logo" 
               accept="image/png,image/jpeg" 
               required 
-              className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer"
+              disabled={uploadingLogo}
+              className="text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 dark:file:bg-slate-800 dark:file:text-slate-300 dark:hover:file:bg-slate-700 cursor-pointer disabled:opacity-50"
             />
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Supports PNG and JPG files.
             </p>
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition self-start"
+              disabled={uploadingLogo}
+              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded hover:bg-blue-700 transition self-start disabled:opacity-50"
             >
-              Upload New Logo
+              {uploadingLogo ? "Uploading & Applying..." : "Upload New Logo"}
             </button>
           </form>
         </div>

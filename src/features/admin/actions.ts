@@ -167,6 +167,10 @@ export const saveClinicProfile = createSafeAction({
   schema: clinicProfileSchema,
   requiredPermission: PERMISSIONS.USER_MANAGE,
   handler: async (data, ctx) => {
+    const logoValue = data.clinicLogo && data.clinicLogo.startsWith("/icon.png")
+      ? `/icon.png?v=${Date.now()}`
+      : (data.clinicLogo || "/icon.png");
+
     await prisma.$transaction([
       prisma.systemSetting.upsert({
         where: { key: "clinicName" },
@@ -180,8 +184,8 @@ export const saveClinicProfile = createSafeAction({
       }),
       prisma.systemSetting.upsert({
         where: { key: "clinicLogo" },
-        update: { value: data.clinicLogo },
-        create: { key: "clinicLogo", value: data.clinicLogo }
+        update: { value: logoValue },
+        create: { key: "clinicLogo", value: logoValue }
       })
     ]);
     
@@ -189,10 +193,12 @@ export const saveClinicProfile = createSafeAction({
       actorId: ctx.userId,
       action: PERMISSIONS.USER_MANAGE,
       resourceId: "system",
-      newValue: { clinicName: data.clinicName, clinicLogo: data.clinicLogo }
+      newValue: { clinicName: data.clinicName, clinicLogo: logoValue }
     });
 
     revalidatePath("/", "layout");
+    revalidatePath("/(dashboard)", "layout");
+    revalidatePath("/admin");
     return { success: true };
   }
 });

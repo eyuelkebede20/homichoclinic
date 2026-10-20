@@ -19,15 +19,16 @@ export default async function AuthLayout({
   const clinicName = clinicNameSetting?.value || "Clinic ERP";
   let clinicLogo = clinicLogoSetting?.value || "";
 
-  if (clinicLogo === "/icon.png") {
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const stat = fs.statSync(path.join(process.cwd(), "public", "icon.png"));
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const iconFile = path.join(process.cwd(), "public", "icon.png");
+    if (fs.existsSync(iconFile)) {
+      const stat = fs.statSync(iconFile);
       clinicLogo = `/icon.png?v=${stat.mtimeMs}`;
-    } catch (e) {
-      // ignore
     }
+  } catch (e) {
+    if (!clinicLogo) clinicLogo = "/icon.png";
   }
 
   return (

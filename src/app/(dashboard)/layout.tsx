@@ -44,15 +44,16 @@ export default async function DashboardLayout({
   let clinicLogo = clinicLogoSetting?.value || "";
   const totalRoomsCount = parseInt(opdRoomsSetting?.value || "5", 10);
 
-  if (clinicLogo === "/icon.png") {
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const stat = fs.statSync(path.join(process.cwd(), "public", "icon.png"));
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const iconFile = path.join(process.cwd(), "public", "icon.png");
+    if (fs.existsSync(iconFile)) {
+      const stat = fs.statSync(iconFile);
       clinicLogo = `/icon.png?v=${stat.mtimeMs}`;
-    } catch (e) {
-      // ignore
     }
+  } catch (e) {
+    if (!clinicLogo) clinicLogo = "/icon.png";
   }
 
   let gitHash = "unknown";
@@ -198,9 +199,25 @@ export default async function DashboardLayout({
         <TutorialManager role={role} />
 
         {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-200 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-end px-8 print:hidden gap-4 sticky top-0 z-10">
-          <GlobalNotifications />
-          <ThemeToggle />
+        <header className="h-16 border-b border-slate-200 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-between px-6 sm:px-8 print:hidden gap-4 sticky top-0 z-10">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {clinicLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={clinicLogo} alt="Logo" className="h-7 w-7 object-contain rounded bg-white p-0.5 shadow-2xs border border-slate-200 dark:border-slate-700 shrink-0" />
+            ) : (
+              <div className="h-7 w-7 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xs shadow shrink-0">
+                +
+              </div>
+            )}
+            <span className="font-bold text-sm sm:text-base text-slate-800 dark:text-slate-100 truncate" title={clinicName}>
+              {clinicName}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <GlobalNotifications />
+            <ThemeToggle />
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto print:overflow-visible print:p-0">
