@@ -15,6 +15,26 @@ interface HematologyResultFormProps {
 export function HematologyResultForm({ testName, initialData, onSubmit, onCancel, loading = false }: HematologyResultFormProps) {
   const selected = parseHematologySelectedSubTests(testName);
 
+  const isReqWbcDiff = selected.isFull || !!selected.reqWbcDiff;
+  const isReqHgbHct = selected.isFull || !!selected.reqHgbHct;
+  const isReqRbc = selected.isFull || !!selected.reqRbc || !!selected.reqHgbHct;
+  const isReqPlatelets = selected.isFull || !!selected.reqPlatelets;
+  const isReqReticulocytes = selected.isFull || !!selected.reqReticulocytes;
+  const isReqCoagulation = selected.isFull || !!selected.reqCoagulation;
+  const isReqEsr = selected.isFull || !!selected.reqEsr;
+  const isReqIndices = selected.isFull || !!selected.reqIndices;
+  const isReqMorphology = selected.isFull || !!selected.reqMorphology;
+
+  const getInputClass = (isFieldOrdered: boolean) => {
+    if (selected.isFull) {
+      return "w-full px-2.5 py-1.5 rounded-lg border border-rose-300 dark:border-rose-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none transition-all";
+    }
+    if (isFieldOrdered) {
+      return "w-full px-2.5 py-1.5 rounded-lg border-2 border-rose-400 dark:border-rose-400 ring-2 ring-rose-400/35 dark:ring-rose-500/40 bg-rose-50/80 dark:bg-rose-950/50 text-rose-950 dark:text-rose-100 font-semibold font-mono placeholder:text-rose-600/50 shadow-sm focus:ring-4 focus:ring-rose-400/50 focus:border-rose-500 focus:outline-none transition-all";
+    }
+    return "w-full px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 dark:text-slate-500 font-mono opacity-60 hover:opacity-90 focus:opacity-100 focus:border-slate-400 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 focus:outline-none transition-all";
+  };
+
   // Cell Counts & CBC Core
   const [wbc, setWbc] = useState(initialData?.wbc || "6.8");
   const [rbc, setRbc] = useState(initialData?.rbc || "4.8");
@@ -212,16 +232,107 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
         </div>
 
         {!selected.isFull && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-rose-200/70 dark:border-rose-800/70">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-              Requested Sub-tests:
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2.5 border-t border-rose-200/70 dark:border-rose-800/70">
+            <span className="text-[11px] font-bold text-rose-950 dark:text-rose-100 flex items-center gap-1">
+              Jump directly to ordered input box:
             </span>
+            {isReqWbcDiff && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-wbc");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ WBC & Diff ↓
+              </button>
+            )}
+            {isReqHgbHct && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-hemoglobin");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Hemoglobin & Hct ↓
+              </button>
+            )}
+            {isReqPlatelets && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-platelets");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Platelets ↓
+              </button>
+            )}
+            {isReqEsr && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-esr");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ E.S.R. ↓
+              </button>
+            )}
+            {isReqCoagulation && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-bleedingTime");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Coagulation Profile ↓
+              </button>
+            )}
+            {isReqIndices && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-mcv");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ RBC Indices ↓
+              </button>
+            )}
+            {isReqMorphology && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("hema-input-morphology");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-rose-700 hover:bg-rose-800 text-white shadow-xs ring-2 ring-rose-300 dark:ring-rose-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Morphology Smear ↓
+              </button>
+            )}
             {selected.selectedList.map((testItem, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-rose-700 text-white shadow-xs ring-1 ring-rose-800/50"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-900/50 text-rose-800 dark:text-rose-200 border border-rose-300 dark:border-rose-700"
               >
-                ★ {testItem}
+                ✓ {testItem}
               </span>
             ))}
           </div>
@@ -252,10 +363,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">4.0 - 11.0 ×10³/µL</div>
             <input
+              id="hema-input-wbc"
               type="text"
               value={wbc}
               onChange={(e) => setWbc(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -277,10 +389,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">4.0 - 5.5 ×10⁶/µL</div>
             <input
+              id="hema-input-rbc"
               type="text"
               value={rbc}
               onChange={(e) => setRbc(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqRbc)}
             />
           </div>
 
@@ -302,10 +415,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">12.0 - 17.5 g/dL</div>
             <input
+              id="hema-input-hemoglobin"
               type="text"
               value={hemoglobin}
               onChange={(e) => setHemoglobin(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqHgbHct)}
             />
           </div>
 
@@ -327,10 +441,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">36 - 52 %</div>
             <input
+              id="hema-input-hematocrit"
               type="text"
               value={hematocrit}
               onChange={(e) => setHematocrit(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqHgbHct)}
             />
           </div>
 
@@ -352,10 +467,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">150 - 450 ×10³/µL</div>
             <input
+              id="hema-input-platelets"
               type="text"
               value={platelets}
               onChange={(e) => setPlatelets(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono font-medium focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqPlatelets)}
             />
           </div>
 
@@ -377,10 +493,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[10px] text-slate-400 mb-1">0.5 - 2.5 %</div>
             <input
+              id="hema-input-reticulocytes"
               type="text"
               value={reticulocytes}
               onChange={(e) => setReticulocytes(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqReticulocytes)}
             />
           </div>
         </div>
@@ -407,10 +524,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Neutrophils</label>
             <div className="text-[9px] text-slate-400 mb-1">40 - 75%</div>
             <input
+              id="hema-input-neutrophils"
               type="text"
               value={neutrophils}
               onChange={(e) => setNeutrophils(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -418,10 +536,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Bands</label>
             <div className="text-[9px] text-slate-400 mb-1">0 - 5%</div>
             <input
+              id="hema-input-bands"
               type="text"
               value={bands}
               onChange={(e) => setBands(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -429,10 +548,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Lymphocytes</label>
             <div className="text-[9px] text-slate-400 mb-1">20 - 45%</div>
             <input
+              id="hema-input-lymphocytes"
               type="text"
               value={lymphocytes}
               onChange={(e) => setLymphocytes(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -440,10 +560,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Monocytes</label>
             <div className="text-[9px] text-slate-400 mb-1">2 - 10%</div>
             <input
+              id="hema-input-monocytes"
               type="text"
               value={monocytes}
               onChange={(e) => setMonocytes(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -451,10 +572,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Eosinophils</label>
             <div className="text-[9px] text-slate-400 mb-1">1 - 6%</div>
             <input
+              id="hema-input-eosinophils"
               type="text"
               value={eosinophils}
               onChange={(e) => setEosinophils(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -462,10 +584,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Basophils</label>
             <div className="text-[9px] text-slate-400 mb-1">0 - 1%</div>
             <input
+              id="hema-input-basophils"
               type="text"
               value={basophils}
               onChange={(e) => setBasophils(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -473,10 +596,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Blast</label>
             <div className="text-[9px] text-slate-400 mb-1">0%</div>
             <input
+              id="hema-input-blast"
               type="text"
               value={blast}
               onChange={(e) => setBlast(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
 
@@ -484,10 +608,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-0.5">Myelocytes</label>
             <div className="text-[9px] text-slate-400 mb-1">0%</div>
             <input
+              id="hema-input-myelocytes"
               type="text"
               value={myelocytes}
               onChange={(e) => setMyelocytes(e.target.value)}
-              className="w-full px-2 py-1 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono text-center focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqWbcDiff)}
             />
           </div>
         </div>
@@ -517,10 +642,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">2 - 7 min</div>
             <input
+              id="hema-input-bleedingTime"
               type="text"
               value={bleedingTime}
               onChange={(e) => setBleedingTime(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqCoagulation)}
             />
           </div>
 
@@ -542,10 +668,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">5 - 11 min</div>
             <input
+              id="hema-input-coagulationTime"
               type="text"
               value={coagulationTime}
               onChange={(e) => setCoagulationTime(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqCoagulation)}
             />
           </div>
 
@@ -567,10 +694,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">11 - 13.5 sec</div>
             <input
+              id="hema-input-prothrombinTime"
               type="text"
               value={prothrombinTime}
               onChange={(e) => setProthrombinTime(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqCoagulation)}
             />
           </div>
 
@@ -592,10 +720,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">0 - 20 mm/hr</div>
             <input
+              id="hema-input-esr"
               type="text"
               value={esr}
               onChange={(e) => setEsr(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqEsr)}
             />
           </div>
 
@@ -617,10 +746,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">80 - 100 fL</div>
             <input
+              id="hema-input-mcv"
               type="text"
               value={mcv}
               onChange={(e) => setMcv(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqIndices)}
             />
           </div>
 
@@ -642,10 +772,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">27 - 33 pg</div>
             <input
+              id="hema-input-mch"
               type="text"
               value={mch}
               onChange={(e) => setMch(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqIndices)}
             />
           </div>
 
@@ -667,10 +798,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
             </label>
             <div className="text-[9px] text-slate-400 mb-1">32 - 36 g/dL</div>
             <input
+              id="hema-input-mchc"
               type="text"
               value={mchc}
               onChange={(e) => setMchc(e.target.value)}
-              className="w-full px-2 py-1.5 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 font-mono focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqIndices)}
             />
           </div>
         </div>
@@ -698,10 +830,11 @@ export function HematologyResultForm({ testName, initialData, onSubmit, onCancel
               ) : null}
             </label>
             <input
+              id="hema-input-morphology"
               type="text"
               value={bloodMorphology}
               onChange={(e) => setBloodMorphology(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-rose-200 dark:border-rose-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-500 focus:outline-none"
+              className={getInputClass(isReqMorphology)}
               placeholder="e.g. Normocytic, normochromic RBCs. Adequate platelets."
             />
           </div>

@@ -15,6 +15,25 @@ interface UrineResultFormProps {
 export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loading = false }: UrineResultFormProps) {
   const selected = parseUrineSelectedSubTests(testName);
 
+  const isReqPhysical = selected.isFull || !!selected.reqPhysical;
+  const isReqAlbumin = selected.isFull || !!selected.reqAlbumin || !!selected.reqDipstick;
+  const isReqSugar = selected.isFull || !!selected.reqSugar || !!selected.reqDipstick;
+  const isReqAcetone = selected.isFull || !!selected.reqAcetone || !!selected.reqDipstick;
+  const isReqBile = selected.isFull || !!selected.reqBile || !!selected.reqDipstick;
+  const isReqKetosteroids = selected.isFull || !!selected.reqKetosteroids;
+  const isReqElectrolytes = selected.isFull || !!selected.reqElectrolytes;
+  const isReqSediment = selected.isFull || !!selected.reqSediment;
+
+  const getInputClass = (isFieldOrdered: boolean) => {
+    if (selected.isFull) {
+      return "w-full px-2.5 py-1.5 rounded-lg border border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none transition-all";
+    }
+    if (isFieldOrdered) {
+      return "w-full px-2.5 py-1.5 rounded-lg border-2 border-amber-400 dark:border-amber-400 ring-2 ring-amber-400/35 dark:ring-amber-500/40 bg-amber-50/80 dark:bg-amber-950/50 text-amber-950 dark:text-amber-100 font-semibold placeholder:text-amber-600/50 shadow-sm focus:ring-4 focus:ring-amber-400/50 focus:border-amber-500 focus:outline-none transition-all";
+    }
+    return "w-full px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 dark:text-slate-500 opacity-60 hover:opacity-90 focus:opacity-100 focus:border-slate-400 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 focus:outline-none transition-all";
+  };
+
   // Physical
   const [quantity, setQuantity] = useState(initialData?.quantity || "Random (20ml)");
   const [reaction, setReaction] = useState(initialData?.reaction || "Acidic (pH 6.0)");
@@ -182,16 +201,94 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
         </div>
 
         {!selected.isFull && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-amber-200/70 dark:border-amber-800/70">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-              Requested Sub-tests:
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2.5 border-t border-amber-200/70 dark:border-amber-800/70">
+            <span className="text-[11px] font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1">
+              Jump directly to ordered input box:
             </span>
+            {isReqAlbumin && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-albuminQual");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Albumin / Protein ↓
+              </button>
+            )}
+            {isReqSugar && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-sugarQual");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Sugar / Glucose ↓
+              </button>
+            )}
+            {isReqSediment && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-microscopic");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Microscopic Sediment ↓
+              </button>
+            )}
+            {isReqPhysical && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-quantity");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Physical Exam ↓
+              </button>
+            )}
+            {isReqBile && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-bilirubin");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Bile & Urobilinogen ↓
+              </button>
+            )}
+            {isReqAcetone && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("urine-input-acetone");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow-xs ring-2 ring-amber-300 dark:ring-amber-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Acetone (Ketones) ↓
+              </button>
+            )}
             {selected.selectedList.map((testItem, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-amber-600 text-white shadow-xs ring-1 ring-amber-700/50"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-100 dark:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-300 dark:border-amber-700"
               >
-                ★ {testItem}
+                ✓ {testItem}
               </span>
             ))}
           </div>
@@ -220,22 +317,38 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
         </h5>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Quantity</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Quantity</span>
+              {isReqPhysical ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
+            </label>
             <input
+              id="urine-input-quantity"
               type="text"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqPhysical)}
               placeholder="e.g. 20ml, Random"
             />
           </div>
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Reaction (pH)</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Reaction (pH)</span>
+              {isReqPhysical ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
+            </label>
             <input
+              id="urine-input-reaction"
               type="text"
               value={reaction}
               onChange={(e) => setReaction(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqPhysical)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Acidic (pH 5.5)", "Acidic (pH 6.0)", "Neutral (pH 7.0)", "Alkaline (pH 8.0)"].map((v) => (
@@ -251,12 +364,20 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
             </div>
           </div>
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">Specific Gravity</label>
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Specific Gravity</span>
+              {isReqPhysical ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
+            </label>
             <input
+              id="urine-input-specificGravity"
               type="text"
               value={specificGravity}
               onChange={(e) => setSpecificGravity(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqPhysical)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["1.010", "1.015", "1.020", "1.025", "1.030"].map((v) => (
@@ -310,10 +431,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-albuminQual"
               type="text"
               value={albuminQualitative}
               onChange={(e) => setAlbuminQualitative(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqAlbumin)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Nil (Negative)", "Trace", "+ (30mg)", "++ (100mg)", "+++ (300mg)"].map((v) => (
@@ -346,10 +468,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-albuminQuant"
               type="text"
               value={albuminQuantitative}
               onChange={(e) => setAlbuminQuantitative(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqAlbumin)}
               placeholder="e.g. <30 mg/dL"
             />
           </div>
@@ -371,10 +494,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-sugarQual"
               type="text"
               value={sugarQualitative}
               onChange={(e) => setSugarQualitative(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqSugar)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Nil (Negative)", "Trace", "+ (0.5%)", "++ (1%)", "+++ (2%)"].map((v) => (
@@ -407,10 +531,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-sugarQuant"
               type="text"
               value={sugarQuantitative}
               onChange={(e) => setSugarQuantitative(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqSugar)}
               placeholder="e.g. Normal, 100 mg/dL"
             />
           </div>
@@ -432,10 +557,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-acetone"
               type="text"
               value={acetone}
               onChange={(e) => setAcetone(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqAcetone)}
             />
           </div>
 
@@ -456,10 +582,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-diaceticAcid"
               type="text"
               value={diaceticAcid}
               onChange={(e) => setDiaceticAcid(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqAcetone)}
             />
           </div>
 
@@ -480,10 +607,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-bilirubin"
               type="text"
               value={bilirubin}
               onChange={(e) => setBilirubin(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqBile)}
             />
           </div>
 
@@ -504,10 +632,11 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-urobilinogen"
               type="text"
               value={urobilinogen}
               onChange={(e) => setUrobilinogen(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqBile)}
             />
           </div>
 
@@ -528,52 +657,68 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               ) : null}
             </label>
             <input
+              id="urine-input-urobilin"
               type="text"
               value={urobilin}
               onChange={(e) => setUrobilin(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqBile)}
             />
           </div>
 
           {/* 17-Ketosteroids */}
-          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+          <div className={`p-2.5 rounded-xl ${isReqKetosteroids ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm" : !selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
               <span>17-Ketosteroids</span>
-              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+              {isReqKetosteroids && !selected.isFull ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
+              id="urine-input-ketosteroids"
               type="text"
               value={ketosteroids17}
               onChange={(e) => setKetosteroids17(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqKetosteroids)}
             />
           </div>
 
           {/* Sodium (Na) */}
-          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+          <div className={`p-2.5 rounded-xl ${isReqElectrolytes ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm" : !selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
               <span>Sodium (Na)</span>
-              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+              {isReqElectrolytes && !selected.isFull ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
+              id="urine-input-sodium"
               type="text"
               value={sodium}
               onChange={(e) => setSodium(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqElectrolytes)}
             />
           </div>
 
           {/* Potassium (K) */}
-          <div className={`p-2.5 rounded-xl ${!selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
+          <div className={`p-2.5 rounded-xl ${isReqElectrolytes ? "border-2 border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/70 dark:bg-amber-950/40 shadow-sm" : !selected.isFull ? "border border-dashed border-slate-300 dark:border-slate-700/80 bg-slate-50/40 dark:bg-slate-900/30 opacity-75" : "border border-amber-200 dark:border-amber-800 bg-white/70 dark:bg-slate-900/50"}`}>
             <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
               <span>Potassium (K)</span>
-              {!selected.isFull && <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>}
+              {isReqElectrolytes && !selected.isFull ? (
+                <span className="text-[10px] bg-amber-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-amber-300 animate-pulse">★ ORDERED</span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">(Optional)</span>
+              ) : null}
             </label>
             <input
+              id="urine-input-potassium"
               type="text"
               value={potassium}
               onChange={(e) => setPotassium(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none"
+              className={getInputClass(isReqElectrolytes)}
             />
           </div>
         </div>
@@ -605,11 +750,12 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
               <span>Microscopic Findings (Pus cells, RBC, Epithelial cells, Casts, Crystals, Bacteria)</span>
             </label>
             <input
+              id="urine-input-microscopic"
               type="text"
               required={selected.reqSediment}
               value={microscopic}
               onChange={(e) => setMicroscopic(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:outline-none text-xs"
+              className={getInputClass(isReqSediment)}
               placeholder="e.g. Pus cells: 2-4/HPF, RBC: 0-1/HPF, Epith cells: Few, Casts: Nil, Crystals: Nil"
             />
             <div className="flex flex-wrap gap-1.5 mt-1.5">

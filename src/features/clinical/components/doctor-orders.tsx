@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { requestLabTest, createPrescription, saveReferral } from "../actions";
-import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send, X, Printer } from "lucide-react";
+import { Loader2, FlaskConical, Droplet, Activity, AlertTriangle, CheckCircle, Send, X, Printer, Search } from "lucide-react";
 import { toast } from "sonner";
 import { isStoolTest, isUrineTest, isHematologyTest } from "../types/lab-panels";
 import { openPrintReferralWindow } from "../utils/print-referral";
@@ -24,6 +24,7 @@ export function DoctorOrders({
   const [loading, setLoading] = useState(false);
   const [rxItems, setRxItems] = useState([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
+  const [labSearch, setLabSearch] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
 
   const [refType, setRefType] = useState("Standard Referral");
@@ -64,6 +65,9 @@ export function DoctorOrders({
     ...Array.from(allHematologyTestIds),
   ].filter(Boolean));
   const otherTests = labTests.filter(t => !coreIds.has(t.id));
+  const filteredOtherTests = labSearch.trim() 
+    ? otherTests.filter(t => t.name.toLowerCase().includes(labSearch.toLowerCase().trim())) 
+    : otherTests;
 
   // Counts and full-panel selections
   const selectedStoolCount = Array.from(selectedTests).filter(id => allStoolTestIds.has(id)).length;
@@ -561,25 +565,91 @@ export function DoctorOrders({
           {/* Other Laboratory Tests */}
           {otherTests.length > 0 && (
             <div>
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                Additional Tests & Serology Catalog
-              </h4>
-              <div className="max-h-48 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/70 dark:bg-slate-950/50 flex flex-wrap gap-2">
-                {otherTests.map(t => {
-                  const isSelected = selectedTests.has(t.id);
-                  return (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                  Additional Tests & Serology Catalog ({otherTests.length})
+                </h4>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search catalog tests..."
+                    value={labSearch}
+                    onChange={e => setLabSearch(e.target.value)}
+                    className="w-full text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 pl-8 pr-7 py-1.5 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  />
+                  {labSearch && (
                     <button
                       type="button"
-                      key={t.id}
-                      onClick={() => toggleTest(t.id)}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all duration-150 ${
-                        isSelected 
-                          ? "bg-indigo-600 border-indigo-700 text-white shadow-sm" 
-                          : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-                      }`}
+                      onClick={() => setLabSearch("")}
+                      className="absolute right-2 top-2 text-slate-400 hover:text-slate-600"
                     >
-                      {t.name}
+                      <X className="w-3.5 h-3.5" />
                     </button>
+                  )}
+                </div>
+              </div>
+              <div className="max-h-52 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl p-3 bg-slate-50/70 dark:bg-slate-950/50 flex flex-wrap gap-2">
+                {filteredOtherTests.length === 0 ? (
+                  <p className="text-xs text-slate-400 italic p-2">No tests match "{labSearch}".</p>
+                ) : (
+                  filteredOtherTests.map(t => {
+                    const isSelected = selectedTests.has(t.id);
+                    return (
+                      <button
+                        type="button"
+                        key={t.id}
+                        onClick={() => toggleTest(t.id)}
+                        className={`px-3 py-1.5 text-xs font-medium rounded-lg border-2 transition-all duration-150 ${
+                          isSelected 
+                            ? "bg-indigo-600 border-indigo-400 ring-2 ring-indigo-400/40 text-white font-bold shadow-sm" 
+                            : "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-indigo-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+                        }`}
+                      >
+                        {isSelected ? "✓ " : "+ "}{t.name}
+                      </button>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Selected Tests Preview Banner */}
+          {selectedTests.size > 0 && (
+            <div className="p-3 bg-indigo-50/80 dark:bg-indigo-950/40 rounded-xl border-2 border-indigo-300 dark:border-indigo-800 ring-2 ring-indigo-400/20 shadow-xs space-y-2 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-indigo-950 dark:text-indigo-200 flex items-center gap-1.5">
+                  <CheckCircle className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  Selected Tests ({selectedTests.size}) - Ready to Request:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTests(new Set())}
+                  className="text-[11px] text-red-600 dark:text-red-400 hover:underline font-semibold"
+                >
+                  Clear All
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {Array.from(selectedTests).map(id => {
+                  const test = labTests.find(t => t.id === id);
+                  if (!test) return null;
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-indigo-950 dark:text-indigo-200 border-2 border-indigo-400 dark:border-indigo-600 shadow-xs"
+                    >
+                      <span>★ {test.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleTest(id)}
+                        className="text-slate-400 hover:text-red-600 ml-0.5"
+                        title="Remove"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
                   );
                 })}
               </div>

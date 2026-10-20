@@ -14,6 +14,23 @@ interface StoolResultFormProps {
 
 export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loading = false }: StoolResultFormProps) {
   const selected = parseStoolSelectedSubTests(testName);
+  const isReqAppCons = selected.isFull || !!selected.reqAppearance || !!selected.reqMacroscopic;
+  const isReqBloodGross = selected.isFull || !!selected.reqGrossBlood || !!selected.reqMacroscopic;
+  const isReqPus = selected.isFull || !!selected.reqPusMucus || !!selected.reqMacroscopic;
+  const isReqMucus = selected.isFull || !!selected.reqPusMucus || !!selected.reqMacroscopic;
+  const isReqBile = selected.isFull || !!selected.reqBile || !!selected.reqMacroscopic;
+  const isReqOccult = selected.isFull || !!selected.reqOccultBlood;
+  const isReqOva = selected.isFull || !!selected.reqOvaParasite;
+
+  const getInputClass = (isFieldOrdered: boolean) => {
+    if (selected.isFull) {
+      return "w-full px-2.5 py-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all";
+    }
+    if (isFieldOrdered) {
+      return "w-full px-2.5 py-1.5 rounded-lg border-2 border-emerald-400 dark:border-emerald-400 ring-2 ring-emerald-400/35 dark:ring-emerald-500/40 bg-emerald-50/80 dark:bg-emerald-950/50 text-emerald-950 dark:text-emerald-100 font-semibold placeholder:text-emerald-600/50 shadow-sm focus:ring-4 focus:ring-emerald-400/50 focus:border-emerald-500 focus:outline-none transition-all";
+    }
+    return "w-full px-2.5 py-1.5 rounded-lg border border-dashed border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30 text-slate-400 dark:text-slate-500 opacity-60 hover:opacity-90 focus:opacity-100 focus:border-slate-400 focus:ring-2 focus:ring-slate-300 dark:focus:ring-slate-700 focus:outline-none transition-all";
+  };
 
   const [appearance, setAppearance] = useState(initialData?.appearance || "Brownish");
   const [consistence, setConsistence] = useState(initialData?.consistence || "Formed");
@@ -137,16 +154,55 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
         </div>
 
         {!selected.isFull && (
-          <div className="flex flex-wrap items-center gap-1.5 mt-2 pt-2 border-t border-emerald-200/70 dark:border-emerald-800/70">
-            <span className="text-[11px] font-bold text-slate-600 dark:text-slate-300">
-              Requested Sub-tests:
+          <div className="flex flex-wrap items-center gap-1.5 mt-2.5 pt-2.5 border-t border-emerald-200/70 dark:border-emerald-800/70">
+            <span className="text-[11px] font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-1">
+              Jump directly to ordered input box:
             </span>
+            {isReqOccult && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("stool-input-occult");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-300 dark:ring-emerald-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Occult Blood (FOBT) ↓
+              </button>
+            )}
+            {isReqOva && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("stool-input-ova");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-300 dark:ring-emerald-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Ova & Parasite ↓
+              </button>
+            )}
+            {isReqAppCons && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById("stool-input-appearance");
+                  el?.scrollIntoView({ behavior: "smooth", block: "center" });
+                  el?.focus();
+                }}
+                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs ring-2 ring-emerald-300 dark:ring-emerald-500 transition-all cursor-pointer hover:scale-105"
+              >
+                ★ Macroscopic Examination ↓
+              </button>
+            )}
             {selected.selectedList.map((testItem, i) => (
               <span
                 key={i}
-                className="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-emerald-600 text-white shadow-xs ring-1 ring-emerald-700/50"
+                className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-900/50 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-700"
               >
-                ★ {testItem}
+                ✓ {testItem}
               </span>
             ))}
           </div>
@@ -179,14 +235,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 text-xs">
           {/* Appearance */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Appearance {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Appearance</span>
+              {isReqAppCons ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-appearance"
               type="text"
               value={appearance}
               onChange={(e) => setAppearance(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqAppCons)}
               placeholder="e.g. Brownish, Yellowish"
             />
             <div className="flex flex-wrap gap-1 mt-1">
@@ -205,14 +269,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
 
           {/* Consistence */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Consistence {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Consistence</span>
+              {isReqAppCons ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-consistence"
               type="text"
               value={consistence}
               onChange={(e) => setConsistence(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqAppCons)}
               placeholder="e.g. Formed, Loose"
             />
             <div className="flex flex-wrap gap-1 mt-1">
@@ -231,14 +303,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
 
           {/* Blood-Gross */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Blood-Gross {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Blood-Gross</span>
+              {isReqBloodGross ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-bloodGross"
               type="text"
               value={bloodGross}
               onChange={(e) => setBloodGross(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqBloodGross)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Negative", "Present (+)", "Trace"].map((val) => (
@@ -256,14 +336,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
 
           {/* Pus */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Pus Cells {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Pus Cells</span>
+              {isReqPus ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-pus"
               type="text"
               value={pus}
               onChange={(e) => setPus(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqPus)}
               placeholder="e.g. Nil, 0-2 /HPF"
             />
             <div className="flex flex-wrap gap-1 mt-1">
@@ -282,14 +370,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
 
           {/* Mucus */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Mucus {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Mucus</span>
+              {isReqMucus ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-mucus"
               type="text"
               value={mucus}
               onChange={(e) => setMucus(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqMucus)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Negative", "Present (+)", "Moderate"].map((val) => (
@@ -307,14 +403,22 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
 
           {/* Bile */}
           <div>
-            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Bile {selected.reqMacroscopic ? <span className="text-[10px] text-emerald-600 font-bold ml-1">★ ORDERED</span> : <span className="text-[10px] text-slate-400 font-normal ml-1">(Optional)</span>}
+            <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center justify-between">
+              <span>Bile</span>
+              {isReqBile ? (
+                <span className="text-[10px] bg-emerald-600 text-white font-extrabold px-1.5 py-0.2 rounded-full shadow-2xs border border-emerald-300 animate-pulse">
+                  ★ ORDERED
+                </span>
+              ) : !selected.isFull ? (
+                <span className="text-[10px] text-slate-400 font-normal italic">Optional</span>
+              ) : null}
             </label>
             <input
+              id="stool-input-bile"
               type="text"
               value={bile}
               onChange={(e) => setBile(e.target.value)}
-              className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+              className={getInputClass(isReqBile)}
             />
             <div className="flex flex-wrap gap-1 mt-1">
               {["Present", "Absent", "Normal"].map((val) => (
@@ -356,10 +460,11 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
         </div>
         <div className="max-w-md">
           <input
+            id="stool-input-occult"
             type="text"
             value={occult}
             onChange={(e) => setOccult(e.target.value)}
-            className="w-full px-2.5 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs"
+            className={getInputClass(isReqOccult)}
           />
           <div className="flex flex-wrap gap-1 mt-1.5">
             {["Negative", "Positive (+)", "Positive (++)"].map((val) => (
@@ -400,11 +505,12 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
           <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-normal hidden sm:inline">Click chips to quickly insert parasites</span>
         </div>
         <input
+          id="stool-input-ova"
           type="text"
           required={selected.reqOvaParasite}
           value={ovaAndParasite}
           onChange={(e) => setOvaAndParasite(e.target.value)}
-          className="w-full px-3 py-2 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-xs"
+          className={getInputClass(isReqOva)}
           placeholder="e.g. No ova or parasite seen, E. histolytica cysts, Giardia lamblia"
         />
         <div className="flex flex-wrap gap-1.5 mt-2">
