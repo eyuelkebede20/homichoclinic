@@ -5,23 +5,34 @@ import { useEffect, useState } from "react";
 import { Moon, Sun } from "lucide-react";
 
 export function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
+  const { resolvedTheme, toggleTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div className="w-8 h-8" />;
+  if (!mounted) {
+    return <div className="w-8 h-8 rounded-lg p-2" aria-hidden="true" />;
+  }
+
+  const isDark =
+    resolvedTheme === "dark" ||
+    (typeof document !== "undefined" && document.documentElement.classList.contains("dark"));
 
   return (
     <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      className="p-2 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
-      title="Toggle Dark Mode"
+      type="button"
+      onClick={toggleTheme}
+      className="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer border border-transparent hover:border-slate-300 dark:hover:border-slate-700 flex items-center justify-center"
+      title={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
+      aria-label={isDark ? "Switch to Light Mode" : "Switch to Dark Mode"}
     >
-      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      {isDark ? (
+        <Sun className="h-4 w-4 text-amber-500 transition-transform duration-200" />
+      ) : (
+        <Moon className="h-4 w-4 text-slate-700 dark:text-slate-300 transition-transform duration-200" />
+      )}
     </button>
   );
 }
