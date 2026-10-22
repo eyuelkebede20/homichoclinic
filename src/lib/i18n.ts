@@ -16,6 +16,7 @@ const en: Dictionary = {
   "nav.billing": "Billing",
   "nav.auditLogs": "Audit Logs",
   "nav.admin": "Admin",
+  "nav.admittedReport": "Inpatient Reports",
   "nav.myStation": "My Station",
   // Dashboard Home
   "dash.welcome": "Welcome to Clinic ERP",
@@ -40,6 +41,7 @@ const am: Dictionary = {
   "nav.billing": "ክፍያ",
   "nav.auditLogs": "የኦዲት ምዝግብ ማስታወሻዎች",
   "nav.admin": "አስተዳዳሪ",
+  "nav.admittedReport": "የተኝቶ ታካሚ ሪፖርት",
   "nav.myStation": "የእኔ ጣቢያ",
   // Dashboard Home
   "dash.welcome": "ወደ ክሊኒክ ሲስተም በደህና መጡ",

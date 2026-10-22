@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { LayoutDashboard, Users, FlaskConical, Pill, Receipt, LogOut, Shield, Tags, Calendar, Activity } from "lucide-react";
+import { LayoutDashboard, Users, FlaskConical, Pill, Receipt, LogOut, Shield, Tags, Calendar, Activity, FileText } from "lucide-react";
 import { redirect } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { GlobalNotifications } from "@/components/global-notifications";
@@ -125,6 +125,10 @@ export default async function DashboardLayout({
     navItems.push({ name: dict["nav.admin"] || "Admin", href: "/admin", icon: Shield });
   }
 
+  if (isManagerOrAdmin) {
+    navItems.push({ name: dict["nav.admittedReport"] || "Inpatient Reports", href: "/admin/admitted-report", icon: FileText });
+  }
+
   return (
     <div className="flex h-screen bg-slate-50 dark:bg-slate-950 print:bg-white print:h-auto">
       
@@ -204,10 +208,12 @@ export default async function DashboardLayout({
         <header className="h-16 border-b border-slate-200 dark:border-slate-800/60 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm flex items-center justify-between px-6 sm:px-8 print:hidden gap-4 sticky top-0 z-10">
           <div className="flex items-center gap-2.5 min-w-0">
             {clinicLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={clinicLogo} alt="Logo" className="h-7 w-7 object-contain rounded bg-white p-0.5 shadow-2xs border border-slate-200 dark:border-slate-700 shrink-0" />
+              <div className="h-7 w-7 rounded-full overflow-hidden bg-white flex items-center justify-center shrink-0 shadow-2xs border border-slate-200 dark:border-slate-700">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={clinicLogo} alt={clinicName} className="h-full w-full object-cover rounded-full" />
+              </div>
             ) : (
-              <div className="h-7 w-7 bg-blue-600 rounded flex items-center justify-center font-bold text-white text-xs shadow shrink-0">
+              <div className="h-7 w-7 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white text-xs shadow shrink-0">
                 +
               </div>
             )}

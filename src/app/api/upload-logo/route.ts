@@ -34,6 +34,9 @@ export async function POST(request: Request) {
     // Invalidate Next.js Server Component caches across layouts
     const { revalidatePath } = await import('next/cache');
     revalidatePath('/', 'layout');
+    revalidatePath('/(auth)', 'layout');
+    revalidatePath('/login');
+    revalidatePath('/register');
     revalidatePath('/(dashboard)', 'layout');
     revalidatePath('/admin');
 

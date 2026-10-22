@@ -197,6 +197,9 @@ export const saveClinicProfile = createSafeAction({
     });
 
     revalidatePath("/", "layout");
+    revalidatePath("/(auth)", "layout");
+    revalidatePath("/login");
+    revalidatePath("/register");
     revalidatePath("/(dashboard)", "layout");
     revalidatePath("/admin");
     return { success: true };
