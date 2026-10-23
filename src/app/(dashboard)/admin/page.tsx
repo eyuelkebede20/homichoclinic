@@ -10,6 +10,7 @@ import { AutoPilotToggle } from "@/features/admin/components/auto-pilot-toggle";
 
 import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
+import { DevWipeDrugs } from "@/features/admin/components/dev-wipe-drugs";
 import { DevWipeCatalogs } from "@/features/admin/components/dev-wipe-catalogs";
 import { DevSeedDatabase } from "@/features/admin/components/dev-seed-db";
 import { DevModeToggle } from "@/features/admin/components/dev-mode-toggle";
@@ -113,6 +114,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             {isDevMode && (
               <>
                 <DevWipePatients />
+                <DevWipeDrugs />
                 <DevWipeCatalogs />
                 <DevSeedDatabase />
               </>

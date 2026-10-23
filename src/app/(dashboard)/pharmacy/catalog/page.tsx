@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { CatalogForm } from "@/features/catalogs/components/catalog-form";
 import { EditableDrugRow } from "@/features/catalogs/components/editable-drug-row";
 import { CatalogImporter } from "@/features/catalogs/components/catalog-importer";
+import { WipeCatalogButton } from "@/features/catalogs/components/wipe-catalog-button";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 import { CatalogSearch } from "@/features/catalogs/components/catalog-search";
@@ -54,8 +55,8 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Pharmacy Catalog</h1>
           <p className="text-slate-500 dark:text-slate-400">Request or manage new drugs and prices.</p>
         </div>
-        <div className="flex gap-3">
-
+        <div className="flex flex-wrap items-center gap-3">
+          {canApprove && <WipeCatalogButton type="DRUG" />}
           <PrintButton label="Print Catalog" />
         </div>
       </div>

@@ -43,6 +43,77 @@ export async function wipeAllPatients() {
   }
 }
 
+export async function wipeAllMedicines() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session) return { error: "Unauthorized" };
+
+  const role = session.user.role || "User";
+  if (role !== "Admin" && role !== "Manager" && role !== "Pharmacy") {
+    return { error: "Access Denied: Only Admins, Managers or Pharmacy staff can wipe medicines." };
+  }
+
+  try {
+    // Truncate Drug table. CASCADE will remove related items like batches and prescription items.
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE "Drug" CASCADE;`);
+    
+    await prisma.auditLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "DEV_DATABASE_WIPE",
+        resourceId: "ALL_MEDICINES",
+        reason: "User executed a full wipe of the Drug and Medicine inventory catalog."
+      }
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath("/pharmacy/catalog");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Medicine Wipe failed:", error);
+    return { error: "Medicine wipe failed: " + error.message };
+  }
+}
+
+export async function wipeAllLabTests() {
+  const session = await auth.api.getSession({
+    headers: await headers()
+  });
+
+  if (!session) return { error: "Unauthorized" };
+
+  const role = session.user.role || "User";
+  if (role !== "Admin" && role !== "Manager" && role !== "Laboratory") {
+    return { error: "Access Denied: Only Admins, Managers or Laboratory staff can wipe lab tests." };
+  }
+
+  try {
+    await prisma.$executeRawUnsafe(`TRUNCATE TABLE "LabTest" CASCADE;`);
+    
+    await prisma.auditLog.create({
+      data: {
+        actorId: session.user.id,
+        action: "DEV_DATABASE_WIPE",
+        resourceId: "ALL_LAB_TESTS",
+        reason: "User executed a full wipe of LabTest catalog."
+      }
+    });
+
+    revalidatePath("/laboratory");
+    revalidatePath("/laboratory/catalog");
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Lab test Wipe failed:", error);
+    return { error: "Lab test wipe failed: " + error.message };
+  }
+}
+
 export async function wipeAllCatalogs() {
   const session = await auth.api.getSession({
     headers: await headers()

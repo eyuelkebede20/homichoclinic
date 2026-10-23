@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
+import { DEFAULT_CLINIC_DISEASES } from "@/features/clinical/types/diseases";
 
 export async function GET() {
   try {
@@ -107,9 +108,16 @@ export async function GET() {
       }
     }
 
+    // Seed clinic diseases catalog (220+ items)
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+    });
+
     return NextResponse.json({
       success: true,
-      message: `Seeded test users and core lab tests. You can now log in! Password is password123 for all.`,
+      message: `Seeded test users, core lab tests, and 220+ clinic diseases. You can now log in! Password is password123 for all.`,
     });
   } catch (error) {
     console.error(error);

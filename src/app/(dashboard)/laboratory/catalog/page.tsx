@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { CatalogForm } from "@/features/catalogs/components/catalog-form";
 import { EditableLabTestRow } from "@/features/catalogs/components/editable-labtest-row";
 import { CatalogImporter } from "@/features/catalogs/components/catalog-importer";
+import { WipeCatalogButton } from "@/features/catalogs/components/wipe-catalog-button";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
 
@@ -48,8 +49,8 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Laboratory Catalog</h1>
           <p className="text-slate-500 dark:text-slate-400">Request or manage new lab tests and prices.</p>
         </div>
-        <div className="flex gap-3">
-
+        <div className="flex flex-wrap items-center gap-3">
+          {canApprove && <WipeCatalogButton type="LAB_TEST" />}
           <PrintButton label="Print Catalog" />
         </div>
       </div>
