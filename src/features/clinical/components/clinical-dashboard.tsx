@@ -295,6 +295,22 @@ export function ClinicalDashboard({
           </button>
         </div>
       </form>
+
+      {/* Disease Selection Modal */}
+      {showDiagnosisModal && (
+        <FinalDiagnosisModal
+          isOpen={showDiagnosisModal}
+          onClose={() => setShowDiagnosisModal(false)}
+          patientName="Patient"
+          patientId={patientId}
+          title="Select Diagnosed Generalized Diseases"
+          confirmLabel="Done"
+          onConfirm={async ({ finalDiagnosis }) => {
+            setAssessmentValue((prev) => (prev.trim() ? `${prev.trim()}; ${finalDiagnosis}` : finalDiagnosis));
+            setShowDiagnosisModal(false);
+          }}
+        />
+      )}
     </div>
   );
 }

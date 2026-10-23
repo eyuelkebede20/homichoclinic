@@ -178,8 +178,24 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     });
   }
 
+  const enteredByIds = Array.from(new Set(patient.medicalRecords.map((r) => r.enteredById).filter(Boolean)));
+  const enteredUsers = enteredByIds.length > 0 
+    ? await prisma.user.findMany({
+        where: { id: { in: enteredByIds } },
+        select: { id: true, name: true, role: true },
+      })
+    : [];
+  const enteredUserMap = new Map(enteredUsers.map((u) => [u.id, u.name]));
+
   const timeline = [
-    ...patient.medicalRecords.map((r) => ({ type: "record" as const, date: r.originalDate || r.createdAt, data: r })),
+    ...patient.medicalRecords.map((r) => ({
+      type: "record" as const,
+      date: r.originalDate || r.createdAt,
+      data: {
+        ...r,
+        enteredByName: enteredUserMap.get(r.enteredById) || null,
+      },
+    })),
     ...patient.prescriptions.map((p) => ({ type: "prescription" as const, date: p.createdAt, data: p }))
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 

@@ -18,6 +18,8 @@ import { SystemUpdater } from "@/features/admin/components/system-updater";
 import { ClinicProfileSettings } from "@/features/admin/components/clinic-profile-settings";
 import { CreateUserModal } from "@/features/admin/components/create-user-modal";
 import { OpdRoomsManager } from "@/features/admin/components/opd-rooms-manager";
+import { DiseaseImporter } from "@/features/admin/components/disease-importer";
+import { getClinicDiseases } from "@/features/clinical/actions";
 import Link from "next/link";
 
 export default async function AdminDashboardPage(props: { searchParams: Promise<{ tab?: string; q?: string }> }) {
@@ -43,7 +45,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     );
   }
 
-  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting, autoPilotSetting, devModeSetting] = await Promise.all([
+  const [users, lowPowerSetting, heavyDutySetting, clinicNameSetting, clinicNameAmharicSetting, clinicLogoSetting, opdRoomsSetting, autoPilotSetting, devModeSetting, clinicDiseases] = await Promise.all([
     prisma.user.findMany({ where: query ? { OR: [{ name: { contains: query, mode: "insensitive" } }, { email: { contains: query, mode: "insensitive" } }] } : {}, orderBy: { createdAt: "desc" } }),
     prisma.systemSetting.findUnique({ where: { key: "lowPowerMode" } }),
     prisma.systemSetting.findUnique({ where: { key: "heavyDutyMode" } }),
@@ -52,7 +54,8 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
     prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
     prisma.systemSetting.findUnique({ where: { key: "registrationAutoPilot" } }),
-    prisma.systemSetting.findUnique({ where: { key: "devMode" } })
+    prisma.systemSetting.findUnique({ where: { key: "devMode" } }),
+    tab === "diseases" ? getClinicDiseases() : Promise.resolve([])
   ]);
 
   const isLowPower = lowPowerSetting?.value !== "false";
@@ -78,6 +81,12 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
             className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'users' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
           >
             Users & Toggles
+          </Link>
+          <Link 
+            href="?tab=diseases" 
+            className={`whitespace-nowrap pb-4 px-1 border-b-2 font-medium text-sm ${tab === 'diseases' ? 'border-blue-500 text-blue-600 dark:text-blue-400' : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300 dark:hover:text-slate-300'}`}
+          >
+            Disease Catalog & Import
           </Link>
           <Link 
             href="?tab=clinic" 
@@ -175,6 +184,10 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
         </table>
       </div>
       </>
+      )}
+
+      {tab === "diseases" && (
+        <DiseaseImporter initialDiseases={clinicDiseases} />
       )}
 
       {tab === "clinic" && (

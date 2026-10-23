@@ -295,13 +295,15 @@ export function DoctorLabResultsInbox({
           patientId={(diagnosingResult.request as any).patientId || (diagnosingResult.request.patient as any).id || ""}
           labTestName={diagnosingResult.request.test?.name}
           labFindings={diagnosingResult.findings || undefined}
-          title="Patient Final Diagnosis & Review"
-          confirmLabel="Save Final Diagnosis & Mark Reviewed"
-          onConfirm={async ({ finalDiagnosis, notes, completeVisit }) => {
+          title="Diagnosed Generalized Diseases & Mark Reviewed"
+          confirmLabel="Done"
+          onConfirm={async ({ finalDiagnosis, selectedDiseases, practitionerName, notes, completeVisit }) => {
             setLoading(diagnosingResult.id);
             const res = await dismissLabResult({
               resultId: diagnosingResult.id,
               finalDiagnosis,
+              selectedDiseases,
+              practitionerName,
               notes,
               completeVisit,
             });
@@ -309,7 +311,7 @@ export function DoctorLabResultsInbox({
             if (res?.error) {
               toast.error(res.error);
             } else {
-              toast.success(`Marked as reviewed with final diagnosis "${finalDiagnosis}"`);
+              toast.success(`Marked as reviewed with diagnosis "${finalDiagnosis}"`);
               router.refresh();
             }
           }}

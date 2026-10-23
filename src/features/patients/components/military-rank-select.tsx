@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import {
   ETHIOPIAN_MILITARY_RANKS,
-  ALL_MILITARY_RANK_VALUES,
+  resolveRankValue,
 } from "../constants/military-ranks";
 
 interface MilitaryRankSelectProps {
@@ -21,8 +21,9 @@ export function MilitaryRankSelect({
   className = "",
   onChange,
 }: MilitaryRankSelectProps) {
-  const isPreset = defaultValue ? ALL_MILITARY_RANK_VALUES.includes(defaultValue) : false;
-  const initialMode = defaultValue ? (isPreset ? defaultValue : "__OTHER__") : "";
+  const resolvedPreset = resolveRankValue(defaultValue);
+  const isPreset = !!resolvedPreset;
+  const initialMode = defaultValue ? (isPreset ? resolvedPreset : "__OTHER__") : "";
   const initialCustom = !isPreset && defaultValue ? defaultValue : "";
 
   const [selectedOption, setSelectedOption] = useState<string>(initialMode);
@@ -30,8 +31,9 @@ export function MilitaryRankSelect({
 
   useEffect(() => {
     if (defaultValue) {
-      if (ALL_MILITARY_RANK_VALUES.includes(defaultValue)) {
-        setSelectedOption(defaultValue);
+      const match = resolveRankValue(defaultValue);
+      if (match) {
+        setSelectedOption(match);
         setCustomRank("");
       } else {
         setSelectedOption("__OTHER__");
@@ -82,7 +84,7 @@ export function MilitaryRankSelect({
           >
             {group.ranks.map((rank) => (
               <option key={rank.value} value={rank.value}>
-                {rank.amharic} ({rank.english})
+                {rank.label}
               </option>
             ))}
           </optgroup>

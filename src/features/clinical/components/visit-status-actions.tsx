@@ -41,20 +41,27 @@ export function VisitStatusActions({
     }
   }
 
-  const handleConfirmDiagnosis = async (data: { finalDiagnosis: string; notes?: string }) => {
+  const handleConfirmDiagnosis = async (data: {
+    finalDiagnosis: string;
+    selectedDiseases: any[];
+    practitionerName?: string;
+    notes?: string;
+  }) => {
     if (!patientId) return;
     setLoading(true);
     const res = await completeVisitWithDiagnosis({
       visitId,
       patientId,
       finalDiagnosis: data.finalDiagnosis,
+      selectedDiseases: data.selectedDiseases,
+      practitionerName: data.practitionerName,
       notes: data.notes,
     });
     setLoading(false);
     if (res?.error) {
       toast.error(res.error);
     } else {
-      toast.success(`Visit completed with final diagnosis "${data.finalDiagnosis}".`);
+      toast.success(`Visit completed with diagnosis "${data.finalDiagnosis}".`);
       router.refresh();
     }
   };
@@ -90,8 +97,8 @@ export function VisitStatusActions({
             onClose={() => setShowDiagnosisModal(false)}
             patientName={patientName}
             patientId={patientId || ""}
-            title="Final Diagnosis & Conclude Consultation"
-            confirmLabel="Save Diagnosis & Complete Review"
+            title="Diagnosed Generalized Diseases & Conclude Visit"
+            confirmLabel="Done"
             onConfirm={handleConfirmDiagnosis}
           />
         )}

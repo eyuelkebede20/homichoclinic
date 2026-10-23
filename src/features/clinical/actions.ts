@@ -591,10 +591,211 @@ export const addClinicDisease = createSafeAction({
   },
 });
 
+export const importDiseasesCSV = createSafeAction({
+  schema: z.object({
+    csvText: z.string(),
+    mode: z.enum(["merge", "replace"]).optional().default("merge"),
+  }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const rawLines = data.csvText.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    if (rawLines.length === 0) {
+      throw new Error("Uploaded file is empty.");
+    }
+
+    // Helper to parse line with quote support
+    const parseLine = (text: string): string[] => {
+      const parts: string[] = [];
+      let cur = "";
+      let inQuotes = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (c === '"') {
+          if (inQuotes && text[i + 1] === '"') {
+            cur += '"';
+            i++;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if ((c === "," || c === "\t") && !inQuotes) {
+          parts.push(cur.trim());
+          cur = "";
+        } else {
+          cur += c;
+        }
+      }
+      parts.push(cur.trim());
+      return parts;
+    };
+
+    const headerParts = parseLine(rawLines[0]);
+    const cleanHeader = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    let codeIdx = -1;
+    let nameIdx = -1;
+    let catIdx = -1;
+    let amhIdx = -1;
+
+    headerParts.forEach((h, idx) => {
+      const cleaned = cleanHeader(h);
+      if (cleaned === "diseasecode" || cleaned === "code" || cleaned === "icd" || cleaned === "icd10") {
+        codeIdx = idx;
+      } else if (cleaned === "diseasename" || cleaned === "disease" || cleaned === "name" || cleaned === "diagnosis") {
+        nameIdx = idx;
+      } else if (cleaned === "category" || cleaned === "type" || cleaned === "group") {
+        catIdx = idx;
+      } else if (cleaned === "amharic" || cleaned === "amharicname" || cleaned === "translation" || cleaned === "amh") {
+        amhIdx = idx;
+      }
+    });
+
+    // Fallbacks if header wasn't labeled strictly
+    if (nameIdx === -1) {
+      if (headerParts.length >= 2) {
+        codeIdx = 0;
+        nameIdx = 1;
+        catIdx = headerParts.length > 2 ? 2 : -1;
+        amhIdx = headerParts.length > 3 ? 3 : -1;
+      } else {
+        nameIdx = 0;
+      }
+    }
+
+    const currentList = data.mode === "replace" ? [] : await getClinicDiseases();
+    const workingList = [...currentList];
+    let createdCount = 0;
+    let updatedCount = 0;
+    const errors: string[] = [];
+
+    for (let i = 1; i < rawLines.length; i++) {
+      const line = rawLines[i];
+      if (!line) continue;
+      const cols = parseLine(line);
+      const name = nameIdx !== -1 && cols[nameIdx] ? cols[nameIdx].replace(/^["']|["']$/g, "").trim() : "";
+      const code = codeIdx !== -1 && cols[codeIdx] ? cols[codeIdx].replace(/^["']|["']$/g, "").trim() : undefined;
+      const cat = catIdx !== -1 && cols[catIdx] ? cols[catIdx].replace(/^["']|["']$/g, "").trim() : "General";
+      const amh = amhIdx !== -1 && cols[amhIdx] ? cols[amhIdx].replace(/^["']|["']$/g, "").trim() : undefined;
+
+      if (!name || name.length < 2) {
+        continue;
+      }
+
+      const matchIdx = workingList.findIndex((item) => {
+        if (code && item.code && item.code.toLowerCase() === code.toLowerCase()) return true;
+        return item.name.toLowerCase() === name.toLowerCase();
+      });
+
+      if (matchIdx !== -1) {
+        workingList[matchIdx] = {
+          ...workingList[matchIdx],
+          name: name || workingList[matchIdx].name,
+          code: code || workingList[matchIdx].code,
+          category: cat || workingList[matchIdx].category,
+          amharic: amh || workingList[matchIdx].amharic,
+        };
+        updatedCount++;
+      } else {
+        workingList.push({
+          id: `dis-${Date.now()}-${i}`,
+          name,
+          code: code || undefined,
+          category: cat || "General",
+          amharic: amh || undefined,
+        });
+        createdCount++;
+      }
+    }
+
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(workingList) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(workingList) },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CLINIC_DISEASE_IMPORT",
+      newValue: { created: createdCount, updated: updatedCount, total: workingList.length, mode: data.mode },
+    });
+
+    revalidatePath("/admin");
+    revalidatePath("/dashboard");
+    return { created: createdCount, updated: updatedCount, total: workingList.length, errors };
+  },
+});
+
+export const deleteClinicDisease = createSafeAction({
+  schema: z.object({ id: z.string() }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const list = await getClinicDiseases();
+    const filtered = list.filter((d) => d.id !== data.id);
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(filtered) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(filtered) },
+    });
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CLINIC_DISEASE_DELETE",
+      resourceId: data.id,
+    });
+    revalidatePath("/admin");
+    return { success: true, remaining: filtered.length };
+  },
+});
+
+export const resetClinicDiseasesToDefault = createSafeAction({
+  schema: z.object({}).optional(),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (_data, ctx) => {
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+    });
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CLINIC_DISEASE_RESET",
+      newValue: { count: DEFAULT_CLINIC_DISEASES.length },
+    });
+    revalidatePath("/admin");
+    return { success: true, count: DEFAULT_CLINIC_DISEASES.length };
+  },
+});
+
+export const clearClinicDiseases = createSafeAction({
+  schema: z.object({}).optional(),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (_data, ctx) => {
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify([]) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify([]) },
+    });
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CLINIC_DISEASE_CLEAR",
+    });
+    revalidatePath("/admin");
+    return { success: true, count: 0 };
+  },
+});
+
 export const dismissLabResult = createSafeAction({
   schema: z.object({
     resultId: z.string(),
     finalDiagnosis: z.string().optional(),
+    selectedDiseases: z.array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        code: z.string().optional(),
+        category: z.string().optional(),
+        amharic: z.string().optional(),
+      })
+    ).optional(),
+    practitionerName: z.string().optional(),
     notes: z.string().optional(),
     completeVisit: z.boolean().optional(),
   }),
@@ -610,9 +811,24 @@ export const dismissLabResult = createSafeAction({
       },
     });
 
-    if (data.finalDiagnosis && data.finalDiagnosis.trim() && result.request?.patientId) {
-      const diag = data.finalDiagnosis.trim();
+    let diag = data.finalDiagnosis?.trim() || "";
+    if (data.selectedDiseases && data.selectedDiseases.length > 0) {
+      diag = data.selectedDiseases
+        .map((d) => (d.code ? `[${d.code}] ${d.name}` : d.name))
+        .join("; ");
+    }
+
+    if (diag && result.request?.patientId) {
       const patientId = result.request.patientId;
+
+      let practitioner = data.practitionerName?.trim();
+      if (!practitioner) {
+        const doc = await prisma.user.findUnique({
+          where: { id: ctx.userId },
+          select: { name: true, role: true },
+        });
+        practitioner = doc?.name ? (doc.name.startsWith("Dr.") ? doc.name : `Dr. ${doc.name}`) : "Attending Doctor";
+      }
 
       await prisma.medicalRecord.create({
         data: {
@@ -626,7 +842,7 @@ export const dismissLabResult = createSafeAction({
           objective: `Lab Findings: ${result.findings}`,
           assessment: diag,
           plan: data.notes?.trim() || "Confirmed upon doctor review of diagnostic findings.",
-          content: `Final Diagnosis: ${diag}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
+          content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? `\nClinical Notes: ${data.notes.trim()}` : ""}`,
           enteredById: ctx.userId,
         },
       });
@@ -647,7 +863,7 @@ export const dismissLabResult = createSafeAction({
             where: { id: activeVisit.id },
             data: {
               status: "completed",
-              notes: (activeVisit.notes ? activeVisit.notes + " | " : "") + `Final Diagnosis: ${diag}`,
+              notes: (activeVisit.notes ? activeVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
             },
           });
         }
@@ -657,7 +873,7 @@ export const dismissLabResult = createSafeAction({
         actorId: ctx.userId,
         action: "LAB_RESULT_REVIEWED_WITH_DIAGNOSIS",
         resourceId: result.id,
-        newValue: { finalDiagnosis: diag, notes: data.notes },
+        newValue: { finalDiagnosis: diag, practitioner, notes: data.notes },
       });
     }
 
@@ -675,12 +891,40 @@ export const completeVisitWithDiagnosis = createSafeAction({
   schema: z.object({
     visitId: z.string(),
     patientId: z.string(),
-    finalDiagnosis: z.string().min(1, "Final diagnosis is required"),
+    finalDiagnosis: z.string().optional(),
+    selectedDiseases: z.array(
+      z.object({
+        id: z.string().optional(),
+        name: z.string(),
+        code: z.string().optional(),
+        category: z.string().optional(),
+        amharic: z.string().optional(),
+      })
+    ).optional(),
+    practitionerName: z.string().optional(),
     notes: z.string().optional(),
   }),
   requiredPermission: PERMISSIONS.VISIT_UPDATE,
   handler: async (data, ctx) => {
-    const diag = data.finalDiagnosis.trim();
+    let diag = data.finalDiagnosis?.trim() || "";
+    if (data.selectedDiseases && data.selectedDiseases.length > 0) {
+      diag = data.selectedDiseases
+        .map((d) => (d.code ? `[${d.code}] ${d.name}` : d.name))
+        .join("; ");
+    }
+
+    if (!diag) {
+      throw new Error("At least one diagnosed generalized disease must be selected.");
+    }
+
+    let practitioner = data.practitionerName?.trim();
+    if (!practitioner) {
+      const doc = await prisma.user.findUnique({
+        where: { id: ctx.userId },
+        select: { name: true, role: true },
+      });
+      practitioner = doc?.name ? (doc.name.startsWith("Dr.") ? doc.name : `Dr. ${doc.name}`) : "Attending Doctor";
+    }
 
     const existingVisit = await prisma.visit.findUnique({
       where: { id: data.visitId },
@@ -690,7 +934,7 @@ export const completeVisitWithDiagnosis = createSafeAction({
       where: { id: data.visitId },
       data: {
         status: "completed",
-        notes: (existingVisit?.notes ? existingVisit.notes + " | " : "") + `Final Diagnosis: ${diag}`,
+        notes: (existingVisit?.notes ? existingVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
       },
     });
 
@@ -700,7 +944,7 @@ export const completeVisitWithDiagnosis = createSafeAction({
         source: "system",
         assessment: diag,
         plan: data.notes?.trim() || "Consultation concluded and marked completed.",
-        content: `Final Diagnosis: ${diag}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
+        content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
         enteredById: ctx.userId,
       },
     });
@@ -709,7 +953,7 @@ export const completeVisitWithDiagnosis = createSafeAction({
       actorId: ctx.userId,
       action: "VISIT_COMPLETED_WITH_DIAGNOSIS",
       resourceId: visit.id,
-      newValue: { finalDiagnosis: diag, notes: data.notes },
+      newValue: { finalDiagnosis: diag, practitioner, notes: data.notes },
     });
 
     revalidatePath("/dashboard");
