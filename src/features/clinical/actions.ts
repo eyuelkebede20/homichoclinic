@@ -9,6 +9,7 @@ import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labReq
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
+import { ClinicDisease, DEFAULT_CLINIC_DISEASES } from "./types/diseases";
 
 /**
  * Automatically resets active visits in OPD queue that have reached 1 day (>= 24 hours or past 1 day).
@@ -521,21 +522,203 @@ export const addClinicalNote = createSafeAction({
   }
 });
 
+export async function getClinicDiseases(): Promise<ClinicDisease[]> {
+  try {
+    const setting = await prisma.systemSetting.findUnique({
+      where: { key: "clinicDiseasesList" },
+    });
+    if (setting?.value) {
+      const parsed = JSON.parse(setting.value);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+    });
+    return DEFAULT_CLINIC_DISEASES;
+  } catch (err) {
+    console.error("Error fetching clinic diseases:", err);
+    return DEFAULT_CLINIC_DISEASES;
+  }
+}
+
+export const addClinicDisease = createSafeAction({
+  schema: z.object({
+    name: z.string().min(2, "Disease name is required"),
+    category: z.string().optional().default("General"),
+    amharic: z.string().optional(),
+    code: z.string().optional(),
+  }),
+  requiredPermission: PERMISSIONS.HISTORY_WRITE,
+  handler: async (data, ctx) => {
+    const diseases = await getClinicDiseases();
+    const trimmed = data.name.trim();
+
+    const existing = diseases.find(
+      (d) => d.name.toLowerCase() === trimmed.toLowerCase()
+    );
+    if (existing) {
+      return { disease: existing, diseases };
+    }
+
+    const newDisease: ClinicDisease = {
+      id: `dis-${Date.now()}`,
+      name: trimmed,
+      category: data.category?.trim() || "General",
+      amharic: data.amharic?.trim() || undefined,
+      code: data.code?.trim() || undefined,
+    };
+
+    const updated = [newDisease, ...diseases];
+
+    await prisma.systemSetting.upsert({
+      where: { key: "clinicDiseasesList" },
+      update: { value: JSON.stringify(updated) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(updated) },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "CLINIC_DISEASE_ADD",
+      resourceId: newDisease.id,
+      newValue: newDisease,
+    });
+
+    return { disease: newDisease, diseases: updated };
+  },
+});
+
 export const dismissLabResult = createSafeAction({
-  schema: z.object({ resultId: z.string() }),
+  schema: z.object({
+    resultId: z.string(),
+    finalDiagnosis: z.string().optional(),
+    notes: z.string().optional(),
+    completeVisit: z.boolean().optional(),
+  }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
   handler: async (data, ctx) => {
     const result = await prisma.labResult.update({
       where: { id: data.resultId },
       data: { isReadByDoctor: true },
-      include: { request: true },
+      include: {
+        request: {
+          include: { patient: true, test: true },
+        },
+      },
     });
+
+    if (data.finalDiagnosis && data.finalDiagnosis.trim() && result.request?.patientId) {
+      const diag = data.finalDiagnosis.trim();
+      const patientId = result.request.patientId;
+
+      await prisma.medicalRecord.create({
+        data: {
+          patientId,
+          source: "system",
+          bp: null,
+          heartRate: null,
+          temp: null,
+          weight: null,
+          subjective: `Post-investigation review: ${result.request.test?.name || "Lab Investigation"}`,
+          objective: `Lab Findings: ${result.findings}`,
+          assessment: diag,
+          plan: data.notes?.trim() || "Confirmed upon doctor review of diagnostic findings.",
+          content: `Final Diagnosis: ${diag}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
+          enteredById: ctx.userId,
+        },
+      });
+
+      if (data.completeVisit !== false) {
+        const today = getStartOfDayLocal();
+        const activeVisit = await prisma.visit.findFirst({
+          where: {
+            patientId,
+            status: { in: ["scheduled", "in_progress"] },
+            visitDate: { gte: today },
+            deletedAt: null,
+          },
+        });
+
+        if (activeVisit) {
+          await prisma.visit.update({
+            where: { id: activeVisit.id },
+            data: {
+              status: "completed",
+              notes: (activeVisit.notes ? activeVisit.notes + " | " : "") + `Final Diagnosis: ${diag}`,
+            },
+          });
+        }
+      }
+
+      await logAudit({
+        actorId: ctx.userId,
+        action: "LAB_RESULT_REVIEWED_WITH_DIAGNOSIS",
+        resourceId: result.id,
+        newValue: { finalDiagnosis: diag, notes: data.notes },
+      });
+    }
+
     revalidatePath("/dashboard");
+    revalidatePath("/visits");
+    revalidatePath("/admin/admitted-report");
     if (result.request?.patientId) {
       revalidatePath(`/patients/${result.request.patientId}`);
     }
     return result;
-  }
+  },
+});
+
+export const completeVisitWithDiagnosis = createSafeAction({
+  schema: z.object({
+    visitId: z.string(),
+    patientId: z.string(),
+    finalDiagnosis: z.string().min(1, "Final diagnosis is required"),
+    notes: z.string().optional(),
+  }),
+  requiredPermission: PERMISSIONS.VISIT_UPDATE,
+  handler: async (data, ctx) => {
+    const diag = data.finalDiagnosis.trim();
+
+    const existingVisit = await prisma.visit.findUnique({
+      where: { id: data.visitId },
+    });
+
+    const visit = await prisma.visit.update({
+      where: { id: data.visitId },
+      data: {
+        status: "completed",
+        notes: (existingVisit?.notes ? existingVisit.notes + " | " : "") + `Final Diagnosis: ${diag}`,
+      },
+    });
+
+    await prisma.medicalRecord.create({
+      data: {
+        patientId: data.patientId,
+        source: "system",
+        assessment: diag,
+        plan: data.notes?.trim() || "Consultation concluded and marked completed.",
+        content: `Final Diagnosis: ${diag}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
+        enteredById: ctx.userId,
+      },
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "VISIT_COMPLETED_WITH_DIAGNOSIS",
+      resourceId: visit.id,
+      newValue: { finalDiagnosis: diag, notes: data.notes },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/visits");
+    revalidatePath(`/patients/${data.patientId}`);
+    revalidatePath("/admin/admitted-report");
+
+    return visit;
+  },
 });
 
 export const toggleLabResultReadStatus = createSafeAction({

@@ -261,6 +261,13 @@ export const updatePatient = createSafeAction({
         discountPercent: discountPercent,
         primaryPatientId: resolvedPrimaryId,
         relationship: newRelationship,
+        ...(existingPatient.patientType === "Soldier" ? {
+          militaryId: data.militaryId !== undefined ? data.militaryId : existingPatient.militaryId,
+          rank: data.rank !== undefined ? data.rank : existingPatient.rank,
+          division: data.division !== undefined ? data.division : existingPatient.division,
+          salutation: data.rank !== undefined ? data.rank : existingPatient.salutation,
+          department: data.division !== undefined ? data.division : existingPatient.department,
+        } : {}),
       },
     });
 

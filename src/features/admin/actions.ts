@@ -353,10 +353,13 @@ export const triggerSystemUpdate = createSafeAction({
         const { spawn } = await import("child_process");
         const script = fs.existsSync(path.join(process.cwd(), "update.sh"))
           ? path.join(process.cwd(), "update.sh")
-          : path.join(process.cwd(), "deploy", "update.sh");
+          : (fs.existsSync(path.join(process.cwd(), "start.sh"))
+              ? path.join(process.cwd(), "start.sh")
+              : path.join(process.cwd(), "deploy", "update.sh"));
 
         const shell = fs.existsSync("/bin/bash") ? "/bin/bash" : "sh";
-        const proc = spawn(shell, [script], {
+        const args = script.endsWith("start.sh") ? [script, "--quick", "--no-color"] : [script];
+        const proc = spawn(shell, args, {
           cwd: process.cwd(),
           detached: true,
           stdio: ["ignore", "pipe", "pipe"],

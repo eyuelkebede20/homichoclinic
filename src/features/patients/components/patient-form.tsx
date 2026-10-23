@@ -7,6 +7,7 @@ import { Loader2 } from "lucide-react";
 import { FamilyLinkSelector } from "./family-link-selector";
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 import { getCurrentEthiopianYear } from "@/lib/date-utils";
+import { MilitaryRankSelect } from "./military-rank-select";
 
 export function PatientForm({ userRole = "User" }: { userRole?: string }) {
   const [loading, setLoading] = useState(false);
@@ -126,18 +127,38 @@ export function PatientForm({ userRole = "User" }: { userRole?: string }) {
       </div>
 
       {patientType === "Soldier" && (
-        <div className="grid grid-cols-3 gap-4 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700">
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Military ID</label>
-            <input required name="militaryId" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Military ID / የወታደራዊ መታወቂያ ቁጥር
+              </label>
+              <input 
+                required 
+                name="militaryId" 
+                type="text" 
+                placeholder="e.g. MIL-10293" 
+                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Division / ክፍለ ጦር
+              </label>
+              <input 
+                required 
+                name="division" 
+                type="text" 
+                placeholder="e.g. 24ኛ ክፍለ ጦር" 
+                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" 
+              />
+            </div>
           </div>
           <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Rank</label>
-            <input required name="rank" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Division</label>
-            <input required name="division" type="text" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Military Rank / ወታደራዊ ማዕረግ
+            </label>
+            <MilitaryRankSelect name="rank" required />
           </div>
         </div>
       )}

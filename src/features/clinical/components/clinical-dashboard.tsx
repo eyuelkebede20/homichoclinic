@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, Activity, Heart, Thermometer, Scale, Save, CheckCircle2, Stethoscope } from "lucide-react";
+import { Loader2, Activity, Heart, Thermometer, Scale, Save, CheckCircle2, Stethoscope, Plus } from "lucide-react";
+import { FinalDiagnosisModal } from "./final-diagnosis-modal";
 import { addClinicalNote, toggleAdmissionStatus, deactivatePatientOpd } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -16,6 +17,8 @@ export function ClinicalDashboard({
   activeVisit?: any;
 }) {
   const [loading, setLoading] = useState(false);
+  const [assessmentValue, setAssessmentValue] = useState("");
+  const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
   const router = useRouter();
 
   async function handleDeactivateOpd() {
@@ -61,6 +64,7 @@ export function ClinicalDashboard({
     if (res.error) toast.error(res.error);
     else {
       (e.target as HTMLFormElement).reset();
+      setAssessmentValue("");
       router.refresh();
     }
   }
@@ -242,13 +246,24 @@ export function ClinicalDashboard({
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                Assessment <span className="text-rose-500">*</span> <span className="font-normal text-slate-400">(Diagnosis)</span>
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400">
+                  Assessment <span className="text-rose-500">*</span> <span className="font-normal text-slate-400">(Diagnosis)</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowDiagnosisModal(true)}
+                  className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                >
+                  <Plus className="w-3 h-3" /> Select / Add Disease
+                </button>
+              </div>
               <textarea
                 name="assessment"
                 rows={2}
                 required
+                value={assessmentValue}
+                onChange={(e) => setAssessmentValue(e.target.value)}
                 placeholder="Working or confirmed clinical diagnosis..."
                 className="block w-full rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/20 dark:bg-blue-950/20 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all"
               />

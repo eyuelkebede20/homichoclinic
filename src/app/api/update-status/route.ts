@@ -34,11 +34,11 @@ export async function GET() {
     const lines = raw.split("\n").filter(Boolean);
 
     const failed =
-      lines.some((l) => l.includes("Rollback complete")) ||
+      lines.some((l) => l.includes("Rollback complete") || l.includes("FAILED: quick build") || l.includes("FAILED: rollback unhealthy")) ||
       lines.some((l) => l.includes("[!] Backup failed") || l.includes("[!] git pull failed") || l.includes("aborting") || l.includes("Update failed") || (l.includes("Process exited with code") && !l.includes("code 0")));
 
     const done =
-      lines.some((l) => l.includes("Update complete") || l.includes("UPDATE COMPLETE SUCCESSFULLY!")) ||
+      lines.some((l) => l.toLowerCase().includes("update complete") || l.includes("UPDATE COMPLETE SUCCESSFULLY!")) ||
       failed;
 
     return NextResponse.json({ lines, done, failed });

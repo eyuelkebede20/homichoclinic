@@ -194,7 +194,12 @@ export function DoctorPatientQueue({ visits }: { visits: QueueVisit[] }) {
                     <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
 
                     {/* Status Toggle Component */}
-                    <VisitStatusActions visitId={visit.id} currentStatus={visit.status} patientId={visit.patientId} />
+                    <VisitStatusActions
+                      visitId={visit.id}
+                      currentStatus={visit.status}
+                      patientId={visit.patientId}
+                      patientName={`${visit.patient.firstName} ${visit.patient.lastName}`}
+                    />
                   </div>
                 </td>
               </tr>

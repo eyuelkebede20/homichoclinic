@@ -11,7 +11,7 @@ echo and synchronize your local database.
 echo.
 
 echo [1/5] Stashing local changes (if any)...
-call git stash
+call git stash --include-untracked || call git stash
 echo.
 
 echo [2/5] Pulling latest code from GitHub...

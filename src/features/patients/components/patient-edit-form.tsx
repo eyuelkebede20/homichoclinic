@@ -7,11 +7,15 @@ import { Loader2 } from "lucide-react";
 import { FamilyLinkSelector } from "./family-link-selector";
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 import { getCurrentEthiopianYear, calculateAge } from "@/lib/date-utils";
+import { MilitaryRankSelect } from "./military-rank-select";
 
 export function PatientEditForm({ patient }: { 
   patient: { 
     id: string; firstName: string; lastName: string; yob: string | null; gender: string | null; contactNumber: string | null; permanentSince?: string | null; 
     patientType: string;
+    militaryId?: string | null;
+    rank?: string | null;
+    division?: string | null;
     primaryPatient?: { id: string; firstName: string; lastName: string; contactNumber: string | null; employeeId: string | null; militaryId: string | null; patientType?: string | null; } | null;
     relationship?: string | null;
   } 
@@ -57,6 +61,9 @@ export function PatientEditForm({ patient }: {
       gender: formData.get("sex") as string,
       contactNumber: formData.get("contactNumber") as string,
       permanentSince: formData.get("permanentSince") as string || undefined,
+      militaryId: formData.get("militaryId") as string || undefined,
+      rank: formData.get("rank") as string || undefined,
+      division: formData.get("division") as string || undefined,
       primaryPatientId: formData.get("primaryPatientId") as string || undefined,
       staffSearchStr: formData.get("staffSearchStr") as string || undefined,
       relationship: formData.get("relationship") as string || undefined,
@@ -141,6 +148,43 @@ export function PatientEditForm({ patient }: {
           </div>
         )}
       </div>
+
+      {patient.patientType === "Soldier" && (
+        <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-700 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Military ID / የወታደራዊ መታወቂያ ቁጥር
+              </label>
+              <input 
+                defaultValue={patient.militaryId || ""} 
+                name="militaryId" 
+                type="text" 
+                placeholder="e.g. MIL-10293" 
+                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" 
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Division / ክፍለ ጦር
+              </label>
+              <input 
+                defaultValue={patient.division || ""} 
+                name="division" 
+                type="text" 
+                placeholder="e.g. 24ኛ ክፍለ ጦር" 
+                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2.5 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 text-slate-900 dark:text-slate-100" 
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Military Rank / ወታደራዊ ማዕረግ
+            </label>
+            <MilitaryRankSelect defaultValue={patient.rank || ""} name="rank" />
+          </div>
+        </div>
+      )}
 
       {isFamily && (
         <FamilyLinkSelector

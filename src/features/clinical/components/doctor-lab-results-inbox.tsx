@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { parseLabFindings, getLabPanelType } from "../types/lab-panels";
 import { StructuredLabResultView } from "./structured-lab-result-view";
+import { FinalDiagnosisModal } from "./final-diagnosis-modal";
 import { toast } from "sonner";
 
 export interface LabResultInboxItem {
@@ -29,6 +30,7 @@ export function DoctorLabResultsInbox({
   const [loading, setLoading] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"unread" | "reviewed" | "all">("unread");
+  const [diagnosingResult, setDiagnosingResult] = useState<LabResultInboxItem | null>(null);
   const router = useRouter();
 
   if (results.length === 0) return null;
@@ -43,7 +45,7 @@ export function DoctorLabResultsInbox({
       ? reviewedResults
       : results;
 
-  async function handleMarkReviewed(id: string) {
+  async function handleQuickMarkReviewed(id: string) {
     setLoading(id);
     const res = await dismissLabResult({ resultId: id });
     setLoading(null);
@@ -248,10 +250,11 @@ export function DoctorLabResultsInbox({
 
                     {!res.isReadByDoctor ? (
                       <button
-                        onClick={() => handleMarkReviewed(res.id)}
+                        onClick={() => setDiagnosingResult(res)}
                         disabled={loading === res.id}
                         type="button"
                         className="flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold shadow-xs transition-colors disabled:opacity-50"
+                        title="Mark as reviewed and assign final diagnosis"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
                         Mark Reviewed
@@ -281,6 +284,36 @@ export function DoctorLabResultsInbox({
             );
           })}
         </ul>
+      )}
+
+      {/* Final Diagnosis Modal for Mark Reviewed */}
+      {diagnosingResult && (
+        <FinalDiagnosisModal
+          isOpen={!!diagnosingResult}
+          onClose={() => setDiagnosingResult(null)}
+          patientName={`${diagnosingResult.request.patient.firstName} ${diagnosingResult.request.patient.lastName}`}
+          patientId={(diagnosingResult.request as any).patientId || (diagnosingResult.request.patient as any).id || ""}
+          labTestName={diagnosingResult.request.test?.name}
+          labFindings={diagnosingResult.findings || undefined}
+          title="Patient Final Diagnosis & Review"
+          confirmLabel="Save Final Diagnosis & Mark Reviewed"
+          onConfirm={async ({ finalDiagnosis, notes, completeVisit }) => {
+            setLoading(diagnosingResult.id);
+            const res = await dismissLabResult({
+              resultId: diagnosingResult.id,
+              finalDiagnosis,
+              notes,
+              completeVisit,
+            });
+            setLoading(null);
+            if (res?.error) {
+              toast.error(res.error);
+            } else {
+              toast.success(`Marked as reviewed with final diagnosis "${finalDiagnosis}"`);
+              router.refresh();
+            }
+          }}
+        />
       )}
     </div>
   );

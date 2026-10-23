@@ -31,9 +31,14 @@ while true; do
       /bin/bash "$ROOT/update.sh" >> "$LOG" 2>&1
       RC=$?
       echo "[$(date '+%F %T')] update.sh finished (exit code $RC)." >> "$LOG"
+    elif [ -f "$ROOT/start.sh" ]; then
+      git stash --include-untracked >> "$ROOT/run/update.status" 2>&1 || git stash >> "$ROOT/run/update.status" 2>&1 || true
+      /bin/bash "$ROOT/start.sh" --quick --no-color 2>&1 | tee -a "$ROOT/run/update.status" >> "$LOG"
+      RC=${PIPESTATUS[0]}
+      echo "[$(date '+%F %T')] start.sh --quick finished (exit code $RC)." >> "$LOG"
     else
-      echo "[$(date '+%F %T')] ERROR: $ROOT/update.sh not found." >> "$LOG"
-      echo "[!] ERROR: $ROOT/update.sh not found on host." >> "$ROOT/run/update.status" 2>/dev/null || true
+      echo "[$(date '+%F %T')] ERROR: Neither update.sh nor start.sh found." >> "$LOG"
+      echo "[!] ERROR: Neither update.sh nor start.sh found on host." >> "$ROOT/run/update.status" 2>/dev/null || true
     fi
   fi
   sleep 3
