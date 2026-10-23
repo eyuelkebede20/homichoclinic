@@ -20,8 +20,8 @@ import {
   HelpCircle,
   Trash2,
 } from "lucide-react";
-import { ClinicDisease, DEFAULT_CLINIC_DISEASES } from "../types/diseases";
-import { addClinicDisease, getClinicDiseases } from "../actions";
+import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES } from "../types/diseases";
+import { addClinicDisease, getClinicDiseases, getTopDiagnosedDiseases } from "../actions";
 import { useSession } from "@/lib/auth-client";
 import { toast } from "sonner";
 
@@ -71,6 +71,7 @@ export function FinalDiagnosisModal({
 }: FinalDiagnosisModalProps) {
   const { data: session } = useSession();
   const [diseases, setDiseases] = useState<ClinicDisease[]>(DEFAULT_CLINIC_DISEASES);
+  const [mostPicked, setMostPicked] = useState<ClinicDisease[]>(DEFAULT_MOST_PICKED_DISEASES);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDiseases, setSelectedDiseases] = useState<ClinicDisease[]>([]);
@@ -105,7 +106,7 @@ export function FinalDiagnosisModal({
     }
   }, [defaultDocName]);
 
-  // Load clinic diseases from database when modal opens
+  // Load clinic diseases & most picked diagnoses from database when modal opens
   useEffect(() => {
     if (!isOpen) return;
     let isMounted = true;
@@ -116,6 +117,23 @@ export function FinalDiagnosisModal({
         }
       })
       .catch((e) => console.error(e));
+
+    getTopDiagnosedDiseases(18)
+      .then((topList) => {
+        if (isMounted && topList && topList.length > 0) {
+          setMostPicked(
+            topList.map((d) => ({
+              id: d.id || `dis-${d.name}`,
+              name: d.name,
+              code: d.code,
+              category: d.category,
+              amharic: d.amharic,
+            }))
+          );
+        }
+      })
+      .catch((e) => console.error(e));
+
     return () => {
       isMounted = false;
     };
@@ -495,6 +513,65 @@ export function FinalDiagnosisModal({
                 </div>
               </form>
             )}
+
+            {/* ──────────────────────────────────────────────────────────── */}
+            {/* MOST PICKED / QUICK PICKS (Top 10 - 20 Diagnoses)             */}
+            {/* ──────────────────────────────────────────────────────────── */}
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/25 border border-amber-200/90 dark:border-amber-900/40 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  <span className="text-[11px] font-bold text-amber-950 dark:text-amber-200 uppercase tracking-wider">
+                    Most Picked Diagnoses (Top 10 - 20 Quick Picks)
+                  </span>
+                  <span className="text-[10px] bg-amber-200 text-amber-900 dark:bg-amber-900/60 dark:text-amber-300 font-bold px-1.5 py-0.2 rounded-full">
+                    {mostPicked.length}
+                  </span>
+                </div>
+                <span className="text-[10px] text-amber-800 dark:text-amber-300 italic font-medium">
+                  Click to select directly
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto pr-1">
+                {mostPicked.map((d) => {
+                  const isSelected = selectedDiseases.some(
+                    (x) => x.name.toLowerCase() === d.name.toLowerCase()
+                  );
+                  return (
+                    <button
+                      key={d.id || d.name}
+                      type="button"
+                      onClick={() => toggleDisease(d)}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs transition-all cursor-pointer ${
+                        isSelected
+                          ? "bg-indigo-600 text-white shadow-xs font-bold ring-2 ring-indigo-400"
+                          : "bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-amber-200/90 dark:border-slate-800 hover:border-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/40 font-medium"
+                      }`}
+                      title={`${d.name} (${d.category})`}
+                    >
+                      {isSelected ? (
+                        <Check className="w-3 h-3 text-white stroke-[3]" />
+                      ) : (
+                        <Plus className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                      )}
+                      {d.code && (
+                        <span
+                          className={`font-mono text-[10px] px-1 py-0.2 rounded font-bold ${
+                            isSelected
+                              ? "bg-indigo-700 text-indigo-100"
+                              : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                          }`}
+                        >
+                          {d.code}
+                        </span>
+                      )}
+                      <span className="truncate max-w-[200px]">{d.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
 
             {/* Category Pills */}
             <div className="flex items-center gap-1 overflow-x-auto pb-1 text-[11px] scrollbar-none">

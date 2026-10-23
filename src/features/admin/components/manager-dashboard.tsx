@@ -29,6 +29,15 @@ import {
   Hospital
 } from "lucide-react";
 
+export type TopDiseaseStat = {
+  name: string;
+  code?: string;
+  category: string;
+  amharic?: string;
+  count: number;
+  percentage?: number;
+};
+
 export type ManagerDashboardProps = {
   patientStats: {
     currentInpatients: number;
@@ -111,6 +120,7 @@ export type ManagerDashboardProps = {
     userName: string;
     userRole: string;
   };
+  topDiseases?: TopDiseaseStat[];
 };
 
 export function ManagerDashboard({
@@ -118,6 +128,7 @@ export function ManagerDashboard({
   medicineStats,
   operationalStats,
   clinicInfo,
+  topDiseases = [],
 }: ManagerDashboardProps) {
   const router = useRouter();
   const [patientSearch, setPatientSearch] = useState("");
@@ -516,7 +527,133 @@ export function ManagerDashboard({
       </section>
 
       {/* ──────────────────────────────────────────────────────────── */}
-      {/* 2. MEDICINE INVENTORY & EXPIRY INTELLIGENCE                 */}
+      {/* 2. TOP 10 DIAGNOSED CLINICAL DISEASES (MORBIDITY OVERVIEW)   */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      <section className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                Top 10 Diagnosed Clinical Diseases
+                <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 font-bold">
+                  የበሽታዎች ቅኝት
+                </span>
+              </h2>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Leading morbidities and diagnoses recorded by attending physicians during OPD and Inpatient consultations.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
+              {topDiseases.reduce((sum, d) => sum + (d.count || 0), 0)} Cases Tracked
+            </span>
+          </div>
+        </div>
+
+        {/* Top 10 Diseases Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          {topDiseases.length === 0 ? (
+            <div className="col-span-full p-8 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 text-slate-500">
+              No clinical diagnoses recorded yet. When doctors mark visits as reviewed, the top 10 diseases will appear here automatically.
+            </div>
+          ) : (
+            topDiseases.slice(0, 10).map((disease, idx) => {
+              const rank = idx + 1;
+              const isGold = rank === 1;
+              const isSilver = rank === 2;
+              const isBronze = rank === 3;
+
+              return (
+                <div
+                  key={disease.name + idx}
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200/90 dark:border-slate-800 p-3.5 shadow-2xs hover:border-indigo-300 dark:hover:border-indigo-700 transition-all space-y-2.5"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                      {/* Rank Indicator */}
+                      <span
+                        className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs shrink-0 ${
+                          isGold
+                            ? "bg-amber-500 text-white font-black shadow-xs ring-2 ring-amber-300 dark:ring-amber-600"
+                            : isSilver
+                            ? "bg-slate-400 text-white font-bold ring-2 ring-slate-300 dark:ring-slate-600"
+                            : isBronze
+                            ? "bg-amber-700 text-white font-bold ring-2 ring-amber-600 dark:ring-amber-800"
+                            : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold border border-slate-200 dark:border-slate-700"
+                        }`}
+                      >
+                        #{rank}
+                      </span>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {disease.code && (
+                            <span className="font-mono text-[10px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-1.5 py-0.2 rounded">
+                              {disease.code}
+                            </span>
+                          )}
+                          <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
+                            {disease.name}
+                          </h3>
+                        </div>
+
+                        {disease.amharic && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 font-amharic truncate mt-0.5">
+                            {disease.amharic}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Category Badge & Count */}
+                    <div className="text-right shrink-0">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium block w-fit ml-auto mb-1">
+                        {disease.category}
+                      </span>
+                      <div className="text-xs">
+                        <strong className="text-slate-900 dark:text-slate-100 font-black text-sm">
+                          {disease.count}
+                        </strong>{" "}
+                        <span className="text-slate-400 text-[11px]">case{disease.count === 1 ? "" : "s"}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Percentage Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-slate-400">
+                      <span>Prevalence</span>
+                      <span className="font-semibold text-slate-600 dark:text-slate-300">
+                        {disease.percentage || 0}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-500 ${
+                          isGold
+                            ? "bg-amber-500"
+                            : isSilver
+                            ? "bg-slate-500"
+                            : isBronze
+                            ? "bg-amber-700"
+                            : "bg-indigo-600 dark:bg-indigo-500"
+                        }`}
+                        style={{ width: `${Math.max(disease.percentage || 0, disease.count > 0 ? 5 : 2)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </section>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* 3. MEDICINE INVENTORY & EXPIRY INTELLIGENCE                 */}
       {/* ──────────────────────────────────────────────────────────── */}
       <section className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">

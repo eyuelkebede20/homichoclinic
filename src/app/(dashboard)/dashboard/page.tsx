@@ -17,7 +17,7 @@ import { DoctorPatientQueue } from "@/features/clinical/components/doctor-queue"
 import { DoctorWeeklyAppointmentsCard } from "@/features/clinical/components/doctor-weekly-appointments-card";
 import { DoctorAwaitingReviewCard } from "@/features/clinical/components/doctor-awaiting-review-card";
 import { ManagerDashboard } from "@/features/admin/components/manager-dashboard";
-import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
+import { autoResetExpiredOpdVisits, getTopDiagnosedDiseases } from "@/features/clinical/actions";
 
 function startOfWeek(date: Date) {
   const d = new Date(date);
@@ -302,6 +302,7 @@ export default async function DashboardPage() {
     activeDoctors,
     totalRoomsSetting,
     activeOpdRoomsListSetting,
+    topDiseases,
   ] = await Promise.all([
     // 1. Inpatients currently admitted
     prisma.patient.count({ where: { admissionStatus: "Inpatient", deletedAt: null } }),
@@ -413,6 +414,8 @@ export default async function DashboardPage() {
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } }),
     // Active OPD rooms list
     prisma.systemSetting.findUnique({ where: { key: "activeOpdRoomsList" } }),
+    // Top 10 diagnosed diseases
+    getTopDiagnosedDiseases(10),
   ]);
 
   const doctorIds = Array.from(new Set(recentVisitsRaw.map(v => v.doctorId).filter(Boolean))) as string[];
@@ -612,6 +615,7 @@ export default async function DashboardPage() {
           userName: session.user.name,
           userRole: role,
         }}
+        topDiseases={topDiseases}
       />
     </div>
   );

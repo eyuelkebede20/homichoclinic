@@ -9,7 +9,7 @@ import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labReq
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
-import { ClinicDisease, DEFAULT_CLINIC_DISEASES } from "./types/diseases";
+import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES } from "./types/diseases";
 
 /**
  * Automatically resets active visits in OPD queue that have reached 1 day (>= 24 hours or past 1 day).
@@ -529,9 +529,23 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
     });
     if (setting?.value) {
       const parsed = JSON.parse(setting.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed) && parsed.length >= DEFAULT_CLINIC_DISEASES.length) {
         return parsed;
       }
+      // If catalog has fewer items than our expanded 200+ default set, merge in missing ones
+      const existingNames = new Set((parsed || []).map((d: any) => d.name.toLowerCase()));
+      const merged = [...(parsed || [])];
+      for (const def of DEFAULT_CLINIC_DISEASES) {
+        if (!existingNames.has(def.name.toLowerCase())) {
+          merged.push(def);
+        }
+      }
+      await prisma.systemSetting.upsert({
+        where: { key: "clinicDiseasesList" },
+        update: { value: JSON.stringify(merged) },
+        create: { key: "clinicDiseasesList", value: JSON.stringify(merged) },
+      });
+      return merged;
     }
     await prisma.systemSetting.upsert({
       where: { key: "clinicDiseasesList" },
@@ -542,6 +556,101 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
   } catch (err) {
     console.error("Error fetching clinic diseases:", err);
     return DEFAULT_CLINIC_DISEASES;
+  }
+}
+
+export type TopDiagnosedDisease = {
+  id?: string;
+  name: string;
+  code?: string;
+  category: string;
+  amharic?: string;
+  count: number;
+  percentage?: number;
+};
+
+export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDiagnosedDisease[]> {
+  try {
+    const [records, catalog] = await Promise.all([
+      prisma.medicalRecord.findMany({
+        where: {
+          deletedAt: null,
+          assessment: { not: null },
+        },
+        select: { assessment: true },
+        take: 1000,
+      }),
+      getClinicDiseases(),
+    ]);
+
+    const counts = new Map<string, number>();
+    let totalDiagnosesCount = 0;
+
+    for (const r of records) {
+      if (!r.assessment) continue;
+      const diags = r.assessment.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
+      for (const diag of diags) {
+        // Clean off code prefix like "[A09] Acute Gastroenteritis" -> "Acute Gastroenteritis"
+        const cleanName = diag.replace(/^\[[^\]]+\]\s*/, "").trim();
+        if (cleanName.length < 2) continue;
+        const key = cleanName.toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+        totalDiagnosesCount++;
+      }
+    }
+
+    const scoredList: TopDiagnosedDisease[] = [];
+    const usedNames = new Set<string>();
+
+    for (const disease of catalog) {
+      const c = counts.get(disease.name.toLowerCase()) || 0;
+      if (c > 0) {
+        scoredList.push({
+          id: disease.id,
+          name: disease.name,
+          code: disease.code,
+          category: disease.category,
+          amharic: disease.amharic,
+          count: c,
+          percentage: totalDiagnosesCount > 0 ? Math.round((c / totalDiagnosesCount) * 1000) / 10 : 0,
+        });
+        usedNames.add(disease.name.toLowerCase());
+      }
+    }
+
+    scoredList.sort((a, b) => b.count - a.count);
+
+    // If fewer than limit, supplement from default most picked primary care diseases
+    if (scoredList.length < limit) {
+      for (const common of DEFAULT_MOST_PICKED_DISEASES) {
+        if (!usedNames.has(common.name.toLowerCase())) {
+          scoredList.push({
+            id: common.id,
+            name: common.name,
+            code: common.code,
+            category: common.category,
+            amharic: common.amharic,
+            count: 0,
+            percentage: 0,
+          });
+          usedNames.add(common.name.toLowerCase());
+          if (scoredList.length >= limit) break;
+        }
+      }
+    }
+
+    return scoredList.slice(0, limit);
+  } catch (err) {
+    console.error("Error fetching top diagnosed diseases:", err);
+    return DEFAULT_MOST_PICKED_DISEASES.map((d) => ({
+      id: d.id,
+      name: d.name,
+      code: d.code,
+      category: d.category,
+      amharic: d.amharic,
+      count: 0,
+      percentage: 0,
+    })).slice(0, limit);
   }
 }
 
