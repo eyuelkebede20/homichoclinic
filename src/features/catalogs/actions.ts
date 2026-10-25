@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { catalogCreateSchema, catalogUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
+import { parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 
 async function hasApprovePermission(userId: string) {
   const user = await prisma.user.findUnique({ where: { id: userId } });
@@ -22,14 +23,92 @@ export const createDrug = createSafeAction({
     const canApprove = true;
 
     if (canApprove) {
-      const drug = await prisma.drug.create({ data });
+      const initialStock =
+        data.initialStock !== undefined && data.initialStock !== null
+          ? data.initialStock
+          : null;
+
+      const drug = await prisma.drug.create({
+        data: {
+          name: data.name.trim(),
+          description: data.description || null,
+          category: data.category || null,
+          unit: data.unit || null,
+          price: data.price,
+          initialStock: initialStock,
+          amountInStock: initialStock,
+        },
+      });
+
+      const hasBatchInfo = Boolean(
+        data.batchNumber?.trim() ||
+        data.expiryDate?.trim() ||
+        data.docNo?.trim() ||
+        data.dateAddedToStock?.trim() ||
+        (initialStock !== null && initialStock > 0)
+      );
+
+      if (hasBatchInfo) {
+        let expiryDate: Date = new Date("2099-12-31");
+        if (data.expiryDate && data.expiryDate.trim() !== "") {
+          const parsedExp = parseEthiopianDateString(data.expiryDate);
+          if (parsedExp) {
+            expiryDate = ethiopianToGregorian(parsedExp.year, parsedExp.month, parsedExp.day);
+          } else {
+            const d = new Date(data.expiryDate);
+            if (!isNaN(d.getTime())) expiryDate = d;
+          }
+        }
+
+        let dateAddedToStock: Date = new Date();
+        if (data.dateAddedToStock && data.dateAddedToStock.trim() !== "") {
+          const parsedAdded = parseEthiopianDateString(data.dateAddedToStock);
+          if (parsedAdded) {
+            dateAddedToStock = ethiopianToGregorian(parsedAdded.year, parsedAdded.month, parsedAdded.day);
+          } else {
+            const d = new Date(data.dateAddedToStock);
+            if (!isNaN(d.getTime())) dateAddedToStock = d;
+          }
+        }
+
+        const batchQty = initialStock !== null ? initialStock : 0;
+        const bNum = data.batchNumber?.trim() || `BATCH-${new Date().getFullYear()}`;
+
+        const newBatch = await prisma.stockBatch.create({
+          data: {
+            drugId: drug.id,
+            batchNumber: bNum,
+            expiryDate: expiryDate,
+            quantity: batchQty,
+            cost: data.price,
+            dateAddedToStock: dateAddedToStock,
+            docNo: data.docNo?.trim() || "INITIAL-ENTRY",
+          },
+        });
+
+        if (batchQty > 0) {
+          await prisma.stockMovement.create({
+            data: {
+              batchId: newBatch.id,
+              type: "receive",
+              quantity: batchQty,
+              reason: "Initial catalog entry",
+              actorId: ctx.userId,
+            },
+          });
+        }
+      }
+
       await logAudit({
         actorId: ctx.userId,
         action: PERMISSIONS.CATALOG_APPROVE,
         resourceId: drug.id,
         newValue: JSON.stringify(drug),
-        reason: "Directly created new drug in catalog",
+        reason: "Directly created new drug in catalog with initial stock/batch",
       });
+
+      revalidatePath("/pharmacy");
+      revalidatePath("/pharmacy/catalog");
       revalidatePath("/catalogs");
       return drug;
     } else {
@@ -40,7 +119,7 @@ export const createDrug = createSafeAction({
           action: "CREATE",
           requestedData: JSON.stringify(data),
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
       return { success: "Approval request submitted." };
@@ -55,7 +134,15 @@ export const createLabTest = createSafeAction({
     const canApprove = true;
 
     if (canApprove) {
-      const test = await prisma.labTest.create({ data });
+      const test = await prisma.labTest.create({
+        data: {
+          name: data.name.trim(),
+          description: data.description || null,
+          unit: data.unit || null,
+          options: data.options || null,
+          price: data.price,
+        },
+      });
       await logAudit({
         actorId: ctx.userId,
         action: PERMISSIONS.CATALOG_APPROVE,
@@ -64,6 +151,7 @@ export const createLabTest = createSafeAction({
         reason: "Directly created new lab test in catalog",
       });
       revalidatePath("/catalogs");
+      revalidatePath("/laboratory/catalog");
       return test;
     } else {
       await prisma.catalogChangeRequest.create({
@@ -72,9 +160,10 @@ export const createLabTest = createSafeAction({
           action: "CREATE",
           requestedData: JSON.stringify(data),
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
+      revalidatePath("/laboratory/catalog");
       return { success: "Approval request submitted." };
     }
   },
@@ -95,15 +184,71 @@ export const updateDrug = createSafeAction({
           category: data.category,
           unit: data.unit,
           price: data.price,
-        }
+        },
       });
+
+      if (data.batchNumber || data.expiryDate || data.dateAddedToStock || data.docNo) {
+        let expiryDate: Date | undefined;
+        if (data.expiryDate && data.expiryDate.trim() !== "") {
+          const parsedExp = parseEthiopianDateString(data.expiryDate);
+          if (parsedExp) {
+            expiryDate = ethiopianToGregorian(parsedExp.year, parsedExp.month, parsedExp.day);
+          } else {
+            const d = new Date(data.expiryDate);
+            if (!isNaN(d.getTime())) expiryDate = d;
+          }
+        }
+
+        let dateAddedToStock: Date | undefined;
+        if (data.dateAddedToStock && data.dateAddedToStock.trim() !== "") {
+          const parsedAdded = parseEthiopianDateString(data.dateAddedToStock);
+          if (parsedAdded) {
+            dateAddedToStock = ethiopianToGregorian(parsedAdded.year, parsedAdded.month, parsedAdded.day);
+          } else {
+            const d = new Date(data.dateAddedToStock);
+            if (!isNaN(d.getTime())) dateAddedToStock = d;
+          }
+        }
+
+        const latestBatch = await prisma.stockBatch.findFirst({
+          where: { drugId: data.id },
+          orderBy: [{ dateAddedToStock: "desc" }, { createdAt: "desc" }],
+        });
+
+        if (latestBatch) {
+          await prisma.stockBatch.update({
+            where: { id: latestBatch.id },
+            data: {
+              ...(data.batchNumber?.trim() ? { batchNumber: data.batchNumber.trim() } : {}),
+              ...(expiryDate ? { expiryDate } : {}),
+              ...(dateAddedToStock ? { dateAddedToStock } : {}),
+              ...(data.docNo !== undefined ? { docNo: data.docNo ? data.docNo.trim() : null } : {}),
+            },
+          });
+        } else if (data.batchNumber?.trim()) {
+          await prisma.stockBatch.create({
+            data: {
+              drugId: drug.id,
+              batchNumber: data.batchNumber.trim(),
+              expiryDate: expiryDate || new Date("2099-12-31"),
+              quantity: drug.amountInStock ?? drug.initialStock ?? 0,
+              cost: data.price || 0,
+              dateAddedToStock: dateAddedToStock || new Date(),
+              docNo: data.docNo?.trim() || "EDIT-ENTRY",
+            },
+          });
+        }
+      }
+
       await logAudit({
         actorId: ctx.userId,
         action: PERMISSIONS.CATALOG_APPROVE,
         resourceId: drug.id,
         newValue: JSON.stringify(drug),
-        reason: "Directly updated drug details/price",
+        reason: "Directly updated drug details/price/batch",
       });
+      revalidatePath("/pharmacy");
+      revalidatePath("/pharmacy/catalog");
       revalidatePath("/catalogs");
       return drug;
     } else {
@@ -114,12 +259,12 @@ export const updateDrug = createSafeAction({
           targetId: data.id,
           requestedData: JSON.stringify(data),
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
       return { success: "Approval request submitted." };
     }
-  }
+  },
 });
 
 export const deleteDrug = createSafeAction({
@@ -146,12 +291,12 @@ export const deleteDrug = createSafeAction({
           targetId: data.id,
           requestedData: "{}",
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
       return { success: "Deletion request submitted." };
     }
-  }
+  },
 });
 
 export const processCatalogApproval = createSafeAction({
@@ -164,7 +309,7 @@ export const processCatalogApproval = createSafeAction({
     if (!data.approve) {
       await prisma.catalogChangeRequest.update({
         where: { id: data.id },
-        data: { status: "REJECTED", evaluatedById: ctx.userId }
+        data: { status: "REJECTED", evaluatedById: ctx.userId },
       });
       revalidatePath("/catalogs/approvals");
       return { success: "Rejected." };
@@ -194,7 +339,7 @@ export const processCatalogApproval = createSafeAction({
 
     await prisma.catalogChangeRequest.update({
       where: { id: data.id },
-      data: { status: "APPROVED", evaluatedById: ctx.userId }
+      data: { status: "APPROVED", evaluatedById: ctx.userId },
     });
 
     await logAudit({
@@ -207,7 +352,7 @@ export const processCatalogApproval = createSafeAction({
     revalidatePath("/catalogs");
     revalidatePath("/catalogs/approvals");
     return { success: "Approved and applied." };
-  }
+  },
 });
 
 export const deleteLabTest = createSafeAction({
@@ -234,12 +379,12 @@ export const deleteLabTest = createSafeAction({
           targetId: data.id,
           requestedData: "{}",
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
       return { success: "Deletion request submitted." };
     }
-  }
+  },
 });
 
 export const toggleDrugAvailability = createSafeAction({
@@ -248,7 +393,7 @@ export const toggleDrugAvailability = createSafeAction({
   handler: async (data, ctx) => {
     const drug = await prisma.drug.update({
       where: { id: data.id },
-      data: { isOperational: data.isOperational }
+      data: { isOperational: data.isOperational },
     });
     await logAudit({
       actorId: ctx.userId,
@@ -260,7 +405,7 @@ export const toggleDrugAvailability = createSafeAction({
     revalidatePath("/pharmacy");
     revalidatePath("/catalogs");
     return { success: "Availability updated." };
-  }
+  },
 });
 
 export const bulkApproveCatalogRequests = createSafeAction({
@@ -287,7 +432,7 @@ export const bulkApproveCatalogRequests = createSafeAction({
 
         await prisma.catalogChangeRequest.update({
           where: { id },
-          data: { status: "APPROVED", evaluatedById: ctx.userId }
+          data: { status: "APPROVED", evaluatedById: ctx.userId },
         });
       } catch (e) {
         console.error("Failed bulk approve for ", id, e);
@@ -295,9 +440,8 @@ export const bulkApproveCatalogRequests = createSafeAction({
     }
     revalidatePath("/catalogs/approvals");
     return { success: "Bulk approved." };
-  }
+  },
 });
-
 
 export const updateLabTest = createSafeAction({
   schema: catalogUpdateSchema,
@@ -314,7 +458,7 @@ export const updateLabTest = createSafeAction({
           options: data.options,
           unit: data.unit,
           price: data.price,
-        }
+        },
       });
       await logAudit({
         actorId: ctx.userId,
@@ -334,11 +478,11 @@ export const updateLabTest = createSafeAction({
           targetId: data.id,
           requestedData: JSON.stringify(data),
           requestedById: ctx.userId,
-        }
+        },
       });
       revalidatePath("/catalogs");
       revalidatePath("/laboratory/catalog");
       return { success: "Approval request submitted." };
     }
-  }
+  },
 });

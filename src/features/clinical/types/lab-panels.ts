@@ -1,4 +1,4 @@
-export type LabPanelType = "STOOL" | "URINE" | "HEMATOLOGY";
+export type LabPanelType = "STOOL" | "URINE" | "HEMATOLOGY" | "GENERIC_JSON";
 
 export interface StoolPanelData {
   type: "STOOL";
@@ -93,7 +93,7 @@ export function getLabPanelType(testName: string): LabPanelType | null {
 export function parseLabFindings(findings: string | null | undefined): {
   isStructured: boolean;
   type: LabPanelType | null;
-  data: StructuredPanelData | null;
+  data: any | null;
   rawText: string;
 } {
   if (!findings) {
@@ -104,19 +104,88 @@ export function parseLabFindings(findings: string | null | undefined): {
   if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
     try {
       const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === "object" && parsed.type) {
-        if (parsed.type === "STOOL" || parsed.type === "URINE" || parsed.type === "HEMATOLOGY") {
+      if (parsed && typeof parsed === "object") {
+        const t = (parsed.type || "").toUpperCase();
+
+        // 1. Explicit or auto-detected STOOL panel
+        if (
+          t === "STOOL" ||
+          "consistence" in parsed ||
+          "ovaAndParasite" in parsed ||
+          "bloodGross" in parsed
+        ) {
           return {
             isStructured: true,
-            type: parsed.type as LabPanelType,
-            data: parsed as StructuredPanelData,
+            type: "STOOL",
+            data: { ...parsed, type: "STOOL" },
             rawText: parsed.remarks || "",
           };
         }
+
+        // 2. Explicit or auto-detected URINE panel
+        if (
+          t === "URINE" ||
+          "specificGravity" in parsed ||
+          "albuminQualitative" in parsed ||
+          "sugarQualitative" in parsed ||
+          "diaceticAcid" in parsed
+        ) {
+          return {
+            isStructured: true,
+            type: "URINE",
+            data: { ...parsed, type: "URINE" },
+            rawText: parsed.remarks || "",
+          };
+        }
+
+        // 3. Explicit or auto-detected HEMATOLOGY panel
+        if (
+          t === "HEMATOLOGY" ||
+          "wbc" in parsed ||
+          "hemoglobin" in parsed ||
+          "platelets" in parsed ||
+          "esr" in parsed ||
+          "neutrophils" in parsed
+        ) {
+          return {
+            isStructured: true,
+            type: "HEMATOLOGY",
+            data: { ...parsed, type: "HEMATOLOGY" },
+            rawText: parsed.remarks || "",
+          };
+        }
+
+        // 4. Any other structured JSON object - parse as GENERIC_JSON
+        return {
+          isStructured: true,
+          type: "GENERIC_JSON",
+          data: parsed,
+          rawText: parsed.remarks || parsed.comments || parsed.interpretation || "",
+        };
       }
     } catch {
       // Not valid JSON, fallback to raw text
     }
+  }
+
+  // Also check if string contains unescaped JSON object
+  if (trimmed.includes('{"') && trimmed.includes('"}')) {
+    try {
+      const start = trimmed.indexOf("{");
+      const end = trimmed.lastIndexOf("}");
+      if (start !== -1 && end > start) {
+        const jsonSlice = trimmed.substring(start, end + 1);
+        const parsed = JSON.parse(jsonSlice);
+        if (parsed && typeof parsed === "object") {
+          return {
+            isStructured: true,
+            type: "GENERIC_JSON",
+            data: parsed,
+            rawText: "",
+          };
+        }
+      }
+    } catch {}
   }
 
   return {
@@ -125,6 +194,72 @@ export function parseLabFindings(findings: string | null | undefined): {
     data: null,
     rawText: findings,
   };
+}
+
+export function formatLabSummary(findings: string | null | undefined): string {
+  if (!findings) return "No findings recorded.";
+  const p = parseLabFindings(findings);
+
+  if (p.isStructured && p.data) {
+    if (p.type === "STOOL") {
+      const d = p.data as any;
+      const parts = [
+        d.consistence ? `Consistence: ${d.consistence}` : "",
+        d.ovaAndParasite ? `O&P: ${d.ovaAndParasite}` : "No parasites",
+        d.bloodGross && d.bloodGross.toLowerCase() !== "negative" ? `Gross Blood: ${d.bloodGross}` : "",
+      ].filter(Boolean);
+      return parts.join(" • ") + (d.remarks ? ` (${d.remarks})` : "");
+    }
+    if (p.type === "URINE") {
+      const d = p.data as any;
+      const parts = [
+        d.reaction ? `Reaction: ${d.reaction}` : "",
+        d.albuminQualitative ? `Albumin: ${d.albuminQualitative}` : "",
+        d.sugarQualitative ? `Sugar: ${d.sugarQualitative}` : "",
+        d.microscopic ? `Microscopic: ${d.microscopic}` : "",
+      ].filter(Boolean);
+      return parts.join(" • ") + (d.remarks ? ` (${d.remarks})` : "");
+    }
+    if (p.type === "HEMATOLOGY") {
+      const d = p.data as any;
+      const parts = [
+        d.wbc ? `WBC: ${d.wbc}` : "",
+        d.hemoglobin ? `Hgb: ${d.hemoglobin}` : "",
+        d.platelets ? `Plt: ${d.platelets}` : "",
+        d.esr ? `ESR: ${d.esr}` : "",
+      ].filter(Boolean);
+      return parts.join(" • ") + (d.remarks ? ` (${d.remarks})` : "");
+    }
+    if (p.type === "GENERIC_JSON") {
+      const entries = Object.entries(p.data).filter(
+        ([k]) => k !== "type" && k !== "id" && k !== "requestId"
+      );
+      if (entries.length > 0) {
+        return entries
+          .map(([k, v]) => {
+            const label = k
+              .replace(/([A-Z])/g, " $1")
+              .replace(/_/g, " ")
+              .replace(/^./, (s) => s.toUpperCase());
+            return `${label}: ${v}`;
+          })
+          .join(" • ");
+      }
+    }
+  }
+
+  // Strip raw JSON wrapping if somehow rendered as text
+  if (findings.trim().startsWith("{") && findings.trim().endsWith("}")) {
+    try {
+      const obj = JSON.parse(findings.trim());
+      const entries = Object.entries(obj).filter(([k]) => k !== "type");
+      if (entries.length > 0) {
+        return entries.map(([k, v]) => `${k}: ${v}`).join(" • ");
+      }
+    } catch {}
+  }
+
+  return findings;
 }
 
 export function parseHematologySelectedSubTests(testName?: string) {

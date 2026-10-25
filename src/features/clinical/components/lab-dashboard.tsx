@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2, FlaskConical, Droplet, Activity, TestTube, CheckCircle2, AlertTriangle, Sparkles } from "lucide-react";
+import { Loader2, FlaskConical, Droplet, Activity, TestTube, CheckCircle2, AlertTriangle, Sparkles, Search } from "lucide-react";
 import { enterLabResult } from "../actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -20,8 +20,18 @@ export function LabDashboard({
   referralDestinations?: string[];
   clinicNames?: { clinicName?: string; clinicNameAmharic?: string; clinicSubName?: string; clinicSubNameAmharic?: string };
 }) {
+  const [searchQuery, setSearchQuery] = useState("");
   const groupedRequests = groupPendingLabRequests(requests);
   const urgentCount = groupedRequests.filter(r => r.isUrgent).length;
+
+  const queryLower = searchQuery.toLowerCase().trim();
+  const filteredRequests = groupedRequests.filter((r) => {
+    if (!queryLower) return true;
+    const patientName = `${r.patient.firstName} ${r.patient.lastName}`.toLowerCase();
+    const idStr = `${r.patient.militaryId || ""} ${r.patient.employeeId || ""}`.toLowerCase();
+    const testName = (r.testName || "").toLowerCase();
+    return patientName.includes(queryLower) || idStr.includes(queryLower) || testName.includes(queryLower);
+  });
 
   return (
     <div className="space-y-6">
@@ -42,22 +52,62 @@ export function LabDashboard({
       </div>
 
       <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-hidden">
-        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex justify-between items-center">
-          <h3 className="font-bold text-slate-800 dark:text-slate-200">Pending Tests ({groupedRequests.length})</h3>
-          <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 text-xs font-bold px-2.5 py-1 rounded-full">
-            {groupedRequests.length} in queue
-          </span>
+        <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800/60 bg-slate-50/50 dark:bg-slate-900/30 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-slate-800 dark:text-slate-200">
+              Pending Tests ({filteredRequests.length})
+            </h3>
+            <span className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 text-xs font-bold px-2.5 py-1 rounded-full">
+              {groupedRequests.length} in queue
+            </span>
+          </div>
+
+          {/* Real-time search bar */}
+          <div className="relative w-full sm:w-72">
+            <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search tests by patient, MRN, or test..."
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold w-4 h-4 flex items-center justify-center rounded"
+              >
+                ×
+              </button>
+            )}
+          </div>
         </div>
         
         <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {groupedRequests.length === 0 ? (
+          {filteredRequests.length === 0 ? (
             <div className="p-12 text-center text-slate-500 dark:text-slate-400 italic flex flex-col items-center justify-center">
               <CheckCircle2 className="w-10 h-10 text-slate-300 dark:text-slate-600 mb-2" />
-              <p className="font-medium">No pending lab requests.</p>
-              <p className="text-xs text-slate-400 mt-0.5">All patient diagnostic orders have been completed.</p>
+              {searchQuery ? (
+                <>
+                  <p className="font-medium">No pending requests match &ldquo;{searchQuery}&rdquo;</p>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 underline font-medium mt-1 hover:text-indigo-700 not-italic"
+                  >
+                    Clear search filter
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="font-medium">No pending lab requests.</p>
+                  <p className="text-xs text-slate-400 mt-0.5">All patient diagnostic orders have been completed.</p>
+                </>
+              )}
             </div>
           ) : (
-            groupedRequests.map(group => (
+            filteredRequests.map(group => (
               <LabRequestRow 
                 key={group.id} 
                 groupedItem={group} 

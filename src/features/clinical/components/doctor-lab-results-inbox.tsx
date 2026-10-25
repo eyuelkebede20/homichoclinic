@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ChevronRight, ChevronDown, FlaskConical, Droplet, Activity, TestTube, RotateCcw, Clock, CheckCheck } from "lucide-react";
+import { CheckCircle2, ChevronRight, ChevronDown, FlaskConical, Droplet, Activity, TestTube, RotateCcw, Clock, CheckCheck, Search } from "lucide-react";
 import { dismissLabResult, toggleLabResultReadStatus } from "../actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { parseLabFindings, getLabPanelType } from "../types/lab-panels";
+import { parseLabFindings, getLabPanelType, formatLabSummary } from "../types/lab-panels";
 import { StructuredLabResultView } from "./structured-lab-result-view";
 import { FinalDiagnosisModal } from "./final-diagnosis-modal";
 import { toast } from "sonner";
@@ -30,6 +30,7 @@ export function DoctorLabResultsInbox({
   const [loading, setLoading] = useState<string | null>(null);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [filter, setFilter] = useState<"unread" | "reviewed" | "all">("unread");
+  const [searchQuery, setSearchQuery] = useState("");
   const [diagnosingResult, setDiagnosingResult] = useState<LabResultInboxItem | null>(null);
   const router = useRouter();
 
@@ -38,12 +39,21 @@ export function DoctorLabResultsInbox({
   const unreadResults = results.filter((r) => !r.isReadByDoctor);
   const reviewedResults = results.filter((r) => r.isReadByDoctor);
 
-  const displayedResults =
+  const tabFilteredResults =
     filter === "unread"
       ? unreadResults
       : filter === "reviewed"
       ? reviewedResults
       : results;
+
+  const queryLower = searchQuery.toLowerCase().trim();
+  const displayedResults = tabFilteredResults.filter((r) => {
+    if (!queryLower) return true;
+    const patientName = `${r.request.patient.firstName} ${r.request.patient.lastName}`.toLowerCase();
+    const testName = (r.request.test.name || "").toLowerCase();
+    const findingsStr = (r.findings || "").toLowerCase();
+    return patientName.includes(queryLower) || testName.includes(queryLower) || findingsStr.includes(queryLower);
+  });
 
   async function handleQuickMarkReviewed(id: string) {
     setLoading(id);
@@ -78,7 +88,7 @@ export function DoctorLabResultsInbox({
 
   return (
     <div className="bg-white dark:bg-slate-900/80 rounded-2xl shadow-sm border border-indigo-200/80 dark:border-indigo-900/60 overflow-hidden mb-8 transition-all">
-      <div className="px-6 py-4 border-b border-indigo-100 dark:border-indigo-950 flex flex-wrap justify-between items-center gap-3 bg-indigo-50/70 dark:bg-indigo-950/40">
+      <div className="px-6 py-4 border-b border-indigo-100 dark:border-indigo-950 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-indigo-50/70 dark:bg-indigo-950/40">
         <div className="flex items-center gap-2.5">
           <div className="p-1.5 rounded-lg bg-indigo-600 text-white shadow-xs">
             <FlaskConical className="w-4 h-4" />
@@ -95,47 +105,83 @@ export function DoctorLabResultsInbox({
           </div>
         </div>
 
-        {/* Tab Filters: Unread vs Reviewed vs All */}
-        <div className="flex items-center gap-1.5 bg-white/80 dark:bg-slate-800/80 p-1 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-xs">
-          <button
-            type="button"
-            onClick={() => setFilter("unread")}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors ${
-              filter === "unread"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
-          >
-            New ({unreadResults.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("reviewed")}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors ${
-              filter === "reviewed"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
-          >
-            Reviewed ({reviewedResults.length})
-          </button>
-          <button
-            type="button"
-            onClick={() => setFilter("all")}
-            className={`px-3 py-1 rounded-lg font-bold transition-colors ${
-              filter === "all"
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
-            }`}
-          >
-            All ({results.length})
-          </button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          {/* Real-time Search Box */}
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search patient, test, findings..."
+              className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-900 border border-indigo-200/80 dark:border-indigo-800 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 shadow-2xs"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold w-4 h-4 flex items-center justify-center rounded"
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {/* Tab Filters: Unread vs Reviewed vs All */}
+          <div className="flex items-center gap-1 bg-white/80 dark:bg-slate-800/80 p-1 rounded-xl border border-indigo-100 dark:border-indigo-900/40 text-xs">
+            <button
+              type="button"
+              onClick={() => setFilter("unread")}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors ${
+                filter === "unread"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              New ({unreadResults.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("reviewed")}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors ${
+                filter === "reviewed"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              Reviewed ({reviewedResults.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`px-3 py-1 rounded-lg font-bold transition-colors ${
+                filter === "all"
+                  ? "bg-indigo-600 text-white shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200"
+              }`}
+            >
+              All ({results.length})
+            </button>
+          </div>
         </div>
       </div>
 
       {displayedResults.length === 0 ? (
         <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-sm">
-          {filter === "unread" ? (
+          {searchQuery ? (
+            <div className="space-y-1">
+              <p className="font-semibold text-slate-700 dark:text-slate-300">
+                No laboratory results match &ldquo;{searchQuery}&rdquo;
+              </p>
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                className="text-xs text-indigo-600 dark:text-indigo-400 underline font-medium hover:text-indigo-700"
+              >
+                Clear search query
+              </button>
+            </div>
+          ) : filter === "unread" ? (
             <div className="space-y-1">
               <CheckCheck className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
               <p className="font-semibold text-slate-700 dark:text-slate-300">All lab results have been reviewed!</p>
@@ -209,24 +255,7 @@ export function DoctorLabResultsInbox({
                     {!isExpanded && (
                       <div className="text-xs text-slate-600 dark:text-slate-400 pl-7">
                         <span className="font-semibold text-slate-700 dark:text-slate-300">Summary: </span>
-                        {(() => {
-                          const p = parseLabFindings(res.findings);
-                          if (p.isStructured && p.data) {
-                            if (p.type === "STOOL") {
-                              const d = p.data as any;
-                              return `${d.consistence || "Formed"} • ${d.ovaAndParasite || "No parasites"}${d.remarks ? ` (${d.remarks})` : ""}`;
-                            }
-                            if (p.type === "URINE") {
-                              const d = p.data as any;
-                              return `${d.reaction || "Acidic"} • Microscopic: ${d.microscopic || "Normal"}${d.remarks ? ` (${d.remarks})` : ""}`;
-                            }
-                            if (p.type === "HEMATOLOGY") {
-                              const d = p.data as any;
-                              return `WBC: ${d.wbc || "N/A"}, Hgb: ${d.hemoglobin || "N/A"}, Plt: ${d.platelets || "N/A"}${d.remarks ? ` (${d.remarks})` : ""}`;
-                            }
-                          }
-                          return res.findings || "No findings recorded.";
-                        })()}
+                        <span>{formatLabSummary(res.findings)}</span>
                       </div>
                     )}
                   </div>

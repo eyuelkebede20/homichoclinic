@@ -33,6 +33,22 @@ export function EditableDrugRow({ drug }: {
   const [unit, setUnit] = useState(drug.unit || "");
   const [priceStr, setPriceStr] = useState((drug.price / 100).toFixed(2));
 
+  const batches = drug.batches && drug.batches.length > 0 ? drug.batches : [];
+  const totalBatches = batches.reduce((sum, b) => sum + b.quantity, 0);
+  const totalStock = batches.length > 0 ? totalBatches : (drug.amountInStock ?? drug.initialStock ?? 0);
+  const isPendingHamleUpdate = drug.amountInStock == null && (drug.initialStock ?? 0) > 0;
+  const latestBatch = batches[0]; // Ordered by date desc
+  const previousBatches = batches.slice(1);
+
+  const [batchNumber, setBatchNumber] = useState(latestBatch?.batchNumber || "");
+  const [expiryDate, setExpiryDate] = useState(
+    latestBatch?.expiryDate ? new Date(latestBatch.expiryDate).toISOString().split("T")[0] : ""
+  );
+  const [dateAddedToStock, setDateAddedToStock] = useState(
+    latestBatch?.dateAddedToStock ? new Date(latestBatch.dateAddedToStock).toISOString().split("T")[0] : ""
+  );
+  const [docNo, setDocNo] = useState(latestBatch?.docNo || "");
+
   async function handleSave() {
     setLoading(true);
     const res = await updateDrug({
@@ -41,7 +57,11 @@ export function EditableDrugRow({ drug }: {
       description: description || undefined,
       category: category || undefined,
       unit: unit || undefined,
-      price: Math.round(parseFloat(priceStr) * 100)
+      price: Math.round(parseFloat(priceStr) * 100),
+      batchNumber: batchNumber || undefined,
+      expiryDate: expiryDate || undefined,
+      dateAddedToStock: dateAddedToStock || undefined,
+      docNo: docNo || undefined,
     });
     setLoading(false);
     if (res?.error) toast.error(res.error);
@@ -78,13 +98,6 @@ export function EditableDrugRow({ drug }: {
     }
   }
 
-  const batches = drug.batches && drug.batches.length > 0 ? drug.batches : [];
-  const totalBatches = batches.reduce((sum, b) => sum + b.quantity, 0);
-  const totalStock = batches.length > 0 ? totalBatches : (drug.amountInStock ?? drug.initialStock ?? 0);
-  const isPendingHamleUpdate = drug.amountInStock == null && (drug.initialStock ?? 0) > 0;
-  const latestBatch = batches[0]; // Assuming ordered by date desc
-  const previousBatches = batches.slice(1);
-
   const formatDate = (dateInput: any) => {
     if (!dateInput) return "N/A";
     return formatToEthiopianDate(dateInput, { format: "full" });
@@ -119,6 +132,31 @@ export function EditableDrugRow({ drug }: {
                 <input type="number" step="0.01" value={priceStr} onChange={e => setPriceStr(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
               </div>
             </div>
+
+            <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+              <p className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Active Batch & Details (የባች እና የሰነድ መረጃ)
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Batch Number</label>
+                  <input value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="e.g. BATCH-001" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm font-mono" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Expiry Date (YYYY-MM-DD)</label>
+                  <input value={expiryDate} onChange={e => setExpiryDate(e.target.value)} placeholder="YYYY-MM-DD" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Date Added (YYYY-MM-DD)</label>
+                  <input value={dateAddedToStock} onChange={e => setDateAddedToStock(e.target.value)} placeholder="YYYY-MM-DD" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Doc / Invoice No</label>
+                  <input value={docNo} onChange={e => setDocNo(e.target.value)} placeholder="e.g. INV-1002" className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                </div>
+              </div>
+            </div>
+
             <div className="flex justify-end gap-2 mt-2">
               <button onClick={() => setIsEditing(false)} disabled={loading} className="px-3 py-1 text-xs border border-slate-300 rounded text-slate-600 hover:bg-slate-100 flex items-center">
                 <X className="w-3 h-3 mr-1" /> Cancel

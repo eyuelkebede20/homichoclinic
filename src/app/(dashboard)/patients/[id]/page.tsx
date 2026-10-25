@@ -16,6 +16,7 @@ import { MedicalRecordItem } from "@/features/patients/components/medical-record
 import { PrescriptionHistoryItem } from "@/features/patients/components/prescription-history-item";
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
 import { StructuredLabResultView } from "@/features/clinical/components/structured-lab-result-view";
+import { PatientLabResultsCard } from "@/features/clinical/components/patient-lab-results-card";
 import { PendingApprovalBanner } from "@/features/patients/components/pending-approval-banner";
 import { autoResetExpiredOpdVisits } from "@/features/clinical/actions";
 
@@ -393,75 +394,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   </div>
 )}
 {canReadHistory && (
-          <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Laboratory Results</h2>
-              <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                {patient.labRequests.length} Test{patient.labRequests.length === 1 ? "" : "s"}
-              </span>
-            </div>
-
-            {patient.labRequests.length === 0 ? (
-              <p className="text-sm text-slate-500 dark:text-slate-400 py-4 text-center">No lab requests found for this patient.</p>
-            ) : (
-              <div className="grid grid-cols-1 gap-5">
-                {patient.labRequests.map((req) => (
-                  <div key={req.id} className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/60 p-4 space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                          {req.test.name}
-                        </span>
-                        <span className="text-xs text-slate-400">
-                          • {formatToEthiopianDate(req.createdAt)}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {req.result && (
-                          req.result.isReadByDoctor ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                              ✓ Reviewed by Doctor
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
-                              ● Pending Doctor Review
-                            </span>
-                          )
-                        )}
-                        {req.status === "completed" ? (
-                          <span className="inline-flex items-center rounded-full bg-green-100 dark:bg-green-900/30 px-2.5 py-0.5 text-xs font-bold text-green-800 dark:text-green-400">
-                            Completed
-                          </span>
-                        ) : req.status === "cancelled" ? (
-                          <span className="inline-flex items-center rounded-full bg-red-100 dark:bg-red-900/30 px-2.5 py-0.5 text-xs font-medium text-red-800 dark:text-red-400">
-                            Cancelled
-                          </span>
-                        ) : req.status === "urgent" ? (
-                          <span className="inline-flex items-center rounded-full bg-red-600 text-white px-2.5 py-0.5 text-xs font-extrabold shadow-sm animate-pulse">
-                            ⚡ URGENT
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full bg-yellow-100 dark:bg-yellow-900/30 px-2.5 py-0.5 text-xs font-medium text-yellow-800 dark:text-yellow-400">
-                            Pending
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="pt-1">
-                      {req.result ? (
-                        <StructuredLabResultView findings={req.result.findings} testName={req.test.name} />
-                      ) : (
-                        <div className="p-4 rounded-lg bg-amber-50/50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-xs text-amber-800 dark:text-amber-300 italic">
-                          Awaiting laboratory analysis and technician input...
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          <PatientLabResultsCard labRequests={patient.labRequests} />
 )}
         </div>
 

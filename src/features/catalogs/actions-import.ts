@@ -5,6 +5,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 
 const importCatalogSchema = z.object({
   csvText: z.string().min(1, "CSV text cannot be empty"),
@@ -13,6 +14,49 @@ const importCatalogSchema = z.object({
 
 function normalizeKey(str: string): string {
   return str.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+function parseFlexibleDate(str: string | null | undefined): Date | null {
+  if (!str || str.trim() === "") return null;
+  const trimmed = str.trim();
+
+  // 1. Check Excel numeric serial date (e.g. 40000 - 60000)
+  if (/^\d{5}(\.\d+)?$/.test(trimmed)) {
+    const serial = parseFloat(trimmed);
+    const utcDays = Math.floor(serial - 25569);
+    const date = new Date(utcDays * 86400 * 1000);
+    if (!isNaN(date.getTime())) return date;
+  }
+
+  // 2. Check if explicitly or likely Ethiopian date (e.g. "2017-06-12", "12/06/2017 E.C.")
+  const isExplicitEth = trimmed.includes("ዓ.ም") || trimmed.includes("E.C") || trimmed.includes("EC");
+  const parsedEth = parseEthiopianDateString(trimmed);
+  if (parsedEth) {
+    if (isExplicitEth || (parsedEth.year >= 2010 && parsedEth.year <= 2025)) {
+      try {
+        const gDate = ethiopianToGregorian(parsedEth.year, parsedEth.month, parsedEth.day);
+        if (!isNaN(gDate.getTime())) return gDate;
+      } catch {}
+    }
+  }
+
+  // 3. DD/MM/YYYY or DD-MM-YYYY
+  const dmyMatch = trimmed.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+  if (dmyMatch) {
+    const p1 = parseInt(dmyMatch[1], 10);
+    const p2 = parseInt(dmyMatch[2], 10);
+    const year = parseInt(dmyMatch[3], 10);
+    const day = p1;
+    const month = p2 - 1;
+    const d = new Date(Date.UTC(year, month, day));
+    if (!isNaN(d.getTime())) return d;
+  }
+
+  // 4. Standard Date parsing (YYYY-MM-DD, ISO, etc.)
+  const d = new Date(trimmed);
+  if (!isNaN(d.getTime())) return d;
+
+  return null;
 }
 
 function parseCSV(text: string): Record<string, string>[] {
@@ -214,7 +258,6 @@ export const importCatalogCSV = createSafeAction({
       }
 
       // If initial stock and current stock were not explicitly named, but a generic stock column is present:
-      // Map generic stock to initialStock!
       if (parsedInitialStock === null && parsedCurrentStock === null && genericStockRaw !== "") {
         const parsed = parseInt(genericStockRaw, 10);
         if (!isNaN(parsed)) {
@@ -235,8 +278,7 @@ export const importCatalogCSV = createSafeAction({
       const expiryDateStr =
         getField(row, ["expirydate", "expiry", "expdate", "exp", "expirationdate"]) ||
         null;
-      const expiryDate = expiryDateStr ? new Date(expiryDateStr) : new Date("2099-12-31");
-      const validExpiry = isNaN(expiryDate.getTime()) ? new Date("2099-12-31") : expiryDate;
+      const validExpiry = parseFlexibleDate(expiryDateStr) || new Date("2099-12-31");
 
       const dateAddedToStockStr =
         getField(row, [
@@ -246,12 +288,10 @@ export const importCatalogCSV = createSafeAction({
           "receiptdate",
           "date",
         ]) || null;
-      const dateAddedToStock = dateAddedToStockStr ? new Date(dateAddedToStockStr) : null;
-      const validDateAdded =
-        dateAddedToStock && !isNaN(dateAddedToStock.getTime()) ? dateAddedToStock : null;
+      const validDateAdded = parseFlexibleDate(dateAddedToStockStr) || new Date();
 
       const docNo =
-        getField(row, ["docno", "documentno", "receiptno", "receipt", "invoiceno", "invoice", "refno"]) ||
+        getField(row, ["docno", "documentno", "receiptno", "receipt", "invoiceno", "invoice", "refno", "voucher", "siv"]) ||
         null;
 
       if (data.type === "DRUG") {
@@ -326,52 +366,56 @@ export const importCatalogCSV = createSafeAction({
             createdCount++;
           }
 
-          // Synchronize physical in-stock batches with effective stock
-          // If there is an initial input, use it as primary stock available (not out of stock!)
+          // Synchronize physical in-stock batches with effective stock and batch metadata
           const effectiveStock = parsedCurrentStock ?? parsedInitialStock;
-          if (effectiveStock !== null) {
-            if (effectiveStock === 0) {
-              await prisma.stockBatch.updateMany({
-                where: { drugId: drug.id },
-                data: { quantity: 0 },
+          const hasBatchDetails = Boolean(batchNumber || expiryDateStr || dateAddedToStockStr || docNo);
+          const hasStockDetails = effectiveStock !== null;
+
+          if (hasStockDetails || hasBatchDetails) {
+            const batchQty = effectiveStock !== null ? effectiveStock : (existingDrug ? (existingDrug.amountInStock ?? existingDrug.initialStock ?? 0) : 0);
+            const bNum = batchNumber ? batchNumber.trim() : `BATCH-${new Date().getFullYear()}`;
+
+            const existingBatches = await prisma.stockBatch.findMany({
+              where: {
+                drugId: drug.id,
+                ...(batchNumber ? { batchNumber: batchNumber.trim() } : {}),
+              },
+              orderBy: [{ dateAddedToStock: "desc" }, { createdAt: "desc" }],
+            });
+
+            if (existingBatches.length > 0) {
+              await prisma.stockBatch.update({
+                where: { id: existingBatches[0].id },
+                data: {
+                  quantity: batchQty,
+                  expiryDate: validExpiry,
+                  dateAddedToStock: validDateAdded,
+                  ...(docNo ? { docNo: docNo.trim() } : {}),
+                },
               });
             } else {
-              const bNum = batchNumber || `HAMLE-${new Date().getFullYear()}`;
-              const existingBatches = await prisma.stockBatch.findMany({
-                where: { drugId: drug.id, ...(batchNumber ? { batchNumber } : {}) },
-                orderBy: { createdAt: "desc" },
+              await prisma.stockBatch.create({
+                data: {
+                  drugId: drug.id,
+                  batchNumber: bNum,
+                  expiryDate: validExpiry,
+                  quantity: batchQty,
+                  cost: priceCents || 0,
+                  dateAddedToStock: validDateAdded,
+                  docNo: docNo ? docNo.trim() : "IMPORT",
+                },
               });
+            }
 
-              if (existingBatches.length > 0) {
-                await prisma.stockBatch.update({
-                  where: { id: existingBatches[0].id },
-                  data: {
-                    quantity: effectiveStock,
-                    expiryDate: validExpiry,
-                    dateAddedToStock: validDateAdded,
-                    docNo: docNo || "HAMLE-BASELINE-IMPORT",
-                  },
-                });
-                if (existingBatches.length > 1) {
-                  const olderBatchIds = existingBatches.slice(1).map((b) => b.id);
-                  await prisma.stockBatch.updateMany({
-                    where: { id: { in: olderBatchIds } },
-                    data: { quantity: 0 },
-                  });
-                }
-              } else {
-                await prisma.stockBatch.create({
-                  data: {
-                    drugId: drug.id,
-                    batchNumber: bNum,
-                    expiryDate: validExpiry,
-                    quantity: effectiveStock,
-                    cost: priceCents || 0,
-                    dateAddedToStock: validDateAdded || new Date(),
-                    docNo: docNo || "HAMLE-BASELINE-IMPORT",
-                  },
-                });
-              }
+            // Sync drug stock
+            if (batchQty > 0 || effectiveStock !== null) {
+              await prisma.drug.update({
+                where: { id: drug.id },
+                data: {
+                  amountInStock: batchQty,
+                  initialStock: drug.initialStock ?? batchQty,
+                },
+              });
             }
           }
 

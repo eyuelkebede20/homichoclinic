@@ -6,25 +6,47 @@ import { FlaskConical, Droplet, Activity, CheckCircle2, AlertCircle, FileText } 
 export function StructuredLabResultView({ findings, testName }: { findings: string | null | undefined; testName?: string }) {
   const parsed = parseLabFindings(findings);
 
-  if (!parsed.isStructured || !parsed.data) {
-    return (
-      <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-1.5">
-          <span>{testName ? `${testName} - Diagnostic Findings` : "General Laboratory Findings"}</span>
-        </div>
-        <p className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans font-medium">
-          {parsed.rawText || <span className="text-slate-400 italic">No findings recorded.</span>}
-        </p>
-      </div>
-    );
-  }
-
   // Helper to check for abnormal keywords
   const isAbnormal = (val?: string) => {
     if (!val) return false;
     const v = val.toLowerCase();
     return v.includes("positive") || v.includes("present") || v.includes("many") || v.includes("gross") || v.includes("bloody") || v.includes("+++") || v.includes("tntc") || v.includes("elevated");
   };
+
+  const formatKeyLabel = (key: string) => {
+    return key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/[_-]/g, " ")
+      .replace(/^./, (s) => s.toUpperCase())
+      .trim();
+  };
+
+  if (!parsed.isStructured || !parsed.data) {
+    let cleanText = parsed.rawText || "";
+    // If cleanText looks like JSON (e.g. starts with { or [), format it safely
+    if (cleanText.trim().startsWith("{") || cleanText.trim().startsWith("[")) {
+      try {
+        const obj = JSON.parse(cleanText.trim());
+        if (typeof obj === "object" && obj !== null) {
+          const parts = Object.entries(obj)
+            .filter(([k]) => !["type", "id", "requestId"].includes(k))
+            .map(([k, v]) => `${formatKeyLabel(k)}: ${typeof v === "object" ? JSON.stringify(v) : v}`);
+          cleanText = parts.join(" • ");
+        }
+      } catch {}
+    }
+
+    return (
+      <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+          <span>{testName ? `${testName} - Diagnostic Findings` : "General Laboratory Findings"}</span>
+        </div>
+        <p className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans font-medium">
+          {cleanText || <span className="text-slate-400 italic">No findings recorded.</span>}
+        </p>
+      </div>
+    );
+  }
 
   // 1. STOOL EXAMINATION
   if (parsed.type === "STOOL") {
@@ -407,5 +429,98 @@ export function StructuredLabResultView({ findings, testName }: { findings: stri
     );
   }
 
-  return null;
+  // 4. GENERIC STRUCTURED / OTHER JSON TEST RESULTS
+  if (parsed.type === "GENERIC_JSON" || (parsed.isStructured && parsed.data)) {
+    const rawObj = (parsed.data || {}) as Record<string, any>;
+    const entries = Object.entries(rawObj).filter(
+      ([k]) => !["type", "id", "requestId", "patientId", "createdAt", "updatedAt"].includes(k)
+    );
+
+    const remarksEntry = entries.find(([k]) =>
+      ["remarks", "notes", "comment", "comments", "interpretation"].includes(k.toLowerCase())
+    );
+    const metricEntries = entries.filter(
+      ([k]) => !["remarks", "notes", "comment", "comments", "interpretation"].includes(k.toLowerCase())
+    );
+
+    return (
+      <div className="bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-200/80 dark:border-indigo-800/80 rounded-2xl p-4 sm:p-5 space-y-4 shadow-sm text-xs transition-all print:border-indigo-700 print:bg-white">
+        {/* Header Badge */}
+        <div className="flex items-center justify-between border-b border-indigo-200/70 dark:border-indigo-800/60 pb-3">
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 shadow-sm">
+              <FlaskConical className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="font-bold text-indigo-950 dark:text-indigo-100 text-sm tracking-tight">
+                {testName || "Laboratory Diagnostic Findings"}
+              </h4>
+              <p className="text-[11px] text-indigo-700/80 dark:text-indigo-400">
+                Diagnostic Analysis & Qualitative/Quantitative Findings
+              </p>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300 text-[10px] font-extrabold tracking-wider uppercase border border-indigo-300 dark:border-indigo-700">
+            COMPLETED
+          </span>
+        </div>
+
+        {/* Dynamic Metric Grid */}
+        {metricEntries.length > 0 ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+            {metricEntries.map(([key, val]) => {
+              const strVal = typeof val === "object" ? JSON.stringify(val) : String(val ?? "N/A");
+              const abnormal = isAbnormal(strVal);
+              return (
+                <div
+                  key={key}
+                  className={`p-3 rounded-xl border shadow-2xs transition-all ${
+                    abnormal
+                      ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200"
+                      : "bg-white dark:bg-slate-900/90 border-slate-200/80 dark:border-slate-800"
+                  }`}
+                >
+                  <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-1">
+                    {formatKeyLabel(key)}
+                  </span>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <strong className={`text-xs font-bold block ${abnormal ? "text-amber-900 dark:text-amber-200 font-mono" : "text-slate-800 dark:text-slate-100"}`}>
+                      {strVal}
+                    </strong>
+                    {abnormal && <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-slate-600 dark:text-slate-300">
+            {parsed.rawText || "Completed diagnostic investigation."}
+          </p>
+        )}
+
+        {/* Remarks / Clinical Notes */}
+        {remarksEntry && remarksEntry[1] && (
+          <div className="text-xs text-slate-600 dark:text-slate-300 bg-white/80 dark:bg-slate-900/80 p-3 rounded-xl border border-indigo-200/70 dark:border-indigo-800/50">
+            <span className="font-bold text-slate-700 dark:text-slate-200">
+              {formatKeyLabel(remarksEntry[0])}:{" "}
+            </span>
+            {String(remarksEntry[1])}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Fallback view for any remaining unhandled format
+  return (
+    <div className="bg-slate-50/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-xl p-3.5 space-y-2">
+      <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-200 dark:border-slate-800 pb-1.5">
+        <span>{testName ? `${testName} - Diagnostic Findings` : "General Laboratory Findings"}</span>
+      </div>
+      <p className="text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-sans font-medium">
+        {parsed.rawText || <span className="text-slate-400 italic">No findings recorded.</span>}
+      </p>
+    </div>
+  );
 }
