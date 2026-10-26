@@ -5,6 +5,7 @@ export type ClinicDisease = {
   amharic?: string;
   code?: string;
   isCommon?: boolean;
+  recommendedMedicines?: string;
 };
 
 export const DEFAULT_CLINIC_DISEASES: ClinicDisease[] = [
@@ -280,6 +281,110 @@ export const DEFAULT_CLINIC_DISEASES: ClinicDisease[] = [
   { id: "dis-219", name: "Post-Operative Wound Follow-up", amharic: "ከቀዶ ጥገና በኋላ ክትትል", category: "General", code: "Z48.8" },
   { id: "dis-220", name: "Vaccination / Immunization Reaction", amharic: "የክትባት ተዛማጅ ምላሽ", category: "General", code: "T88.1" }
 ];
+
+// Helper to suggest standard first-line medications for a disease based on national clinical guidelines
+export function getSuggestedMedicinesForDisease(diseaseName: string, category?: string): string {
+  const n = (diseaseName || "").toLowerCase();
+  const cat = (category || "").toLowerCase();
+
+  if (n.includes("urti") || n.includes("upper respiratory")) {
+    return "Amoxicillin 500mg (1 cap TID x 5d), Paracetamol 500mg (1 tab TID PRN), Cetirizine 10mg (1 tab daily)";
+  }
+  if (n.includes("tonsil") || n.includes("pharyngitis")) {
+    return "Amoxicillin-Clavulanate 625mg (1 tab BID x 7d), Paracetamol 500mg (1 tab TID x 3d)";
+  }
+  if (n.includes("pneumonia") || n.includes("cap")) {
+    return "Amoxicillin 500mg (1 cap TID x 7d), Azithromycin 500mg (1 tab daily x 3d), Paracetamol 500mg PRN";
+  }
+  if (n.includes("asthma")) {
+    return "Salbutamol Inhaler 100mcg (2 puffs QID PRN), Prednisolone 20mg (1 tab daily x 5d)";
+  }
+  if (n.includes("bronchitis")) {
+    return "Amoxicillin 500mg (1 cap TID x 5d), Dextromethorphan Syrup (10ml TID x 5d), Paracetamol 500mg PRN";
+  }
+  if (n.includes("gastroenteritis") || n.includes("age") || n.includes("diarrhea")) {
+    return "ORS (Oral Rehydration Salts) 1 sachet in 1L water PO, Zinc Sulfate 20mg (1 tab daily x 10d), Ciprofloxacin 500mg (1 tab BID x 5d)";
+  }
+  if (n.includes("typhoid") || n.includes("enteric fever")) {
+    return "Ciprofloxacin 500mg (1 tab BID x 7-10d), Paracetamol 500mg (1 tab TID PRN)";
+  }
+  if (n.includes("amoeba") || n.includes("dysentery")) {
+    return "Metronidazole 500mg (1 tab TID x 7d), ORS sachets";
+  }
+  if (n.includes("giardia")) {
+    return "Metronidazole 250mg (1 tab TID x 5d) / Tinidazole 2g single dose";
+  }
+  if (n.includes("peptic") || n.includes("pud") || n.includes("gastritis")) {
+    return "Omeprazole 20mg (1 cap daily before breakfast x 28d), Antacid Suspension (15ml TID PRN)";
+  }
+  if (n.includes("gerd") || n.includes("reflux")) {
+    return "Omeprazole 20mg (1 cap daily x 28d), Antacid Suspension (15ml PRN)";
+  }
+  if (n.includes("helminth") || n.includes("worm") || n.includes("ascaris")) {
+    return "Albendazole 400mg (1 tab stat single dose), Mebendazole 100mg BID x 3d";
+  }
+  if (n.includes("hemorrhoid") || n.includes("piles")) {
+    return "Anusol / Hydrocortisone suppository (1 PR BID x 7d), Bisacodyl 5mg (1 tab at night)";
+  }
+  if (n.includes("malaria")) {
+    return "Artemether-Lumefantrine 20/120mg (4 tabs BID x 3d), Paracetamol 500mg (1 tab TID PRN)";
+  }
+  if (n.includes("typhus") || n.includes("relapsing")) {
+    return "Doxycycline 100mg (1 cap BID x 7d), Paracetamol 500mg (1 tab TID PRN)";
+  }
+  if (n.includes("tb") || n.includes("tuberculosis")) {
+    return "RHZE fixed-dose combination anti-TB regimen daily, Pyridoxine (B6) 25mg daily";
+  }
+  if (n.includes("hypertens") || n.includes("blood pressure")) {
+    return "Amlodipine 5mg (1 tab daily) or Enalapril 5mg (1 tab daily), Hydrochlorothiazide 25mg daily";
+  }
+  if (n.includes("heart failure")) {
+    return "Furosemide 40mg (1 tab daily in AM), Enalapril 5mg (1 tab daily), Spironolactone 25mg daily";
+  }
+  if (n.includes("diabet")) {
+    return "Metformin 500mg (1 tab BID with meals), Glibenclamide 5mg (1 tab daily)";
+  }
+  if (n.includes("uti") || n.includes("urinary tract")) {
+    return "Ciprofloxacin 500mg (1 tab BID x 5d), Nitrofurantoin 100mg (1 cap BID x 5d)";
+  }
+  if (n.includes("back pain") || n.includes("strain") || n.includes("arthritis") || n.includes("musculoskel")) {
+    return "Ibuprofen 400mg (1 tab TID after meals x 5d), Paracetamol 500mg (1 tab TID PRN)";
+  }
+  if (n.includes("dermatitis") || n.includes("eczema") || n.includes("allergy")) {
+    return "Hydrocortisone 1% cream (topical BID x 7d), Cetirizine 10mg (1 tab daily x 7d)";
+  }
+  if (n.includes("scabies")) {
+    return "Permethrin 5% cream / Benzyl Benzoate 25% lotion topical, Cetirizine 10mg daily";
+  }
+  if (n.includes("tinea") || n.includes("fungal")) {
+    return "Clotrimazole 1% cream (topical BID x 14d), Fluconazole 150mg weekly";
+  }
+  if (n.includes("conjunctivit") || n.includes("eye")) {
+    return "Chloramphenicol 0.5% eye drops (1-2 drops QID x 5d), Ciprofloxacin eye drops";
+  }
+  if (n.includes("otitis") || n.includes("ear")) {
+    return "Amoxicillin-Clavulanate 625mg (1 tab BID x 7d), Paracetamol 500mg TID";
+  }
+  if (n.includes("dental") || n.includes("caries") || n.includes("tooth")) {
+    return "Amoxicillin 500mg (1 cap TID x 5d), Ibuprofen 400mg (1 tab TID PRN)";
+  }
+  if (n.includes("wound") || n.includes("laceration") || n.includes("trauma") || n.includes("fracture") || n.includes("bite")) {
+    return "Diclofenac 50mg (1 tab BID x 3d), Amoxicillin 500mg (1 cap TID x 5d), Tetanus Toxoid booster";
+  }
+  if (cat === "respiratory") {
+    return "Amoxicillin 500mg (1 cap TID x 5d), Paracetamol 500mg PRN, Cough syrup 10ml TID";
+  }
+  if (cat === "gastrointestinal") {
+    return "Omeprazole 20mg (1 cap daily x 14d), Antacid 15ml TID PRN, ORS as needed";
+  }
+  if (cat === "cardiovascular") {
+    return "Amlodipine 5mg (1 tab daily), Enalapril 5mg (1 tab daily)";
+  }
+  if (cat === "infectious") {
+    return "Ciprofloxacin 500mg (1 tab BID x 5d), Paracetamol 500mg PRN";
+  }
+  return "Paracetamol 500mg (1-2 tabs TID PRN), Multivitamin 1 tab daily, Clinical follow-up";
+}
 
 // Top 15-20 Most Common Primary Care Diagnoses in Ethiopia for quick picking
 export const DEFAULT_MOST_PICKED_DISEASES: ClinicDisease[] = DEFAULT_CLINIC_DISEASES.filter(

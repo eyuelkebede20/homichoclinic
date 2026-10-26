@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   UploadCloud,
   FileSpreadsheet,
@@ -15,7 +15,9 @@ import {
   BookOpen,
   Tag,
   Stethoscope,
-  Filter
+  Filter,
+  Pill,
+  FileDown
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
@@ -32,6 +34,7 @@ import {
 export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicDisease[] }) {
   const [diseases, setDiseases] = useState<ClinicDisease[]>(initialDiseases || DEFAULT_CLINIC_DISEASES);
   const [file, setFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -44,6 +47,7 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
   const [newName, setNewName] = useState("");
   const [newCategory, setNewCategory] = useState("General");
   const [newAmharic, setNewAmharic] = useState("");
+  const [newMedicines, setNewMedicines] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
   // Load latest diseases on mount
@@ -67,7 +71,8 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
         d.name.toLowerCase().includes(q) ||
         (d.code || "").toLowerCase().includes(q) ||
         (d.category || "").toLowerCase().includes(q) ||
-        (d.amharic || "").toLowerCase().includes(q)
+        (d.amharic || "").toLowerCase().includes(q) ||
+        (d.recommendedMedicines || "").toLowerCase().includes(q)
       );
     });
   }, [diseases, selectedCategory, searchQuery]);
@@ -81,21 +86,118 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
     return Array.from(set);
   }, [diseases]);
 
-  // Download template with "disease code" and "diseasename" columns
-  const handleDownloadTemplate = () => {
+  // Download Excel template (.xlsx) with recommended medicines column
+  const handleDownloadExcelTemplate = () => {
+    const templateData = [
+      {
+        "disease code": "J18.9",
+        "diseasename": "Pneumonia",
+        "category": "Respiratory",
+        "amharic": "የሳንባ ምች",
+        "recommended medicines": "Amoxicillin 500mg, Azithromycin 500mg, Paracetamol 500mg"
+      },
+      {
+        "disease code": "J06.9",
+        "diseasename": "Acute Upper Respiratory Tract Infection (URTI)",
+        "category": "Respiratory",
+        "amharic": "የላይኛው የመተንፈሻ አካል ኢንፌክሽን",
+        "recommended medicines": "Paracetamol 500mg, Chlorpheniramine 4mg, Vitamin C"
+      },
+      {
+        "disease code": "A09",
+        "diseasename": "Acute Gastroenteritis (AGE)",
+        "category": "Gastrointestinal",
+        "amharic": "አጣዳፊ የተቅማጥና ማስመለስ በሽታ",
+        "recommended medicines": "Oral Rehydration Salts (ORS), Zinc Sulfate 20mg, Ciprofloxacin 500mg"
+      },
+      {
+        "disease code": "A01.0",
+        "diseasename": "Typhoid Fever",
+        "category": "Gastrointestinal",
+        "amharic": "የታይፎይድ ትኩሳት",
+        "recommended medicines": "Ciprofloxacin 500mg, Ceftriaxone 1g, Paracetamol 500mg"
+      },
+      {
+        "disease code": "K27.9",
+        "diseasename": "Peptic Ulcer Disease (PUD) / Gastritis",
+        "category": "Gastrointestinal",
+        "amharic": "የጨጓራ ቁስለት / የጨጓራ ህመም",
+        "recommended medicines": "Omeprazole 20mg, Antacid suspension, Amoxicillin 500mg"
+      },
+      {
+        "disease code": "I10",
+        "diseasename": "Essential Hypertension",
+        "category": "Cardiovascular",
+        "amharic": "የደም ግፊት በሽታ",
+        "recommended medicines": "Amlodipine 5mg, Enalapril 5mg, Hydrochlorothiazide 25mg"
+      },
+      {
+        "disease code": "E11.9",
+        "diseasename": "Type 2 Diabetes Mellitus",
+        "category": "Endocrine",
+        "amharic": "ዓይነት 2 የስኳር በሽታ",
+        "recommended medicines": "Metformin 500mg, Glibenclamide 5mg"
+      },
+      {
+        "disease code": "B54",
+        "diseasename": "Malaria",
+        "category": "Infectious",
+        "amharic": "የወባ በሽታ",
+        "recommended medicines": "Coartem (Artemether-Lumefantrine), Paracetamol 500mg"
+      },
+      {
+        "disease code": "N39.0",
+        "diseasename": "Urinary Tract Infection (UTI)",
+        "category": "Infectious",
+        "amharic": "የሽንት ቧንቧ ኢንፌክሽን",
+        "recommended medicines": "Nitrofurantoin 100mg, Ciprofloxacin 500mg"
+      },
+      {
+        "disease code": "M54.5",
+        "diseasename": "Musculoskeletal Strain / Low Back Pain",
+        "category": "Musculoskeletal",
+        "amharic": "የጡንቻና የወገብ / የጀርባ ህመም",
+        "recommended medicines": "Ibuprofen 400mg, Paracetamol 500mg, Diclofenac 50mg"
+      },
+      {
+        "disease code": "L23.9",
+        "diseasename": "Allergic Dermatitis / Eczema",
+        "category": "Dermatology",
+        "amharic": "የቆዳ አለርጂ",
+        "recommended medicines": "Hydrocortisone 1% cream, Cetirizine 10mg"
+      }
+    ];
+
+    const worksheet = XLSX.utils.json_to_sheet(templateData);
+    worksheet["!cols"] = [
+      { wch: 15 },
+      { wch: 38 },
+      { wch: 20 },
+      { wch: 32 },
+      { wch: 55 }
+    ];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "DiseaseCatalog");
+    XLSX.writeFile(workbook, "clinic_disease_catalog_template.xlsx");
+    toast.success("Downloaded Excel template (.xlsx) with recommended medicines column.");
+  };
+
+  // Download CSV template
+  const handleDownloadCsvTemplate = () => {
     const csvContent =
-      "disease code,diseasename,category,amharic\n" +
-      "A09,Acute Gastroenteritis (AGE),Gastrointestinal,አጣዳፊ የተቅማጥና ማስመለስ በሽታ\n" +
-      "A01.0,Typhoid Fever,Gastrointestinal,የታይፎይድ ትኩሳት\n" +
-      "J18.9,Pneumonia,Respiratory,የሳንባ ምች\n" +
-      "J06.9,Acute Upper Respiratory Tract Infection (URTI),Respiratory,የላይኛው የመተንፈሻ አካል ኢንፌክሽን\n" +
-      "I10,Essential Hypertension,Cardiovascular,የደም ግፊት በሽታ\n" +
-      "E11.9,Type 2 Diabetes Mellitus,Endocrine,ዓይነት 2 የስኳር በሽታ\n" +
-      "K27.9,Peptic Ulcer Disease (PUD) / Gastritis,Gastrointestinal,የጨጓራ ቁስለት / የጨጓራ ህመም\n" +
-      "B54,Malaria,Infectious,የወባ በሽታ\n" +
-      "N39.0,Urinary Tract Infection (UTI),Infectious,የሽንት ቧንቧ ኢንፌክሽን\n" +
-      "M54.5,Musculoskeletal Strain / Low Back Pain,Musculoskeletal,የጡንቻና የወገብ / የጀርባ ህመም\n" +
-      "L23.9,Allergic Dermatitis / Eczema,Dermatology,የቆዳ አለርጂ\n";
+      "disease code,diseasename,category,amharic,recommended medicines\n" +
+      "J18.9,Pneumonia,Respiratory,የሳንባ ምች,\"Amoxicillin 500mg, Azithromycin 500mg, Paracetamol 500mg\"\n" +
+      "J06.9,Acute Upper Respiratory Tract Infection (URTI),Respiratory,የላይኛው የመተንፈሻ አካል ኢንፌክሽን,\"Paracetamol 500mg, Chlorpheniramine 4mg\"\n" +
+      "A09,Acute Gastroenteritis (AGE),Gastrointestinal,አጣዳፊ የተቅማጥና ማስመለስ በሽታ,\"ORS, Zinc Sulfate 20mg, Ciprofloxacin 500mg\"\n" +
+      "A01.0,Typhoid Fever,Gastrointestinal,የታይፎይድ ትኩሳት,\"Ciprofloxacin 500mg, Ceftriaxone 1g\"\n" +
+      "I10,Essential Hypertension,Cardiovascular,የደም ግፊት በሽታ,\"Amlodipine 5mg, Enalapril 5mg\"\n" +
+      "E11.9,Type 2 Diabetes Mellitus,Endocrine,ዓይነት 2 የስኳር በሽታ,\"Metformin 500mg, Glibenclamide 5mg\"\n" +
+      "K27.9,Peptic Ulcer Disease (PUD) / Gastritis,Gastrointestinal,የጨጓራ ቁስለት / የጨጓራ ህመም,\"Omeprazole 20mg, Antacid suspension\"\n" +
+      "B54,Malaria,Infectious,የወባ በሽታ,\"Coartem, Paracetamol 500mg\"\n" +
+      "N39.0,Urinary Tract Infection (UTI),Infectious,የሽንት ቧንቧ ኢንፌክሽን,\"Nitrofurantoin 100mg, Ciprofloxacin 500mg\"\n" +
+      "M54.5,Musculoskeletal Strain / Low Back Pain,Musculoskeletal,የጡንቻና የወገብ / የጀርባ ህመም,\"Ibuprofen 400mg, Paracetamol 500mg\"\n" +
+      "L23.9,Allergic Dermatitis / Eczema,Dermatology,የቆዳ አለርጂ,\"Hydrocortisone 1% cream, Cetirizine 10mg\"\n";
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
@@ -105,7 +207,7 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    toast.success("Downloaded sample template with 'disease code' and 'diseasename' columns.");
+    toast.success("Downloaded CSV template.");
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,6 +233,9 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
       } else {
         const buffer = await file.arrayBuffer();
         const workbook = XLSX.read(buffer, { type: "array", cellDates: true });
+        if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+          throw new Error("Excel file contains no worksheets.");
+        }
         const worksheet = workbook.Sheets[workbook.SheetNames[0]];
         text = XLSX.utils.sheet_to_csv(worksheet);
       }
@@ -151,6 +256,9 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
     } finally {
       setLoading(false);
       setFile(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -167,7 +275,8 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
         name: newName.trim(),
         code: newCode.trim() || undefined,
         category: newCategory.trim() || "General",
-        amharic: newAmharic.trim() || undefined
+        amharic: newAmharic.trim() || undefined,
+        recommendedMedicines: newMedicines.trim() || undefined,
       });
 
       if (res?.error) {
@@ -180,6 +289,7 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
         setNewName("");
         setNewCode("");
         setNewAmharic("");
+        setNewMedicines("");
         setShowAddForm(false);
       }
     } catch (err: any) {
@@ -265,13 +375,21 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleDownloadTemplate}
+              onClick={handleDownloadExcelTemplate}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 rounded-xl transition-colors border border-emerald-200 dark:border-emerald-800 shadow-2xs"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Download Excel Template (.xlsx)
+            </button>
+
+            <button
+              onClick={handleDownloadCsvTemplate}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl transition-colors border border-slate-200 dark:border-slate-700"
             >
               <Download className="w-3.5 h-3.5 text-indigo-600" />
-              Download Template (.csv)
+              CSV (.csv)
             </button>
 
             <button
@@ -299,6 +417,7 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
                 Must include columns: <strong className="text-indigo-600">disease code</strong> and <strong className="text-indigo-600">diseasename</strong>
               </p>
               <input
+                ref={fileInputRef}
                 type="file"
                 accept=".csv, .xlsx, .xls"
                 onChange={handleFileChange}
@@ -460,6 +579,20 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
                   className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
+
+              <div className="sm:col-span-4">
+                <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1 flex items-center gap-1.5">
+                  <Pill className="w-3.5 h-3.5 text-indigo-500" />
+                  Recommended First-Line Medicines / Clinical Regimen (comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={newMedicines}
+                  onChange={(e) => setNewMedicines(e.target.value)}
+                  placeholder="e.g. Amoxicillin 500mg, Azithromycin 500mg, Paracetamol 500mg"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-indigo-500 font-medium"
+                />
+              </div>
             </div>
 
             <div className="flex justify-between items-center pt-2">
@@ -536,17 +669,18 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
             <thead className="bg-slate-50 dark:bg-slate-800/50 sticky top-0 border-b border-slate-200 dark:border-slate-800">
               <tr className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 <th className="p-3 w-12 text-center">#</th>
-                <th className="p-3 w-32">Disease Code</th>
+                <th className="p-3 w-28">Disease Code</th>
                 <th className="p-3">Disease Name (Generalized Diagnosis)</th>
-                <th className="p-3">Category</th>
-                <th className="p-3">Amharic Translation</th>
-                <th className="p-3 text-right">Action</th>
+                <th className="p-3 w-32">Category</th>
+                <th className="p-3 w-40">Amharic Translation</th>
+                <th className="p-3">Recommended First-Line Regimen</th>
+                <th className="p-3 text-right w-16">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
               {filteredDiseases.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="p-8 text-center text-slate-500">
+                  <td colSpan={7} className="p-8 text-center text-slate-500">
                     No diseases found matching &ldquo;{searchQuery}&rdquo;.
                   </td>
                 </tr>
@@ -571,6 +705,23 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
                     </td>
                     <td className="p-3 text-slate-600 dark:text-slate-400 font-amharic text-[11px]">
                       {d.amharic || "—"}
+                    </td>
+                    <td className="p-3">
+                      {d.recommendedMedicines ? (
+                        <div className="flex flex-wrap gap-1 max-w-sm">
+                          {d.recommendedMedicines.split(",").map((med, mIdx) => (
+                            <span
+                              key={mIdx}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80"
+                            >
+                              <Pill className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                              {med.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-[11px] italic">Clinical protocol</span>
+                      )}
                     </td>
                     <td className="p-3 text-right">
                       <button

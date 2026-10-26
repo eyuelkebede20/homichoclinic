@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ChevronDown, ChevronUp, CheckCircle2, FlaskConical } from "lucide-react";
+import { Search, ChevronDown, ChevronUp, CheckCircle2, FlaskConical, Printer } from "lucide-react";
 import { formatToEthiopianDate } from "@/lib/date-utils";
 import { StructuredLabResultView } from "./structured-lab-result-view";
 import { formatLabSummary } from "../types/lab-panels";
+import { openPrintLabResultWindow } from "../utils/print-lab-result";
 
 interface CompletedLabRequestItem {
   id: string;
@@ -141,21 +142,39 @@ export function CompletedLabLogs({
                     <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                       Test: {req.test.name}
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => toggleExpand(req.id)}
-                      className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                    >
-                      {isExpanded ? (
-                        <>
-                          Hide Details <ChevronUp className="w-3.5 h-3.5" />
-                        </>
-                      ) : (
-                        <>
-                          View Full Details <ChevronDown className="w-3.5 h-3.5" />
-                        </>
-                      )}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          openPrintLabResultWindow({
+                            patient: req.patient,
+                            testName: req.test.name,
+                            findings: req.result?.findings,
+                            date: req.updatedAt,
+                            isReadByDoctor: req.result?.isReadByDoctor,
+                          });
+                        }}
+                        className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 transition-colors"
+                        title="Print official single-page A4 laboratory test slip"
+                      >
+                        <Printer className="w-3 h-3" /> Print Slip
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => toggleExpand(req.id)}
+                        className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                      >
+                        {isExpanded ? (
+                          <>
+                            Hide Details <ChevronUp className="w-3.5 h-3.5" />
+                          </>
+                        ) : (
+                          <>
+                            View Full Details <ChevronDown className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Summary row when collapsed */}

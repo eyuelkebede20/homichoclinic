@@ -28,6 +28,7 @@ import {
   Tag
 } from "lucide-react";
 import { toggleAdmissionStatus } from "@/features/clinical/actions";
+import { formatLabSummary } from "@/features/clinical/types/lab-panels";
 import { toast } from "sonner";
 
 export type DossierPatient = {
@@ -591,7 +592,7 @@ export function AdmittedPatientsReport({
               return (
                 <article
                   key={patient.id}
-                  className="patient-dossier-page bg-white text-black dark:text-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs print:shadow-none print:border-none print:m-0 print:p-0 overflow-hidden"
+                  className="patient-dossier-page bg-white text-black dark:text-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs print:shadow-none print:border-none print:m-0 print:p-0 overflow-hidden print:overflow-visible"
                 >
                   {/* Screen Header Controls for each patient */}
                   <div className="print:hidden p-4 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -662,9 +663,9 @@ export function AdmittedPatientsReport({
                   {/* ──────────────────────────────────────────────────────────── */}
                   {/* OFFICIAL MEDICAL DOSSIER CONTENT (PRINT READY)               */}
                   {/* ──────────────────────────────────────────────────────────── */}
-                  <div className={`p-6 sm:p-8 space-y-6 ${!isExpanded ? "print:block hidden" : "block"}`}>
+                  <div className={`p-6 sm:p-8 space-y-6 ${!isExpanded ? "print:block hidden" : "block"} print:p-2 print:space-y-2`}>
                     {/* 1. Official Clinic Letterhead */}
-                    <header className="border-b-2 border-black pb-4 text-center space-y-1">
+                    <header className="border-b-2 border-black pb-4 print:pb-1.5 text-center space-y-1 print:space-y-0.5 print-avoid-break">
                       <div className="flex items-center justify-between">
                         <div className="w-16 h-16 flex items-center justify-center shrink-0">
                           {clinicInfo.logo ? (
@@ -983,14 +984,14 @@ export function AdmittedPatientsReport({
                                 <td className="p-2 border-r border-slate-300">
                                   {lab.requestedByName || "Doctor"}
                                 </td>
-                                <td className="p-2 border-r border-slate-300 font-medium">
+                                <td className="p-2 border-r border-slate-300 font-medium print:p-1 print:text-[10px]">
                                   {lab.result?.findings ? (
-                                    <span className="text-black font-semibold">{lab.result.findings}</span>
+                                    <span className="text-black font-semibold">{formatLabSummary(lab.result.findings)}</span>
                                   ) : (
                                     <span className="text-amber-700 italic">Results pending processing</span>
                                   )}
                                 </td>
-                                <td className="p-2 text-[10px]">
+                                <td className="p-2 text-[10px] print:p-1 print:text-[9px]">
                                   {lab.result ? (
                                     <div>
                                       <span>Tech: {lab.result.enteredByName || "Lab Tech"}</span>

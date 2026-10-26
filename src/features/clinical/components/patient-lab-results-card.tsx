@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Search, FlaskConical, CheckCircle2, Clock, AlertTriangle } from "lucide-react";
+import { Search, FlaskConical, CheckCircle2, Clock, AlertTriangle, Printer } from "lucide-react";
 import { formatToEthiopianDate } from "@/lib/date-utils";
 import { StructuredLabResultView } from "./structured-lab-result-view";
+import { openPrintLabResultWindow } from "../utils/print-lab-result";
 
 interface PatientLabRequest {
   id: string;
@@ -23,8 +24,19 @@ interface PatientLabRequest {
 
 export function PatientLabResultsCard({
   labRequests,
+  patientInfo,
 }: {
   labRequests: PatientLabRequest[];
+  patientInfo?: {
+    firstName: string;
+    lastName: string;
+    gender?: string | null;
+    yob?: string | number | null;
+    militaryId?: string | null;
+    employeeId?: string | null;
+    department?: string | null;
+    rank?: string | null;
+  };
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "completed" | "pending">("all");
@@ -58,7 +70,7 @@ export function PatientLabResultsCard({
         </div>
 
         {/* Search & Status Filters */}
-        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto print:hidden">
           <div className="relative flex-1 sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-slate-400" />
             <input
@@ -142,26 +154,45 @@ export function PatientLabResultsCard({
           {filteredRequests.map((req) => (
             <div
               key={req.id}
-              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/60 p-4 space-y-3"
+              className="rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/60 p-4 space-y-3 print:bg-white print:border-slate-400 print:p-2.5 print-avoid-break"
             >
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/60 dark:border-slate-800 pb-2.5 print:pb-1">
                 <div className="flex items-center gap-2">
-                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                  <span className="font-bold text-slate-900 dark:text-slate-100 text-sm print:text-black">
                     {req.test.name}
                   </span>
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs text-slate-400 print:text-slate-600">
                     • {formatToEthiopianDate(req.createdAt)}
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   {req.result && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openPrintLabResultWindow({
+                          patient: patientInfo || { firstName: "Patient", lastName: "" },
+                          testName: req.test.name,
+                          findings: req.result?.findings,
+                          date: req.createdAt,
+                          isReadByDoctor: req.result?.isReadByDoctor,
+                        });
+                      }}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition-colors shadow-2xs print:hidden"
+                      title="Print official single-page A4 laboratory test slip"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      Print Slip
+                    </button>
+                  )}
+                  {req.result && (
                     req.result.isReadByDoctor ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                        <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Reviewed by Doctor
+                      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 px-2.5 py-0.5 text-xs font-bold text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 print:border-black print:text-black print:bg-white">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600 print:hidden" /> Reviewed by Doctor
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800">
-                        <Clock className="w-3 h-3 text-blue-600" /> Pending Doctor Review
+                      <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 dark:bg-blue-950/60 px-2.5 py-0.5 text-xs font-bold text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 print:border-black print:text-black print:bg-white">
+                        <Clock className="w-3 h-3 text-blue-600 print:hidden" /> Pending Doctor Review
                       </span>
                     )
                   )}

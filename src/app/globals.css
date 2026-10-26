@@ -95,13 +95,21 @@ html[data-low-power="true"] body {
 /* ==========================================
    PRINT STYLES FOR CLINICAL REPORTS & DOSSIERS
    ========================================== */
+/* Top-level @page rule ensures Chromium/Edge/Firefox respect A4 paper size and do NOT fall back to Letter */
+@page {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
+@page :first {
+  size: A4 portrait;
+  margin: 8mm;
+}
+
 @media print {
-  @page {
-    size: A4 portrait;
-    margin: 10mm 10mm 12mm 10mm;
-  }
-  
   html, body {
+    width: 210mm !important;
+    max-width: 210mm !important;
     background-color: #ffffff !important;
     color: #000000 !important;
     print-color-adjust: exact !important;
@@ -112,6 +120,8 @@ html[data-low-power="true"] body {
   .patient-dossier-page {
     page-break-after: always !important;
     break-after: page !important;
+    break-inside: auto;
+    page-break-inside: auto;
   }
 
   .patient-dossier-page:last-child {
@@ -122,5 +132,16 @@ html[data-low-power="true"] body {
   .print-avoid-break {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  /* Universal high-contrast print overrides for clinical charts and lab results */
+  .lab-print-contrast {
+    color: #000000 !important;
+    border-color: #334155 !important;
+  }
+
+  .lab-print-sublabel {
+    color: #334155 !important;
+    font-weight: 700 !important;
   }
 }

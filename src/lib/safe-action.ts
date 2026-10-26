@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { auth } from "./auth";
 import { headers } from "next/headers";
-import { ROLE_PERMISSIONS, PermissionString } from "./permissions";
+import { ROLE_PERMISSIONS, PermissionString, getUserPermissions } from "./permissions";
 
 export type ActionState<T> = {
   success?: boolean;
@@ -51,7 +51,7 @@ export function createSafeAction<TInput, TOutput>({
 
       // 2. Authorize
       if (requiredPermission) {
-        const userPermissions = ROLE_PERMISSIONS[role] || [];
+        const userPermissions = getUserPermissions(role);
         if (!userPermissions.includes(requiredPermission)) {
           return { error: `Forbidden: Missing permission ${requiredPermission}` };
         }

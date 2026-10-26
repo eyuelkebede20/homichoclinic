@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, ChevronRight, ChevronDown, FlaskConical, Droplet, Activity, TestTube, RotateCcw, Clock, CheckCheck, Search } from "lucide-react";
+import { CheckCircle2, ChevronRight, ChevronDown, FlaskConical, Droplet, Activity, TestTube, RotateCcw, Clock, CheckCheck, Search, Printer } from "lucide-react";
 import { dismissLabResult, toggleLabResultReadStatus } from "../actions";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { parseLabFindings, getLabPanelType, formatLabSummary } from "../types/lab-panels";
 import { StructuredLabResultView } from "./structured-lab-result-view";
 import { FinalDiagnosisModal } from "./final-diagnosis-modal";
+import { openPrintLabResultWindow } from "../utils/print-lab-result";
 import { toast } from "sonner";
 
 export interface LabResultInboxItem {
@@ -261,6 +262,23 @@ export function DoctorLabResultsInbox({
                   </div>
 
                   <div className="flex items-center gap-2.5 self-end sm:self-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        openPrintLabResultWindow({
+                          patient: res.request.patient,
+                          testName: res.request.test.name,
+                          findings: res.findings,
+                          date: res.createdAt,
+                          isReadByDoctor: res.isReadByDoctor,
+                        });
+                      }}
+                      className="text-xs font-semibold px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 transition-colors"
+                      title="Print official single-page A4 laboratory test slip"
+                    >
+                      <Printer className="w-3.5 h-3.5" /> Print
+                    </button>
+
                     <button
                       type="button"
                       onClick={() => toggleExpand(res.id)}

@@ -19,6 +19,7 @@ import {
   AlertCircle,
   HelpCircle,
   Trash2,
+  Pill,
 } from "lucide-react";
 import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES } from "../types/diseases";
 import { addClinicDisease, getClinicDiseases, getTopDiagnosedDiseases } from "../actions";
@@ -369,28 +370,50 @@ export function FinalDiagnosisModal({
                 No diseases selected yet. Click any disease from the list below or search to select.
               </p>
             ) : (
-              <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                {selectedDiseases.map((d) => (
-                  <span
-                    key={d.id}
-                    className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-xs animate-in zoom-in-95 duration-100"
-                  >
-                    {d.code && (
-                      <span className="font-mono text-[10px] bg-indigo-800/80 px-1 py-0.2 rounded text-indigo-100">
-                        {d.code}
-                      </span>
-                    )}
-                    <span>{d.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => removeSelectedDisease(d.id)}
-                      className="p-0.5 hover:bg-indigo-700 rounded text-indigo-200 hover:text-white ml-0.5"
-                      title="Remove"
+              <div className="space-y-2 pt-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {selectedDiseases.map((d) => (
+                    <span
+                      key={d.id}
+                      className="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-lg text-xs font-bold bg-indigo-600 text-white shadow-xs animate-in zoom-in-95 duration-100"
                     >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </span>
-                ))}
+                      {d.code && (
+                        <span className="font-mono text-[10px] bg-indigo-800/80 px-1 py-0.2 rounded text-indigo-100">
+                          {d.code}
+                        </span>
+                      )}
+                      <span>{d.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => removeSelectedDisease(d.id)}
+                        className="p-0.5 hover:bg-indigo-700 rounded text-indigo-200 hover:text-white ml-0.5"
+                        title="Remove"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+
+                {/* First-Line Clinical Regimens Guidance for Selected Diseases */}
+                {selectedDiseases.some((d) => d.recommendedMedicines) && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-xs space-y-1.5 animate-in fade-in duration-150">
+                    <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300 text-[11px]">
+                      <Pill className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Recommended First-Line Regimen Reference:</span>
+                    </div>
+                    <div className="space-y-1">
+                      {selectedDiseases
+                        .filter((d) => d.recommendedMedicines)
+                        .map((d) => (
+                          <div key={d.id} className="text-[11px] text-slate-700 dark:text-slate-300 flex items-start gap-1">
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">{d.name}:</span>
+                            <span className="text-emerald-700 dark:text-emerald-300 font-medium">{d.recommendedMedicines}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

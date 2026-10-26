@@ -26,8 +26,18 @@ import {
   Activity,
   Layers,
   ArrowRight,
-  Hospital
+  Hospital,
+  Sparkles,
+  Download,
+  X,
+  RefreshCw,
+  Package,
+  Plus
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import { toast } from "sonner";
+import { getTopDiseasesMedicineProtocols, DiseaseMedicineProtocol } from "@/features/clinical/actions";
+import { DiseaseImporter } from "./disease-importer";
 
 export type TopDiseaseStat = {
   name: string;
@@ -36,6 +46,7 @@ export type TopDiseaseStat = {
   amharic?: string;
   count: number;
   percentage?: number;
+  recommendedMedicines?: string;
 };
 
 export type ManagerDashboardProps = {
@@ -134,6 +145,200 @@ export function ManagerDashboard({
   const [patientSearch, setPatientSearch] = useState("");
   const [patientFilter, setPatientFilter] = useState<"all" | "inpatient" | "checked" | "queue">("all");
   const [medTab, setMedTab] = useState<"expired" | "low_stock">("expired");
+
+  // Top 10 Diseases Medicine & Regimen Generation states
+  const [showMedicineModal, setShowMedicineModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [medicineProtocols, setMedicineProtocols] = useState<DiseaseMedicineProtocol[]>([]);
+  const [loadingProtocols, setLoadingProtocols] = useState(false);
+
+  const loadMedicineProtocols = async () => {
+    setLoadingProtocols(true);
+    try {
+      const protocols = await getTopDiseasesMedicineProtocols(10);
+      setMedicineProtocols(protocols);
+    } catch (err: any) {
+      console.error("Error loading medicine protocols:", err);
+      toast.error("Failed to load medicine protocols: " + (err.message || "Unknown error"));
+    } finally {
+      setLoadingProtocols(false);
+    }
+  };
+
+  const handleOpenMedicineModal = () => {
+    setShowMedicineModal(true);
+    if (medicineProtocols.length === 0) {
+      loadMedicineProtocols();
+    }
+  };
+
+  const handleExportMedicineExcel = () => {
+    if (medicineProtocols.length === 0) {
+      toast.error("No medicine protocol data available to export.");
+      return;
+    }
+
+    const rows: any[] = [];
+    medicineProtocols.forEach((proto, pIdx) => {
+      if (proto.parsedMedicines.length === 0) {
+        rows.push({
+          "Rank": pIdx + 1,
+          "Disease Code": proto.code || "—",
+          "Disease Name": proto.diseaseName,
+          "Amharic Name": proto.amharic || "—",
+          "Category": proto.category,
+          "Cases Recorded": proto.caseCount,
+          "Prevalence %": `${proto.percentage}%`,
+          "Recommended Regimen": proto.recommendedMedicines,
+          "Pharmacy Inventory Match": "None",
+          "In-Stock Qty": "0",
+          "Est. Units Needed": 0,
+          "Stock Status": "Not Stocked"
+        });
+      } else {
+        proto.parsedMedicines.forEach((med, mIdx) => {
+          rows.push({
+            "Rank": mIdx === 0 ? pIdx + 1 : "",
+            "Disease Code": mIdx === 0 ? (proto.code || "—") : "",
+            "Disease Name": mIdx === 0 ? proto.diseaseName : "",
+            "Amharic Name": mIdx === 0 ? (proto.amharic || "—") : "",
+            "Category": mIdx === 0 ? proto.category : "",
+            "Cases Recorded": mIdx === 0 ? proto.caseCount : "",
+            "Prevalence %": mIdx === 0 ? `${proto.percentage}%` : "",
+            "Recommended Regimen": `${med.genericName} (${med.dosageInstructions})`,
+            "Pharmacy Inventory Match": med.inventoryDrug ? med.inventoryDrug.name : "Not Matched in Pharmacy",
+            "In-Stock Qty": med.inventoryDrug?.amountInStock ?? "0",
+            "Est. Units Needed": med.estimatedRequiredUnits,
+            "Stock Status": med.stockStatus === "in_stock" ? "In Stock" : med.stockStatus === "low_stock" ? "Low Stock" : "Out of Stock"
+          });
+        });
+      }
+    });
+
+    const ws = XLSX.utils.json_to_sheet(rows);
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 32 },
+      { wch: 28 },
+      { wch: 18 },
+      { wch: 15 },
+      { wch: 14 },
+      { wch: 38 },
+      { wch: 32 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 16 },
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Medicine_Demand");
+    const dateStr = new Date().toISOString().split("T")[0];
+    XLSX.writeFile(wb, `Top_10_Diseases_Medicine_Demand_${dateStr}.xlsx`);
+    toast.success("Exported Top 10 Diseases Medicine Demand forecast (.xlsx)");
+  };
+
+  const handlePrintMedicineProtocols = () => {
+    const printWindow = window.open("", "_blank", "width=920,height=1100");
+    if (!printWindow) {
+      toast.error("Please allow pop-ups to print the medicine protocol sheet.");
+      return;
+    }
+
+    const rowsHtml = medicineProtocols.map((proto, idx) => `
+      <tr style="border-bottom: 1px solid #cbd5e1; page-break-inside: avoid;">
+        <td style="padding: 8px; font-weight: bold; text-align: center; vertical-align: top;">#${idx + 1}</td>
+        <td style="padding: 8px; vertical-align: top;">
+          <span style="font-family: monospace; font-size: 11px; background: #e2e8f0; padding: 1px 5px; border-radius: 4px; font-weight: bold;">${proto.code || "—"}</span>
+          <strong style="margin-left: 4px; font-size: 13px;">${proto.diseaseName}</strong>
+          ${proto.amharic ? `<div style="font-size: 11px; color: #475569; margin-top: 2px;">${proto.amharic}</div>` : ""}
+          <div style="font-size: 10px; color: #64748b; margin-top: 2px;">Category: ${proto.category}</div>
+        </td>
+        <td style="padding: 8px; text-align: center; font-weight: bold; vertical-align: top;">
+          ${proto.caseCount}
+          <div style="font-size: 10px; color: #64748b;">${proto.percentage}% prev.</div>
+        </td>
+        <td style="padding: 8px; vertical-align: top;">
+          ${proto.parsedMedicines.map(m => `
+            <div style="margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dotted #e2e8f0;">
+              <div><strong style="color: #0f172a; font-size: 12px;">${m.genericName}</strong> &bull; <span style="color: #334155; font-size: 11px;">${m.dosageInstructions}</span></div>
+              <div style="font-size: 10px; color: #64748b; margin-top: 2px;">
+                Pharmacy Form: <strong>${m.inventoryDrug ? `${m.inventoryDrug.name} (In stock: ${m.inventoryDrug.amountInStock ?? 0})` : "<em>Not Matched</em>"}</strong>
+                &bull; Est. Demand: <strong>${m.estimatedRequiredUnits} units</strong>
+                &bull; Status: <span style="color: ${m.stockStatus === 'in_stock' ? '#16a34a' : m.stockStatus === 'low_stock' ? '#ca8a04' : '#dc2626'}; font-weight: bold;">${m.stockStatus.replace('_', ' ').toUpperCase()}</span>
+              </div>
+            </div>
+          `).join("")}
+        </td>
+      </tr>
+    `).join("");
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Top 10 Diseases Medicine Demand & Regimens - ${clinicInfo.name}</title>
+          <style>
+            @page { size: A4 portrait; margin: 8mm; }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 12px; color: #0f172a; font-size: 12px; }
+            .header { text-align: center; border-bottom: 2px solid #0f172a; padding-bottom: 8px; margin-bottom: 12px; }
+            .title { font-size: 18px; font-weight: 800; text-transform: uppercase; margin: 0; }
+            .subtitle { font-size: 12px; color: #475569; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+            th { background: #f1f5f9; padding: 8px; text-align: left; font-size: 11px; text-transform: uppercase; border-bottom: 2px solid #94a3b8; }
+            .footer { margin-top: 24px; padding-top: 12px; border-top: 1px dashed #94a3b8; display: flex; justify-content: space-between; font-size: 11px; page-break-inside: avoid; }
+            .sig-box { width: 200px; text-align: center; border-top: 1px solid #475569; margin-top: 35px; padding-top: 4px; font-size: 10px; }
+            @media print {
+              body { padding: 0; }
+              .no-print { display: none !important; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <h1 class="title">${clinicInfo.name}</h1>
+            ${clinicInfo.nameAmharic ? `<div style="font-weight: 600; font-size: 14px; margin-top: 2px;">${clinicInfo.nameAmharic}</div>` : ""}
+            <div class="subtitle">TOP 10 MORBIDITIES &bull; CLINICAL MEDICINE PROTOCOL &amp; DEMAND FORECAST</div>
+            <div style="font-size: 10px; color: #64748b; margin-top: 4px;">Generated: ${new Date().toLocaleString()} &bull; Prepared by: ${clinicInfo.userName} (${clinicInfo.userRole})</div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;">Rank</th>
+                <th style="width: 190px;">Morbidity / Disease</th>
+                <th style="width: 75px; text-align: center;">Cases</th>
+                <th>Standard Pharmacotherapy Regimen &amp; Pharmacy Stock Health</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            <div>
+              <div class="sig-box">Chief Medical Officer / OPD Lead</div>
+            </div>
+            <div>
+              <div class="sig-box">Head of Clinical Pharmacy</div>
+            </div>
+            <div>
+              <div class="sig-box">Clinic Administrator / Manager</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => {
+      printWindow.print();
+    }, 450);
+  };
 
   // Real-time auto refresh every 20 seconds so the manager sees live clinic activity
   useEffect(() => {
@@ -530,7 +735,7 @@ export function ManagerDashboard({
       {/* 2. TOP 10 DIAGNOSED CLINICAL DISEASES (MORBIDITY OVERVIEW)   */}
       {/* ──────────────────────────────────────────────────────────── */}
       <section className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 border-b border-slate-200 dark:border-slate-800 pb-3">
           <div>
             <div className="flex items-center gap-2">
               <Activity className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
@@ -546,10 +751,26 @@ export function ManagerDashboard({
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300">
               {topDiseases.reduce((sum, d) => sum + (d.count || 0), 0)} Cases Tracked
             </span>
+
+            <button
+              onClick={handleOpenMedicineModal}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Generate Medicine &amp; Regimens
+            </button>
+
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 transition-colors shadow-2xs"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              Import Disease List (Excel)
+            </button>
           </div>
         </div>
 
@@ -645,6 +866,31 @@ export function ManagerDashboard({
                       />
                     </div>
                   </div>
+
+                  {/* First-line Recommended Regimen */}
+                  {disease.recommendedMedicines && (
+                    <div className="pt-2 border-t border-slate-100 dark:border-slate-800/80 space-y-1">
+                      <div className="flex items-center gap-1 text-[10px] font-bold text-slate-500 dark:text-slate-400">
+                        <Pill className="w-3 h-3 text-indigo-500" />
+                        <span>First-Line Pharmacotherapy:</span>
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        {disease.recommendedMedicines.split(",").slice(0, 3).map((med, mIdx) => (
+                          <span
+                            key={mIdx}
+                            className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-50/70 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/60 dark:border-indigo-800/60"
+                          >
+                            {med.trim()}
+                          </span>
+                        ))}
+                        {disease.recommendedMedicines.split(",").length > 3 && (
+                          <span className="text-[10px] text-slate-400 px-1">
+                            +{disease.recommendedMedicines.split(",").length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })
@@ -1032,6 +1278,280 @@ export function ManagerDashboard({
           </div>
         </div>
       </section>
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* 5. MEDICINE DEMAND & CLINICAL REGIMENS MODAL                 */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {showMedicineModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    Top 10 Morbidities &mdash; Medicine Demand &amp; Regimens
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 font-bold">
+                      Clinical Pharmacy
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Standard first-line pharmacotherapy matching, demand forecasting based on disease incidence, and pharmacy stock health.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={loadMedicineProtocols}
+                  disabled={loadingProtocols}
+                  className="p-2 rounded-xl text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                  title="Refresh Protocols & Inventory"
+                >
+                  <RefreshCw className={`w-4 h-4 ${loadingProtocols ? "animate-spin" : ""}`} />
+                </button>
+                <button
+                  onClick={() => setShowMedicineModal(false)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Toolbar / Summary stats */}
+            <div className="px-5 py-3 bg-indigo-50/50 dark:bg-indigo-950/30 border-b border-indigo-100 dark:border-indigo-950/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-4">
+                <div>
+                  <span className="text-slate-500">Morbidity Cases:</span>{" "}
+                  <strong className="text-slate-900 dark:text-slate-100 font-bold">
+                    {medicineProtocols.reduce((s, p) => s + (p.caseCount || 0), 0)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">Regimens Analyzed:</span>{" "}
+                  <strong className="text-slate-900 dark:text-slate-100 font-bold">
+                    {medicineProtocols.reduce((s, p) => s + p.parsedMedicines.length, 0)}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">In Stock:</span>{" "}
+                  <strong className="text-emerald-600 dark:text-emerald-400 font-bold">
+                    {medicineProtocols.flatMap(p => p.parsedMedicines).filter(m => m.stockStatus === "in_stock").length}
+                  </strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">Low / Out of Stock:</span>{" "}
+                  <strong className="text-rose-600 dark:text-rose-400 font-bold">
+                    {medicineProtocols.flatMap(p => p.parsedMedicines).filter(m => m.stockStatus !== "in_stock").length}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportMedicineExcel}
+                  disabled={loadingProtocols || medicineProtocols.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5" />
+                  Download Forecast (.xlsx)
+                </button>
+                <button
+                  onClick={handlePrintMedicineProtocols}
+                  disabled={loadingProtocols || medicineProtocols.length === 0}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-white rounded-xl shadow-xs transition-colors disabled:opacity-50"
+                >
+                  <Printer className="w-3.5 h-3.5" />
+                  Print Slip (A4)
+                </button>
+              </div>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+              {loadingProtocols ? (
+                <div className="py-20 flex flex-col items-center justify-center text-slate-500 gap-3">
+                  <RefreshCw className="w-8 h-8 animate-spin text-indigo-600" />
+                  <p className="text-sm font-semibold">Matching clinical diagnoses against clinic drug inventory...</p>
+                </div>
+              ) : medicineProtocols.length === 0 ? (
+                <div className="py-16 text-center text-slate-500">
+                  No top diagnosed morbidities found yet.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {medicineProtocols.map((proto, idx) => (
+                    <div
+                      key={proto.diseaseId || idx}
+                      className="bg-slate-50/70 dark:bg-slate-950/40 rounded-xl border border-slate-200 dark:border-slate-800 p-4 space-y-3"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 dark:border-slate-800/80 pb-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="w-6 h-6 rounded-md bg-indigo-600 text-white text-xs font-bold flex items-center justify-center shrink-0">
+                            #{idx + 1}
+                          </span>
+                          {proto.code && (
+                            <span className="font-mono text-xs font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                              {proto.code}
+                            </span>
+                          )}
+                          <span className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                            {proto.diseaseName}
+                          </span>
+                          {proto.amharic && (
+                            <span className="text-xs text-slate-500 font-amharic">
+                              ({proto.amharic})
+                            </span>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                            {proto.category}
+                          </span>
+                        </div>
+
+                        <div className="text-xs text-slate-600 dark:text-slate-400">
+                          <strong className="text-slate-900 dark:text-slate-100 font-black text-sm">
+                            {proto.caseCount}
+                          </strong>{" "}
+                          cases ({proto.percentage}% morbidity)
+                        </div>
+                      </div>
+
+                      {/* Parsed Medicines Grid */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        {proto.parsedMedicines.map((med, mIdx) => {
+                          const isInStock = med.stockStatus === "in_stock";
+                          const isLowStock = med.stockStatus === "low_stock";
+
+                          return (
+                            <div
+                              key={mIdx}
+                              className={`p-3 rounded-lg border text-xs space-y-1.5 ${
+                                isInStock
+                                  ? "bg-emerald-50/60 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/60"
+                                  : isLowStock
+                                  ? "bg-amber-50/60 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/60"
+                                  : "bg-rose-50/60 dark:bg-rose-950/30 border-rose-200 dark:border-rose-900/60"
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="font-bold text-slate-900 dark:text-slate-100">
+                                  {med.genericName}
+                                </span>
+                                <span
+                                  className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                                    isInStock
+                                      ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/80 dark:text-emerald-200"
+                                      : isLowStock
+                                      ? "bg-amber-100 text-amber-800 dark:bg-amber-900/80 dark:text-amber-200"
+                                      : "bg-rose-100 text-rose-800 dark:bg-rose-900/80 dark:text-rose-200"
+                                  }`}
+                                >
+                                  {isInStock ? "In Stock" : isLowStock ? "Low Stock" : "Out of Stock"}
+                                </span>
+                              </div>
+
+                              <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                                {med.dosageInstructions}
+                              </div>
+
+                              <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800/60 text-[10px] text-slate-600 dark:text-slate-400 space-y-0.5">
+                                <div className="flex justify-between">
+                                  <span>Pharmacy Stock:</span>
+                                  <strong className="text-slate-900 dark:text-slate-100">
+                                    {med.inventoryDrug ? `${med.inventoryDrug.amountInStock ?? 0} ${med.inventoryDrug.unit || "units"}` : "Not in Formulary"}
+                                  </strong>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span>Est. Demand:</span>
+                                  <strong className="text-indigo-600 dark:text-indigo-400">
+                                    ~{med.estimatedRequiredUnits} units
+                                  </strong>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-end">
+              <button
+                onClick={() => setShowMedicineModal(false)}
+                className="px-4 py-2 text-xs font-semibold bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 rounded-xl transition-colors"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ──────────────────────────────────────────────────────────── */}
+      {/* 6. IMPORT DISEASE LIST (EXCEL) MODAL                         */}
+      {/* ──────────────────────────────────────────────────────────── */}
+      {showImportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
+            {/* Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-950/60">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                    Import Disease List &amp; Medicine Regimens (Excel)
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 font-bold">
+                      .xlsx / .xls / .csv
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Upload prebuilt disease catalogs, configure first-line medicines, or download standard clinical templates.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  router.refresh();
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body with DiseaseImporter */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+              <DiseaseImporter />
+            </div>
+
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 flex justify-between items-center text-xs text-slate-500">
+              <span>Changes sync immediately with consultation diagnosis selectors and morbidity rankings.</span>
+              <button
+                onClick={() => {
+                  setShowImportModal(false);
+                  router.refresh();
+                }}
+                className="px-4 py-2 font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-xs transition-colors"
+              >
+                Done &amp; Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

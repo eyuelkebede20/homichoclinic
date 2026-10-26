@@ -394,7 +394,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   </div>
 )}
 {canReadHistory && (
-          <PatientLabResultsCard labRequests={patient.labRequests} />
+          <PatientLabResultsCard labRequests={patient.labRequests} patientInfo={patient} />
 )}
         </div>
 

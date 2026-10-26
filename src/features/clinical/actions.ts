@@ -9,7 +9,7 @@ import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labReq
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
-import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES } from "./types/diseases";
+import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES, getSuggestedMedicinesForDisease } from "./types/diseases";
 
 /**
  * Automatically resets active visits in OPD queue that have reached 1 day (>= 24 hours or past 1 day).
@@ -529,33 +529,29 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
     });
     if (setting?.value) {
       const parsed = JSON.parse(setting.value);
-      if (Array.isArray(parsed) && parsed.length >= DEFAULT_CLINIC_DISEASES.length) {
-        return parsed;
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed.map((d: any) => ({
+          ...d,
+          recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
+        }));
       }
-      // If catalog has fewer items than our expanded 200+ default set, merge in missing ones
-      const existingNames = new Set((parsed || []).map((d: any) => d.name.toLowerCase()));
-      const merged = [...(parsed || [])];
-      for (const def of DEFAULT_CLINIC_DISEASES) {
-        if (!existingNames.has(def.name.toLowerCase())) {
-          merged.push(def);
-        }
-      }
-      await prisma.systemSetting.upsert({
-        where: { key: "clinicDiseasesList" },
-        update: { value: JSON.stringify(merged) },
-        create: { key: "clinicDiseasesList", value: JSON.stringify(merged) },
-      });
-      return merged;
     }
+    const withMeds = DEFAULT_CLINIC_DISEASES.map((d) => ({
+      ...d,
+      recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
+    }));
     await prisma.systemSetting.upsert({
       where: { key: "clinicDiseasesList" },
-      update: { value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
-      create: { key: "clinicDiseasesList", value: JSON.stringify(DEFAULT_CLINIC_DISEASES) },
+      update: { value: JSON.stringify(withMeds) },
+      create: { key: "clinicDiseasesList", value: JSON.stringify(withMeds) },
     });
-    return DEFAULT_CLINIC_DISEASES;
+    return withMeds;
   } catch (err) {
     console.error("Error fetching clinic diseases:", err);
-    return DEFAULT_CLINIC_DISEASES;
+    return DEFAULT_CLINIC_DISEASES.map((d) => ({
+      ...d,
+      recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
+    }));
   }
 }
 
@@ -567,6 +563,7 @@ export type TopDiagnosedDisease = {
   amharic?: string;
   count: number;
   percentage?: number;
+  recommendedMedicines?: string;
 };
 
 export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDiagnosedDisease[]> {
@@ -613,6 +610,7 @@ export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDi
           amharic: disease.amharic,
           count: c,
           percentage: totalDiagnosesCount > 0 ? Math.round((c / totalDiagnosesCount) * 1000) / 10 : 0,
+          recommendedMedicines: disease.recommendedMedicines || getSuggestedMedicinesForDisease(disease.name, disease.category),
         });
         usedNames.add(disease.name.toLowerCase());
       }
@@ -632,6 +630,7 @@ export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDi
             amharic: common.amharic,
             count: 0,
             percentage: 0,
+            recommendedMedicines: common.recommendedMedicines || getSuggestedMedicinesForDisease(common.name, common.category),
           });
           usedNames.add(common.name.toLowerCase());
           if (scoredList.length >= limit) break;
@@ -650,7 +649,104 @@ export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDi
       amharic: d.amharic,
       count: 0,
       percentage: 0,
+      recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
     })).slice(0, limit);
+  }
+}
+
+export type DiseaseMedicineProtocol = {
+  diseaseId?: string;
+  diseaseName: string;
+  code?: string;
+  category: string;
+  amharic?: string;
+  caseCount: number;
+  percentage: number;
+  recommendedMedicines: string;
+  parsedMedicines: {
+    rawText: string;
+    genericName: string;
+    dosageInstructions: string;
+    inventoryDrug: {
+      id: string;
+      name: string;
+      unit: string | null;
+      price: number;
+      amountInStock: number | null;
+    } | null;
+    estimatedRequiredUnits: number;
+    stockStatus: "in_stock" | "low_stock" | "out_of_stock";
+  }[];
+};
+
+export async function getTopDiseasesMedicineProtocols(limit: number = 10): Promise<DiseaseMedicineProtocol[]> {
+  try {
+    const [topDiseases, allDrugs] = await Promise.all([
+      getTopDiagnosedDiseases(limit),
+      prisma.drug.findMany({
+        where: { deletedAt: null, isOperational: true },
+        select: { id: true, name: true, unit: true, price: true, amountInStock: true },
+      }),
+    ]);
+
+    const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+
+    const protocols: DiseaseMedicineProtocol[] = topDiseases.map((dis) => {
+      const recMeds = dis.recommendedMedicines || getSuggestedMedicinesForDisease(dis.name, dis.category);
+      const rawItems = recMeds.split(/[;,]/).map((s) => s.trim()).filter(Boolean);
+
+      const parsedMedicines = rawItems.map((item) => {
+        const matchParens = item.match(/^(.*?)\s*\((.*?)\)$/);
+        const genericName = matchParens ? matchParens[1].trim() : item.split(" - ")[0].trim();
+        const dosageInstructions = matchParens ? matchParens[2].trim() : item.split(" - ")[1]?.trim() || "As directed by physician";
+
+        const firstToken = genericName.split(" ")[0].toLowerCase();
+        const matchedDrug = allDrugs.find((d) => {
+          const dn = d.name.toLowerCase();
+          return dn.includes(firstToken) || normalize(d.name).includes(normalize(firstToken));
+        }) || null;
+
+        const estUnitsPerCase = firstToken.includes("paracetamol") || firstToken.includes("ors") ? 10 : 21;
+        const totalEstimatedUnits = Math.max(1, dis.count || 1) * estUnitsPerCase;
+
+        let stockStatus: "in_stock" | "low_stock" | "out_of_stock" = "out_of_stock";
+        if (matchedDrug && matchedDrug.amountInStock !== null) {
+          if (matchedDrug.amountInStock <= 0) {
+            stockStatus = "out_of_stock";
+          } else if (matchedDrug.amountInStock < totalEstimatedUnits) {
+            stockStatus = "low_stock";
+          } else {
+            stockStatus = "in_stock";
+          }
+        }
+
+        return {
+          rawText: item,
+          genericName,
+          dosageInstructions,
+          inventoryDrug: matchedDrug,
+          estimatedRequiredUnits: totalEstimatedUnits,
+          stockStatus,
+        };
+      });
+
+      return {
+        diseaseId: dis.id,
+        diseaseName: dis.name,
+        code: dis.code,
+        category: dis.category,
+        amharic: dis.amharic,
+        caseCount: dis.count,
+        percentage: dis.percentage || 0,
+        recommendedMedicines: recMeds,
+        parsedMedicines,
+      };
+    });
+
+    return protocols;
+  } catch (err) {
+    console.error("Error generating top diseases medicine protocols:", err);
+    return [];
   }
 }
 
@@ -660,6 +756,7 @@ export const addClinicDisease = createSafeAction({
     category: z.string().optional().default("General"),
     amharic: z.string().optional(),
     code: z.string().optional(),
+    recommendedMedicines: z.string().optional(),
   }),
   requiredPermission: PERMISSIONS.HISTORY_WRITE,
   handler: async (data, ctx) => {
@@ -679,6 +776,7 @@ export const addClinicDisease = createSafeAction({
       category: data.category?.trim() || "General",
       amharic: data.amharic?.trim() || undefined,
       code: data.code?.trim() || undefined,
+      recommendedMedicines: data.recommendedMedicines?.trim() || getSuggestedMedicinesForDisease(trimmed, data.category?.trim()),
     };
 
     const updated = [newDisease, ...diseases];
@@ -711,8 +809,18 @@ export const importDiseasesCSV = createSafeAction({
     if (rawLines.length === 0) {
       throw new Error("Uploaded file is empty.");
     }
+    if (rawLines.length === 1) {
+      throw new Error("Uploaded file contains headers but no disease records.");
+    }
 
-    // Helper to parse line with quote support
+    // Auto-detect delimiter from first line (handles standard CSV, semicolon-delimited Excel, or tab TSV)
+    const firstLine = rawLines[0];
+    const commaCount = (firstLine.match(/,/g) || []).length;
+    const semiCount = (firstLine.match(/;/g) || []).length;
+    const tabCount = (firstLine.match(/\t/g) || []).length;
+    const delimiter = semiCount > commaCount && semiCount > tabCount ? ";" : (tabCount > commaCount ? "\t" : ",");
+
+    // Helper to parse line with quote support and dynamic delimiter
     const parseLine = (text: string): string[] => {
       const parts: string[] = [];
       let cur = "";
@@ -726,7 +834,7 @@ export const importDiseasesCSV = createSafeAction({
           } else {
             inQuotes = !inQuotes;
           }
-        } else if ((c === "," || c === "\t") && !inQuotes) {
+        } else if (c === delimiter && !inQuotes) {
           parts.push(cur.trim());
           cur = "";
         } else {
@@ -744,30 +852,77 @@ export const importDiseasesCSV = createSafeAction({
     let nameIdx = -1;
     let catIdx = -1;
     let amhIdx = -1;
+    let medIdx = -1;
 
     headerParts.forEach((h, idx) => {
       const cleaned = cleanHeader(h);
-      if (cleaned === "diseasecode" || cleaned === "code" || cleaned === "icd" || cleaned === "icd10") {
+      if (
+        cleaned === "diseasecode" ||
+        cleaned === "code" ||
+        cleaned === "icd" ||
+        cleaned === "icd10" ||
+        cleaned.includes("code") ||
+        cleaned.includes("icd")
+      ) {
         codeIdx = idx;
-      } else if (cleaned === "diseasename" || cleaned === "disease" || cleaned === "name" || cleaned === "diagnosis") {
+      } else if (
+        cleaned === "diseasename" ||
+        cleaned === "disease" ||
+        cleaned === "name" ||
+        cleaned === "diagnosis" ||
+        cleaned.includes("disease") ||
+        cleaned.includes("diagnosis") ||
+        cleaned.includes("condition")
+      ) {
         nameIdx = idx;
-      } else if (cleaned === "category" || cleaned === "type" || cleaned === "group") {
+      } else if (
+        cleaned === "category" ||
+        cleaned === "type" ||
+        cleaned === "group" ||
+        cleaned.includes("categor") ||
+        cleaned.includes("department")
+      ) {
         catIdx = idx;
-      } else if (cleaned === "amharic" || cleaned === "amharicname" || cleaned === "translation" || cleaned === "amh") {
+      } else if (
+        cleaned === "amharic" ||
+        cleaned === "amharicname" ||
+        cleaned === "translation" ||
+        cleaned === "amh" ||
+        cleaned.includes("amharic") ||
+        cleaned.includes("local") ||
+        h.includes("የህመም")
+      ) {
         amhIdx = idx;
+      } else if (
+        cleaned.includes("medicine") ||
+        cleaned.includes("medication") ||
+        cleaned.includes("drug") ||
+        cleaned.includes("treatment") ||
+        cleaned.includes("rx") ||
+        h.includes("መድኃኒት")
+      ) {
+        medIdx = idx;
       }
     });
 
     // Fallbacks if header wasn't labeled strictly
     if (nameIdx === -1) {
-      if (headerParts.length >= 2) {
+      if (codeIdx === 0 && headerParts.length >= 2) {
+        nameIdx = 1;
+      } else if (codeIdx === 1) {
+        nameIdx = 0;
+      } else if (headerParts.length >= 2) {
         codeIdx = 0;
         nameIdx = 1;
         catIdx = headerParts.length > 2 ? 2 : -1;
         amhIdx = headerParts.length > 3 ? 3 : -1;
+        medIdx = headerParts.length > 4 ? 4 : -1;
       } else {
         nameIdx = 0;
       }
+    }
+    if (codeIdx === -1 && nameIdx === 1) {
+      codeIdx = 0;
     }
 
     const currentList = data.mode === "replace" ? [] : await getClinicDiseases();
@@ -784,6 +939,7 @@ export const importDiseasesCSV = createSafeAction({
       const code = codeIdx !== -1 && cols[codeIdx] ? cols[codeIdx].replace(/^["']|["']$/g, "").trim() : undefined;
       const cat = catIdx !== -1 && cols[catIdx] ? cols[catIdx].replace(/^["']|["']$/g, "").trim() : "General";
       const amh = amhIdx !== -1 && cols[amhIdx] ? cols[amhIdx].replace(/^["']|["']$/g, "").trim() : undefined;
+      const med = medIdx !== -1 && cols[medIdx] ? cols[medIdx].replace(/^["']|["']$/g, "").trim() : undefined;
 
       if (!name || name.length < 2) {
         continue;
@@ -801,6 +957,7 @@ export const importDiseasesCSV = createSafeAction({
           code: code || workingList[matchIdx].code,
           category: cat || workingList[matchIdx].category,
           amharic: amh || workingList[matchIdx].amharic,
+          recommendedMedicines: med || workingList[matchIdx].recommendedMedicines || getSuggestedMedicinesForDisease(name, cat),
         };
         updatedCount++;
       } else {
@@ -810,9 +967,14 @@ export const importDiseasesCSV = createSafeAction({
           code: code || undefined,
           category: cat || "General",
           amharic: amh || undefined,
+          recommendedMedicines: med || getSuggestedMedicinesForDisease(name, cat),
         });
         createdCount++;
       }
+    }
+
+    if (createdCount === 0 && updatedCount === 0) {
+      throw new Error("No valid disease entries could be parsed from the file. Please check column headers.");
     }
 
     await prisma.systemSetting.upsert({
