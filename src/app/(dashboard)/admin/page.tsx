@@ -12,6 +12,7 @@ import { PatientImporter } from "@/features/admin/components/patient-importer";
 import { DevWipePatients } from "@/features/admin/components/dev-wipe-patients";
 import { DevWipeDrugs } from "@/features/admin/components/dev-wipe-drugs";
 import { DevWipeCatalogs } from "@/features/admin/components/dev-wipe-catalogs";
+import { DevWipeDiseases } from "@/features/admin/components/dev-wipe-diseases";
 import { DevSeedDatabase } from "@/features/admin/components/dev-seed-db";
 import { DevModeToggle } from "@/features/admin/components/dev-mode-toggle";
 import { DatabaseBackupButton } from "@/features/admin/components/database-backup-button";
@@ -116,6 +117,7 @@ export default async function AdminDashboardPage(props: { searchParams: Promise<
                 <DevWipePatients />
                 <DevWipeDrugs />
                 <DevWipeCatalogs />
+                <DevWipeDiseases />
                 <DevSeedDatabase />
               </>
             )}

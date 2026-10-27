@@ -22,7 +22,7 @@ export default async function DashboardLayout({
   });
 
   if (!session) {
-    redirect("/login");
+    redirect("/login?reset=1");
   }
 
   const role = session.user.role as string;
@@ -36,7 +36,11 @@ export default async function DashboardLayout({
     prisma.systemSetting.findUnique({ where: { key: "totalOpdRooms" } })
   ]);
 
-  if (fullUser && fullUser.isActive === false) {
+  if (!fullUser) {
+    redirect("/login?reset=1");
+  }
+
+  if (fullUser.isActive === false) {
     redirect("/login?error=deactivated");
   }
 
@@ -96,7 +100,12 @@ export default async function DashboardLayout({
   if (userPermissions.includes(PERMISSIONS.PATIENT_READ)) {
     navItems.push({ name: dict["nav.patients"] || "Patients", href: "/patients", icon: Users });
   }
+
   const isManagerOrAdmin = userPermissions.includes(PERMISSIONS.CATALOG_APPROVE) || ["Admin", "Manager"].includes(role);
+
+  if (role === "Doctor" || isManagerOrAdmin) {
+    navItems.push({ name: dict["nav.morbidity"] || "Weekly Top Diseases", href: "/morbidity", icon: Activity });
+  }
 
   if (userPermissions.includes(PERMISSIONS.LAB_READ)) {
     navItems.push({ name: dict["nav.laboratory"] || "Laboratory", href: "/laboratory", icon: FlaskConical });
@@ -126,6 +135,7 @@ export default async function DashboardLayout({
   }
 
   if (isManagerOrAdmin) {
+    navItems.push({ name: dict["nav.morbidity"] || "Top Diseases Report", href: "/admin/top-diseases-report", icon: Activity });
     navItems.push({ name: dict["nav.admittedReport"] || "Inpatient Reports", href: "/admin/admitted-report", icon: FileText });
   }
 

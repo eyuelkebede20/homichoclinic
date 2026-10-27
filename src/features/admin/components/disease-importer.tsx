@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import Link from "next/link";
 import {
   UploadCloud,
   FileSpreadsheet,
@@ -17,7 +18,8 @@ import {
   Stethoscope,
   Filter,
   Pill,
-  FileDown
+  FileDown,
+  Printer
 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
@@ -399,6 +401,15 @@ export function DiseaseImporter({ initialDiseases }: { initialDiseases?: ClinicD
               <Plus className="w-3.5 h-3.5" />
               Add Single Disease
             </button>
+
+            <Link
+              href="/admin/top-diseases-report"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white rounded-xl shadow-xs transition-colors border border-slate-700"
+              title="View and print official clinical morbidity surveillance report"
+            >
+              <Printer className="w-3.5 h-3.5 text-indigo-400" />
+              Print Morbidity Report
+            </Link>
           </div>
         </div>
 

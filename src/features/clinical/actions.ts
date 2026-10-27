@@ -527,15 +527,20 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
     const setting = await prisma.systemSetting.findUnique({
       where: { key: "clinicDiseasesList" },
     });
-    if (setting?.value) {
-      const parsed = JSON.parse(setting.value);
-      if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.map((d: any) => ({
-          ...d,
-          recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
-        }));
+    if (setting !== null && typeof setting.value === "string") {
+      try {
+        const parsed = JSON.parse(setting.value);
+        if (Array.isArray(parsed)) {
+          return parsed.map((d: any) => ({
+            ...d,
+            recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
+          }));
+        }
+      } catch (parseErr) {
+        console.error("Malformed clinicDiseasesList JSON in DB:", parseErr);
       }
     }
+    // Only if setting does not exist at all in DB yet (first-time initialization)
     const withMeds = DEFAULT_CLINIC_DISEASES.map((d) => ({
       ...d,
       recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
@@ -548,10 +553,7 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
     return withMeds;
   } catch (err) {
     console.error("Error fetching clinic diseases:", err);
-    return DEFAULT_CLINIC_DISEASES.map((d) => ({
-      ...d,
-      recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
-    }));
+    return [];
   }
 }
 
@@ -566,16 +568,27 @@ export type TopDiagnosedDisease = {
   recommendedMedicines?: string;
 };
 
-export async function getTopDiagnosedDiseases(limit: number = 20): Promise<TopDiagnosedDisease[]> {
+export async function getTopDiagnosedDiseases(
+  limit: number = 20,
+  timeRange: "week" | "month" | "all" = "all"
+): Promise<TopDiagnosedDisease[]> {
   try {
+    const whereClause: any = {
+      deletedAt: null,
+      assessment: { not: null },
+    };
+
+    if (timeRange === "week") {
+      whereClause.createdAt = { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) };
+    } else if (timeRange === "month") {
+      whereClause.createdAt = { gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) };
+    }
+
     const [records, catalog] = await Promise.all([
       prisma.medicalRecord.findMany({
-        where: {
-          deletedAt: null,
-          assessment: { not: null },
-        },
+        where: whereClause,
         select: { assessment: true },
-        take: 1000,
+        take: 2000,
       }),
       getClinicDiseases(),
     ]);
@@ -679,10 +692,13 @@ export type DiseaseMedicineProtocol = {
   }[];
 };
 
-export async function getTopDiseasesMedicineProtocols(limit: number = 10): Promise<DiseaseMedicineProtocol[]> {
+export async function getTopDiseasesMedicineProtocols(
+  limit: number = 10,
+  timeRange: "week" | "month" | "all" = "all"
+): Promise<DiseaseMedicineProtocol[]> {
   try {
     const [topDiseases, allDrugs] = await Promise.all([
-      getTopDiagnosedDiseases(limit),
+      getTopDiagnosedDiseases(limit, timeRange),
       prisma.drug.findMany({
         where: { deletedAt: null, isOperational: true },
         select: { id: true, name: true, unit: true, price: true, amountInStock: true },

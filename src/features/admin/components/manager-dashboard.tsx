@@ -764,6 +764,15 @@ export function ManagerDashboard({
               Generate Medicine &amp; Regimens
             </button>
 
+            <Link
+              href="/admin/top-diseases-report"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 text-white border border-slate-700 shadow-xs transition-colors"
+              title="Print official clinical morbidity & top diseases surveillance report with header and footer"
+            >
+              <Printer className="w-3.5 h-3.5 text-indigo-400" />
+              Print Morbidity Report
+            </Link>
+
             <button
               onClick={() => setShowImportModal(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800 transition-colors shadow-2xs"

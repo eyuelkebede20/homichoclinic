@@ -2,10 +2,10 @@
 
 export const dynamic = "force-dynamic";
 
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "@/lib/auth-client";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Eye, EyeOff, User } from "lucide-react";
+import { Loader2, Eye, EyeOff, User, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -19,6 +19,7 @@ export default function LoginPage() {
 function LoginForm() {
   const searchParams = useSearchParams();
   const deactivatedParam = searchParams?.get("error") === "deactivated";
+  const isResetParam = searchParams?.get("reset");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,10 +29,52 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
+  // Proactively clear lingering/stale cookies when visiting login or when ?reset is present
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      const cookiesToClean = [
+        "clinic_v2.session_token",
+        "clinic_v2.session_data",
+        "clinic_v2.dont_remember",
+        "clinic_v2.csrf_token",
+        "better-auth.session_token",
+        "better-auth.session_data",
+        "better-auth.dont_remember",
+      ];
+      cookiesToClean.forEach((c) => {
+        document.cookie = `${c}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`;
+      });
+      if (isResetParam === "done") {
+        toast.info("Session reset. Stale cookies removed.");
+      }
+    }
+  }, [isResetParam]);
+
+  const handleHardReset = () => {
+    try {
+      localStorage.clear();
+      sessionStorage.clear();
+    } catch (_) {}
+    window.location.href = "/reset";
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    // Clean any remnants before fresh login
+    try {
+      const cookiesToClean = [
+        "clinic_v2.session_token",
+        "clinic_v2.session_data",
+        "better-auth.session_token",
+        "better-auth.session_data",
+      ];
+      cookiesToClean.forEach((c) => {
+        document.cookie = `${c}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; max-age=0`;
+      });
+    } catch (_) {}
 
     await signIn.email(
       {
@@ -134,9 +177,21 @@ function LoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full flex justify-center py-3.5 px-4 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed"
+            className="w-full flex justify-center py-3.5 px-4 rounded-xl text-base font-bold text-white bg-blue-600 hover:bg-blue-700 transition-all duration-300 focus:outline-none disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign In"}
+          </button>
+        </div>
+
+        <div className="pt-2 text-center">
+          <button
+            type="button"
+            onClick={handleHardReset}
+            className="text-xs text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 inline-flex items-center gap-1.5 transition-colors cursor-pointer py-1"
+            title="Clears all stored cookies and session tokens and reloads"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Updated system or stuck? Clear session & hard refresh
           </button>
         </div>
       </form>
