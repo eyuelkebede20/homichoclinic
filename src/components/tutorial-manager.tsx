@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getTutorialsForRole, TutorialStep } from "@/lib/tutorials";
-import { X, ChevronRight, ChevronLeft, Check, HelpCircle } from "lucide-react";
+import { X, ChevronRight, ChevronLeft, Check, HelpCircle, Youtube } from "lucide-react";
 
 export function TutorialManager({ role }: { role: string }) {
   const pathname = usePathname();
@@ -123,6 +123,19 @@ export function TutorialManager({ role }: { role: string }) {
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed whitespace-pre-wrap">
             {currentStep.content[locale]}
           </p>
+        </div>
+
+        {/* YouTube Tutorial Link */}
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800">
+          <a
+            href="https://youtube.com/live/X6oiijA3I7Y"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors font-medium"
+          >
+            <Youtube className="w-5 h-5 flex-shrink-0" />
+            {locale === "en" ? "Watch Video Tutorial on YouTube" : "የቪዲዮ መመሪያን በYouTube ይመልከቱ"}
+          </a>
         </div>
 
         {/* Footer */}
