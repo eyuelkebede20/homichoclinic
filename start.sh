@@ -273,6 +273,7 @@ quick_update() {
 
   qstep 3 "Building the new version (the clinic keeps running meanwhile)"
   git rev-parse --short HEAD > version.txt 2>/dev/null || true
+  node -e "try { const fs = require('fs'); const h = fs.readFileSync('version.txt', 'utf8').trim(); const v = fs.existsSync('VERSION') ? fs.readFileSync('VERSION', 'utf8').trim() : '0.1.29'; const info = { name: 'Bure Clinic ERP', version: v, gitCommit: h, buildTime: new Date().toISOString() }; fs.writeFileSync('version.json', JSON.stringify(info, null, 2) + '\n'); } catch(e){}" 2>/dev/null || true
   local bargs=(build); [ "$REBUILD" = 1 ] && bargs+=(--no-cache)
   run_logged "Building the new app image" dc ${PROG[@]+"${PROG[@]}"} "${bargs[@]}" app; rc=$?
   if [ "$rc" -ne 0 ]; then
@@ -440,74 +441,29 @@ done
 ok ".env present and configured."
 
 # ------------------------------------------------------------
-#  4. Update watcher (systemd path unit or background daemon)
+#  4. Update watcher (systemd service or persistent daemon)
 #     Watches run/update.request, which the admin Update button
 #     creates, and then runs update.sh.
 # ------------------------------------------------------------
 step 4 "Checking update watcher"
 
-chmod +x update.sh deploy/*.sh 2>/dev/null || true
+chmod +x update.sh deploy/*.sh *.sh 2>/dev/null || true
 
-WATCHER_ACTIVE=0
-
-# Try systemd if systemctl is available
-if command -v systemctl >/dev/null 2>&1; then
-  RUN_USER="${SUDO_USER:-$(id -un)}"
-  tmp=$(mktemp -d)
-  cat > "$tmp/clinic-update.path" <<UNIT
-[Unit]
-Description=Watch for clinic update requests
-
-[Path]
-PathExists=$ROOT/run/update.request
-Unit=clinic-update.service
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-
-  cat > "$tmp/clinic-update.service" <<UNIT
-[Unit]
-Description=Run the clinic update
-
-[Service]
-Type=oneshot
-User=$RUN_USER
-WorkingDirectory=$ROOT
-SupplementaryGroups=docker
-Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStartPre=+/bin/rm -f $ROOT/run/update.request
-ExecStart=/bin/bash $ROOT/update.sh
-UNIT
-
-  # Install / update the unit definitions
-  if sudo install -m 644 "$tmp/clinic-update.path" "$tmp/clinic-update.service" /etc/systemd/system/ 2>/dev/null \
-     && sudo systemctl daemon-reload 2>/dev/null \
-     && sudo systemctl enable --now clinic-update.path >/dev/null 2>&1; then
-    if systemctl is-active --quiet clinic-update.path 2>/dev/null; then
-      ok "Update watcher (systemd clinic-update.path) is active."
-      WATCHER_ACTIVE=1
-    fi
-  elif systemctl is-active --quiet clinic-update.path 2>/dev/null; then
-    ok "Update watcher (systemd clinic-update.path) is active."
-    WATCHER_ACTIVE=1
-  fi
-  rm -rf "$tmp"
+if [ -f "$ROOT/deploy/install-watcher.sh" ]; then
+  /bin/bash "$ROOT/deploy/install-watcher.sh" silent || true
 fi
 
-# Fallback: if systemd path unit is not active, run clinic-watcher.sh in background
-if [ "$WATCHER_ACTIVE" -eq 0 ]; then
-  if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
-    ok "Update watcher (clinic-watcher.sh) running in background."
+if [ -f "$ROOT/deploy/clinic-watcher.sh" ]; then
+  if "$ROOT/deploy/clinic-watcher.sh" --status >/dev/null 2>&1; then
+    ok "Update watcher is active and monitoring for updates."
   else
-    info "Starting deploy/clinic-watcher.sh in background daemon mode..."
-    nohup "$ROOT/deploy/clinic-watcher.sh" >/dev/null 2>&1 &
-    sleep 1
-    if pgrep -f "clinic-watcher.sh" >/dev/null 2>&1; then
-      ok "clinic-watcher.sh started in background."
+    info "Starting clinic-watcher.sh daemon..."
+    "$ROOT/deploy/clinic-watcher.sh" --daemon || true
+    if "$ROOT/deploy/clinic-watcher.sh" --status >/dev/null 2>&1; then
+      ok "Update watcher started in background daemon mode."
     else
       warn "Could not start clinic-watcher.sh automatically."
-      echo "      Run manually: nohup ./deploy/clinic-watcher.sh >/dev/null 2>&1 &"
+      echo "      Run manually: ./deploy/install-watcher.sh"
     fi
   fi
 fi
@@ -532,6 +488,7 @@ info "Network address of this PC: $LAN_IP"
 
 compose_job() {
   git rev-parse --short HEAD > version.txt 2>/dev/null || true
+  node -e "try { const fs = require('fs'); const h = fs.readFileSync('version.txt', 'utf8').trim(); const v = fs.existsSync('VERSION') ? fs.readFileSync('VERSION', 'utf8').trim() : '0.1.29'; const info = { name: 'Bure Clinic ERP', version: v, gitCommit: h, buildTime: new Date().toISOString() }; fs.writeFileSync('version.json', JSON.stringify(info, null, 2) + '\n'); } catch(e){}" 2>/dev/null || true
   if [ "$REBUILD" = 1 ]; then
     echo ">>> docker compose build --no-cache"
     dc ${PROG[@]+"${PROG[@]}"} build --no-cache || return $?

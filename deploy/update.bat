@@ -85,6 +85,7 @@ call :status "   [OK] Code updated to !NEW_HEAD!"
 :: ── [3/5] Build ─────────────────────────────────────────────
 call :status "[3/5] Building new image... (takes 2-4 min)"
 git rev-parse --short HEAD > version.txt 2>nul
+node -e "try { const fs = require('fs'); const h = fs.readFileSync('version.txt', 'utf8').trim(); const v = fs.existsSync('VERSION') ? fs.readFileSync('VERSION', 'utf8').trim() : '0.1.29'; const info = { name: 'Bure Clinic ERP', version: v, gitCommit: h, buildTime: new Date().toISOString() }; fs.writeFileSync('version.json', JSON.stringify(info, null, 2) + '\n'); } catch(e){}" 2>nul
 docker compose build app >> "%STATUS_FILE%" 2>&1
 if errorlevel 1 (
     call :status "   [!] Build failed - rolling back to !PREV!"

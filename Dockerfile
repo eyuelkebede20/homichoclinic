@@ -39,6 +39,11 @@ COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/prisma ./prisma
 # Copy src for seed scripts that rely on local typescript modules (e.g., auth)
 COPY --from=build --chown=node:node /app/src ./src
+# Copy version metadata files so runtime container always knows exact application version
+COPY --from=build --chown=node:node /app/VERSION ./VERSION
+COPY --from=build --chown=node:node /app/version.json* ./
+COPY --from=build --chown=node:node /app/version.txt* ./
+COPY --from=build --chown=node:node /app/package.json ./package.json
 # Copy the entire node_modules from deps to ensure Prisma CLI and Client are perfectly intact (needed for pnpm symlinks)
 COPY --from=build --chown=node:node /app/node_modules ./node_modules
 

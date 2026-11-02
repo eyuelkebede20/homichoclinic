@@ -10,7 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import zlib from "zlib";
-import pkg from "../../../../../package.json";
+import { getVersionInfo } from "@/lib/version";
 
 const execAsync = util.promisify(exec);
 
@@ -144,7 +144,8 @@ export async function POST(request: Request) {
         restoredVersion = restoredVersionSetting.value;
       }
 
-      const currentAppVersion = pkg.version || "0.1.29";
+      const versionInfo = getVersionInfo();
+      const currentAppVersion = versionInfo.version;
       await prisma.systemSetting.upsert({
         where: { key: "appVersion" },
         update: { value: currentAppVersion },
@@ -164,6 +165,8 @@ export async function POST(request: Request) {
       console.warn("Could not record post-restore metadata:", metaErr);
     }
 
+    const activeVersion = getVersionInfo().version;
+
     // 6. Log the restore action in the system audit log
     await logAudit({
       actorId: session.user.id,
@@ -172,7 +175,7 @@ export async function POST(request: Request) {
       newValue: {
         filename: file.name,
         restoredVersion,
-        currentAppVersion: pkg.version,
+        currentAppVersion: activeVersion,
         format: isCustomArchive ? "custom_binary" : isGzip ? "compressed_sql" : "plain_sql",
       },
       reason: `Admin restored database from ${file.name} (Source Version: ${restoredVersion})`,
@@ -180,9 +183,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Database restored and reconciled successfully to v${pkg.version}.`,
+      message: `Database restored and reconciled successfully to v${activeVersion}.`,
       restoredVersion,
-      currentVersion: pkg.version,
+      currentVersion: activeVersion,
     });
   } catch (error: any) {
     console.error("Restore failed:", error);

@@ -10,7 +10,7 @@ import fs from "fs/promises";
 import path from "path";
 import os from "os";
 import zlib from "zlib";
-import pkg from "../../../../package.json";
+import { getVersionInfo } from "@/lib/version";
 
 const execAsync = util.promisify(exec);
 
@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const format = searchParams.get("format") || "sql.gz"; // Default: compressed SQL (cross-version compatible)
 
-  const appVersion = pkg.version || "0.1.29";
+  const appVersion = getVersionInfo().version;
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 
   // Step 1: Stamp version metadata into the database so the dump contains this version

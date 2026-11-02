@@ -117,10 +117,11 @@ export function SystemUpdater() {
               appendLog("");
               appendLog("⚠️ The host updater service did not pick up the update request.");
               appendLog("   Troubleshooting options:");
-              appendLog("   1. On Linux (Docker): Ensure the host watcher is active:");
+              appendLog("   1. On Linux (Docker): Ensure the host watcher daemon is running:");
               appendLog("      sudo ./deploy/install-watcher.sh");
-              appendLog("      Or run update manually on the host:  ./update.sh");
-              appendLog("   2. On Windows: Run deploy\\install-watcher.bat (as Admin) or run UPDATE.bat");
+              appendLog("      (Or check status: ./deploy/clinic-watcher.sh --status)");
+              appendLog("      (Or run update manually on host: ./update.sh)");
+              appendLog("   2. On Windows: Run deploy\\install-watcher.bat (as Admin) or UPDATE.bat");
               setPhase("failed");
               return;
             }

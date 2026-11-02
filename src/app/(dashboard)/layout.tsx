@@ -60,31 +60,8 @@ export default async function DashboardLayout({
     if (!clinicLogo) clinicLogo = "/icon.png";
   }
 
-  let gitHash = "unknown";
-  let appVersion = "0.0.0";
-  try {
-    const fs = await import("fs");
-    const path = await import("path");
-    
-    // Read package.json version
-    const packageJsonPath = path.join(process.cwd(), "package.json");
-    if (fs.existsSync(packageJsonPath)) {
-      const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
-      if (pkg.version) appVersion = pkg.version;
-    }
-
-    // First try reading version.txt (injected by START scripts)
-    const versionPath = path.join(process.cwd(), "version.txt");
-    if (fs.existsSync(versionPath)) {
-      gitHash = fs.readFileSync(versionPath, "utf-8").trim();
-    } else {
-      // Fallback: try direct git command if running locally outside Docker
-      const { execSync } = require("child_process");
-      gitHash = execSync("git rev-parse --short HEAD").toString().trim();
-    }
-  } catch (e) {
-    // ignore
-  }
+  const { getVersionInfo } = await import("@/lib/version");
+  const versionInfo = getVersionInfo();
 
   const { getDictionary } = await import("@/lib/i18n");
   const dict = await getDictionary();
@@ -203,7 +180,7 @@ export default async function DashboardLayout({
             </div>
             
             <div className="text-[10px] text-slate-600 text-center border-t border-slate-800/50 pt-2 mt-1">
-              v{appVersion} {gitHash !== "unknown" ? `(${gitHash})` : "(Local)"}
+              {versionInfo.displayVersion}
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getVersionInfo } from "@/lib/version";
 
 /**
  * GET /api/health
@@ -11,10 +12,29 @@ import { prisma } from "@/lib/prisma";
  * Returns 503 { ok: false } otherwise.
  */
 export async function GET() {
+  const versionInfo = getVersionInfo();
   try {
     await prisma.$queryRaw`SELECT 1`;
-    return NextResponse.json({ ok: true }, { status: 200 });
+    return NextResponse.json(
+      { ok: true, version: versionInfo.version, commit: versionInfo.gitCommit },
+      {
+        status: 200,
+        headers: {
+          "X-App-Version": versionInfo.version,
+          "X-Git-Commit": versionInfo.gitCommit,
+          "X-Server-Time": new Date().toISOString(),
+        },
+      }
+    );
   } catch {
-    return NextResponse.json({ ok: false, error: "db_unreachable" }, { status: 503 });
+    return NextResponse.json(
+      { ok: false, error: "db_unreachable", version: versionInfo.version },
+      {
+        status: 503,
+        headers: {
+          "X-App-Version": versionInfo.version,
+        },
+      }
+    );
   }
 }

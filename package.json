@@ -1,6 +1,7 @@
 {
-  "name": "temp-app",
+  "name": "bure-clinic",
   "version": "0.1.29",
+  "description": "Bure Clinic Management System & Staff ERP",
   "private": true,
   "scripts": {
     "dev": "prisma generate && prisma db push --accept-data-loss && next dev",
