@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cancelPrescription } from "../actions";
-import { XCircle, Loader2 } from "lucide-react";
+import { RotateCcw, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function CancelPrescriptionButton({ prescriptionId }: { prescriptionId: string }) {
@@ -26,10 +26,11 @@ export function CancelPrescriptionButton({ prescriptionId }: { prescriptionId: s
     <button 
       onClick={handleCancel}
       disabled={loading}
-      className="inline-flex items-center justify-center p-2 rounded border border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/30 transition-colors disabled:opacity-50"
-      title="Cancel/Reject Prescription"
+      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-400 dark:hover:bg-amber-950/40 text-xs font-semibold transition-colors disabled:opacity-50"
+      title="Return Prescription to Doctor with Reason"
     >
-      {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <XCircle className="h-4 w-4" />}
+      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+      <span>Return</span>
     </button>
   );
 }

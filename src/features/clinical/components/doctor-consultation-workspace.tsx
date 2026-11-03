@@ -31,11 +31,14 @@ import {
   ExternalLink,
   History,
   FileUp,
+  Trash2,
 } from "lucide-react";
 import {
   addClinicalNote,
   requestLabTest,
   createPrescription,
+  deletePrescription,
+  deletePrescriptionItem,
   saveReferral,
   toggleAdmissionStatus,
   deactivatePatientOpd,
@@ -299,6 +302,16 @@ export function DoctorConsultationWorkspace({
   // Check for returned prescriptions from pharmacy
   const returnedPrescriptions = useMemo(() => {
     return (patient.prescriptions || []).filter((p: any) => p.status === "returned");
+  }, [patient.prescriptions]);
+
+  // Check for queued prescriptions waiting at pharmacy (pending dispensing)
+  const queuedPrescriptions = useMemo(() => {
+    return (patient.prescriptions || []).filter(
+      (p: any) =>
+        p.status === "pending" &&
+        !p.deletedAt &&
+        (p.items || []).some((i: any) => !i.deletedAt)
+    );
   }, [patient.prescriptions]);
 
   async function handleRxSubmit(e: React.FormEvent) {
@@ -1505,6 +1518,124 @@ export function DoctorConsultationWorkspace({
                   <span>
                     <strong>Note:</strong> Pharmacy previously returned a prescription for this patient. Please review the returned note and submit an adjusted medication order.
                   </span>
+                </div>
+              )}
+
+              {/* Queued Prescriptions at Pharmacy Notice / Card */}
+              {queuedPrescriptions.length > 0 && (
+                <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 rounded-2xl p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                        Currently Queued at Pharmacy (Pending Dispensing)
+                      </h4>
+                      <span className="text-[10px] font-bold bg-amber-200 dark:bg-amber-800/60 text-amber-800 dark:text-amber-200 px-2 py-0.5 rounded-full">
+                        {queuedPrescriptions.reduce(
+                          (acc: number, p: any) =>
+                            acc + (p.items?.filter((i: any) => !i.deletedAt)?.length || 0),
+                          0
+                        )}{" "}
+                        queued
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-amber-700/80 dark:text-amber-400">
+                      Click <span className="font-bold">✕</span> to remove any medicine before it is dispensed
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {queuedPrescriptions.map((rx: any) => {
+                      const activeItems = (rx.items || []).filter((i: any) => !i.deletedAt);
+                      if (activeItems.length === 0) return null;
+                      return (
+                        <div
+                          key={rx.id}
+                          className="bg-white dark:bg-slate-900 border border-amber-200/80 dark:border-amber-800/40 rounded-xl p-3 shadow-2xs"
+                        >
+                          <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 mb-2">
+                            <span className="text-xs font-medium text-slate-500 flex items-center gap-1.5">
+                              <Clock className="w-3.5 h-3.5 text-amber-500" />
+                              Prescribed {formatToEthiopianDate(rx.createdAt)}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (
+                                  !confirm(
+                                    "Are you sure you want to cancel and remove this entire prescription from the pharmacy queue?"
+                                  )
+                                )
+                                  return;
+                                setLoading(true);
+                                const res = await deletePrescription({ prescriptionId: rx.id });
+                                setLoading(false);
+                                if (res.error) toast.error(res.error);
+                                else {
+                                  toast.success("Prescription removed from pharmacy queue.");
+                                  router.refresh();
+                                }
+                              }}
+                              disabled={loading}
+                              className="text-xs font-medium text-red-600 hover:text-red-700 dark:text-red-400 hover:underline flex items-center gap-1"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                              Remove Entire Prescription
+                            </button>
+                          </div>
+
+                          <ul className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {activeItems.map((item: any) => (
+                              <li
+                                key={item.id}
+                                className="py-2 flex items-center justify-between text-xs text-slate-700 dark:text-slate-300"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Pill className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                                  <span className="font-bold text-slate-900 dark:text-slate-100">
+                                    {item.drug?.name || "Medication"}
+                                  </span>
+                                  <span className="text-slate-500 font-mono">×{item.quantity}</span>
+                                  {item.instructions && (
+                                    <span className="text-slate-400 italic truncate max-w-xs">
+                                      — {item.instructions}
+                                    </span>
+                                  )}
+                                </div>
+
+                                {/* Simple X button */}
+                                <button
+                                  type="button"
+                                  onClick={async () => {
+                                    const drugName = item.drug?.name || "this medicine";
+                                    if (
+                                      !confirm(
+                                        `Remove "${drugName}" from pharmacy queue before it is dispensed?`
+                                      )
+                                    )
+                                      return;
+                                    setLoading(true);
+                                    const res = await deletePrescriptionItem({ itemId: item.id });
+                                    setLoading(false);
+                                    if (res.error) toast.error(res.error);
+                                    else {
+                                      toast.success(`"${drugName}" removed from pharmacy queue.`);
+                                      router.refresh();
+                                    }
+                                  }}
+                                  disabled={loading}
+                                  className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                  title={`Remove ${item.drug?.name || "medicine"} before dispensing`}
+                                >
+                                  <X className="w-4 h-4 text-slate-400 hover:text-red-600" />
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 

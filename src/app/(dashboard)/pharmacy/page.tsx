@@ -5,6 +5,8 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { DispenseButton } from "@/features/pharmacy/components/dispense-button";
 import { CancelPrescriptionButton } from "@/features/pharmacy/components/cancel-prescription-button";
+import { DeletePrescriptionButton } from "@/features/pharmacy/components/delete-prescription-button";
+import { RemoveQueuedMedicineButton } from "@/features/pharmacy/components/remove-queued-medicine-button";
 import { InventoryManager } from "@/features/pharmacy/components/inventory-manager";
 import { PrintReceiptButton } from "@/features/pharmacy/components/print-receipt-button";
 import { NotificationPing } from "@/components/notification-ping";
@@ -58,6 +60,7 @@ export default async function PharmacyDashboardPage({
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const whereClause: import("@prisma/client").Prisma.PrescriptionWhereInput = {
+    deletedAt: null,
     OR: [
       { status: "dispensed" },
       { status: "pending", createdAt: { gte: oneWeekAgo } },
@@ -75,7 +78,13 @@ export default async function PharmacyDashboardPage({
 
   const prescriptions = await prisma.prescription.findMany({
     where: whereClause,
-    include: { patient: true, items: { include: { drug: true } } },
+    include: {
+      patient: true,
+      items: {
+        where: { deletedAt: null },
+        include: { drug: true },
+      },
+    },
     orderBy: { createdAt: "desc" },
     take: 100,
   });
@@ -417,32 +426,38 @@ function PrescriptionCard({
       </div>
 
       {/* Drug list */}
-      <ul className="space-y-1 mb-3">
+      <ul className="space-y-1.5 mb-3">
         {rx.items.map((item) => (
           <li
             key={item.id}
-            className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400"
+            className="flex items-center justify-between gap-2 text-xs text-slate-600 dark:text-slate-400 group bg-slate-50/50 dark:bg-slate-800/30 px-2.5 py-1 rounded-md"
           >
-            <Pill className="w-3 h-3 text-blue-400 shrink-0" />
-            <span className="font-medium text-slate-700 dark:text-slate-300">
-              {item.drug.name}
-            </span>
-            <span className="text-slate-400">×{item.quantity}</span>
-            {item.instructions && (
-              <span className="italic text-slate-400 truncate max-w-[140px]">
-                — {item.instructions}
+            <div className="flex items-center gap-2 min-w-0">
+              <Pill className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="font-semibold text-slate-700 dark:text-slate-200 truncate">
+                {item.drug.name}
               </span>
+              <span className="text-slate-400 shrink-0">×{item.quantity}</span>
+              {item.instructions && (
+                <span className="italic text-slate-400 truncate max-w-[140px]">
+                  — {item.instructions}
+                </span>
+              )}
+            </div>
+            {variant === "pending" && canDispense && (
+              <RemoveQueuedMedicineButton itemId={item.id} drugName={item.drug.name} />
             )}
           </li>
         ))}
       </ul>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {variant === "pending" && canDispense && (
           <>
             <DispenseButton prescriptionId={rx.id} />
             <CancelPrescriptionButton prescriptionId={rx.id} />
+            <DeletePrescriptionButton prescriptionId={rx.id} />
           </>
         )}
         <PrintReceiptButton prescriptionId={rx.id} />

@@ -112,7 +112,7 @@ export default async function DashboardLayout({
   }
 
   if (isManagerOrAdmin) {
-    navItems.push({ name: dict["nav.morbidity"] || "Top Diseases Report", href: "/admin/top-diseases-report", icon: Activity });
+    navItems.push({ name: dict["nav.topDiseasesReport"] || "Top Diseases Report", href: "/admin/top-diseases-report", icon: Activity });
     navItems.push({ name: dict["nav.admittedReport"] || "Inpatient Reports", href: "/admin/admitted-report", icon: FileText });
   }
 
@@ -151,7 +151,7 @@ export default async function DashboardLayout({
             const Icon = item.icon;
             return (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
                 className="flex items-center px-3 py-2.5 text-sm font-medium rounded-lg text-slate-400 hover:bg-slate-800/50 hover:text-slate-100 transition-colors group"
               >

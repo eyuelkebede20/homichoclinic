@@ -1,7 +1,7 @@
 "use server";
 
 import { createSafeAction } from "@/lib/safe-action";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, getUserPermissions } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { receiveStockSchema, dispensePrescriptionSchema } from "./schemas";
@@ -191,6 +191,141 @@ export const cancelPrescription = createSafeAction({
     revalidatePath("/dashboard");
     return updated;
   }
+});
+
+export const deletePrescriptionItem = createSafeAction({
+  schema: z.object({
+    itemId: z.string(),
+    reason: z.string().optional(),
+  }),
+  handler: async (data, ctx) => {
+    const userPermissions = getUserPermissions(ctx.role);
+    const hasDoctorPerm =
+      userPermissions.includes(PERMISSIONS.PRESCRIPTION_CREATE) ||
+      userPermissions.includes(PERMISSIONS.HISTORY_WRITE);
+    const hasPharmacyPerm = userPermissions.includes(PERMISSIONS.PRESCRIPTION_DISPENSE);
+    if (!hasDoctorPerm && !hasPharmacyPerm && ctx.role !== "Admin") {
+      throw new Error("Forbidden: Missing permission to remove prescribed medicine");
+    }
+
+    const item = await prisma.prescriptionItem.findUnique({
+      where: { id: data.itemId },
+      include: {
+        drug: true,
+        prescription: {
+          include: {
+            items: { where: { deletedAt: null } },
+            patient: true,
+          },
+        },
+      },
+    });
+
+    if (!item || item.deletedAt) {
+      throw new Error("Prescription item not found or already removed");
+    }
+
+    if (item.prescription.status === "dispensed") {
+      throw new Error("Cannot remove medicine that has already been dispensed by the pharmacy");
+    }
+
+    const now = new Date();
+
+    // Soft-delete this prescription item
+    await prisma.prescriptionItem.update({
+      where: { id: data.itemId },
+      data: { deletedAt: now },
+    });
+
+    // If this was the only active item remaining in the prescription, mark the entire prescription as cancelled
+    const remainingActiveItems = item.prescription.items.filter((i) => i.id !== data.itemId);
+    if (remainingActiveItems.length === 0) {
+      await prisma.prescription.update({
+        where: { id: item.prescriptionId },
+        data: { status: "cancelled", deletedAt: now },
+      });
+    }
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "REMOVE_QUEUED_PRESCRIPTION_ITEM",
+      resourceId: item.id,
+      newValue: {
+        drugName: item.drug.name,
+        quantity: item.quantity,
+        prescriptionId: item.prescriptionId,
+        patientId: item.prescription.patientId,
+      },
+      reason: data.reason || "Removed before medicine is dispensed",
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath(`/patients/${item.prescription.patientId}`);
+    revalidatePath("/dashboard");
+
+    return { success: true, drugName: item.drug.name };
+  },
+});
+
+export const deletePrescription = createSafeAction({
+  schema: z.object({
+    prescriptionId: z.string(),
+    reason: z.string().optional(),
+  }),
+  handler: async (data, ctx) => {
+    const userPermissions = getUserPermissions(ctx.role);
+    const hasDoctorPerm =
+      userPermissions.includes(PERMISSIONS.PRESCRIPTION_CREATE) ||
+      userPermissions.includes(PERMISSIONS.HISTORY_WRITE);
+    const hasPharmacyPerm = userPermissions.includes(PERMISSIONS.PRESCRIPTION_DISPENSE);
+    if (!hasDoctorPerm && !hasPharmacyPerm && ctx.role !== "Admin") {
+      throw new Error("Forbidden: Missing permission to delete prescription");
+    }
+
+    const prescription = await prisma.prescription.findUnique({
+      where: { id: data.prescriptionId },
+      include: { items: true, patient: true },
+    });
+
+    if (!prescription || prescription.deletedAt) {
+      throw new Error("Prescription not found or already deleted");
+    }
+
+    if (prescription.status === "dispensed") {
+      throw new Error("Cannot delete a prescription that has already been dispensed by the pharmacy");
+    }
+
+    const now = new Date();
+
+    await prisma.$transaction([
+      prisma.prescriptionItem.updateMany({
+        where: { prescriptionId: data.prescriptionId },
+        data: { deletedAt: now },
+      }),
+      prisma.prescription.update({
+        where: { id: data.prescriptionId },
+        data: { status: "cancelled", deletedAt: now },
+      }),
+    ]);
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: "DELETE_QUEUED_PRESCRIPTION",
+      resourceId: prescription.id,
+      newValue: {
+        status: "cancelled",
+        patientId: prescription.patientId,
+        itemsCount: prescription.items.length,
+      },
+      reason: data.reason || "Deleted before medicine is dispensed",
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath(`/patients/${prescription.patientId}`);
+    revalidatePath("/dashboard");
+
+    return { success: true };
+  },
 });
 
 export const updateTemporaryDrugStock = createSafeAction({

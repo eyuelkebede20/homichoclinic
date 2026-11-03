@@ -63,7 +63,13 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
         orderBy: { createdAt: "desc" },
       },
       prescriptions: {
-        include: { items: { include: { drug: true } } },
+        where: { deletedAt: null },
+        include: {
+          items: {
+            where: { deletedAt: null },
+            include: { drug: true }
+          }
+        },
         orderBy: { createdAt: "desc" },
       },
     },

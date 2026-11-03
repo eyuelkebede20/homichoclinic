@@ -18,6 +18,7 @@ const en: Dictionary = {
   "nav.admin": "Admin",
   "nav.admittedReport": "Inpatient Reports",
   "nav.morbidity": "Weekly Top Diseases",
+  "nav.topDiseasesReport": "Top Diseases Report",
   "nav.myStation": "My Station",
   // Dashboard Home
   "dash.welcome": "Welcome to Clinic ERP",
@@ -44,6 +45,7 @@ const am: Dictionary = {
   "nav.admin": "አስተዳዳሪ",
   "nav.admittedReport": "የተኝቶ ታካሚ ሪፖርት",
   "nav.morbidity": "የሳምንቱ ዋና በሽታዎች",
+  "nav.topDiseasesReport": "የበሽታዎች ሪፖርት",
   "nav.myStation": "የእኔ ጣቢያ",
   // Dashboard Home
   "dash.welcome": "ወደ ክሊኒክ ሲስተም በደህና መጡ",
