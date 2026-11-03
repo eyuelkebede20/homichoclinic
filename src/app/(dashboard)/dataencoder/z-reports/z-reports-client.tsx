@@ -2,9 +2,11 @@
 
 import { Printer, Download, Banknote, FileSpreadsheet, LayoutDashboard, Search, UserCheck, Eye, X, Layers, List, CheckCircle2, Calendar, FileText, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { formatToEthiopianDate } from "@/lib/date-utils";
+import { formatToEthiopianDate, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
+import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 
 export type InvoiceItemDetail = {
   id: string;
@@ -61,6 +63,30 @@ export type ClinicInfo = {
 };
 
 export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport[]; clinicInfo?: ClinicInfo }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const fromDate = searchParams.get("from") || "";
+  const toDate = searchParams.get("to") || "";
+
+  const handleDateChange = (type: "from" | "to", value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(type, value);
+    } else {
+      params.delete(type);
+    }
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  const handleClearDates = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("from");
+    params.delete("to");
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEncoder, setSelectedEncoder] = useState("all");
   const [viewMode, setViewMode] = useState<"grouped" | "individual">("grouped");
@@ -72,6 +98,29 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
   }, [reports]);
 
   const filteredReports = useMemo(() => {
+    let fromGreg: Date | null = null;
+    if (fromDate) {
+      const eth = parseEthiopianDateString(fromDate);
+      if (eth) fromGreg = ethiopianToGregorian(eth.year, eth.month, eth.day, 0, 0, 0);
+      else {
+        const d = new Date(fromDate);
+        if (!isNaN(d.getTime())) fromGreg = d;
+      }
+    }
+
+    let toGreg: Date | null = null;
+    if (toDate) {
+      const eth = parseEthiopianDateString(toDate);
+      if (eth) toGreg = ethiopianToGregorian(eth.year, eth.month, eth.day, 23, 59, 59, 999);
+      else {
+        const d = new Date(toDate);
+        if (!isNaN(d.getTime())) {
+          d.setHours(23, 59, 59, 999);
+          toGreg = d;
+        }
+      }
+    }
+
     return reports.filter(r => {
       const q = searchTerm.toLowerCase().trim();
       const matchesSearch = !q || 
@@ -83,9 +132,16 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
       
       const matchesEncoder = selectedEncoder === "all" || r.encoderName === selectedEncoder;
 
-      return matchesSearch && matchesEncoder;
+      let matchesDate = true;
+      if (r.createdAt && (fromGreg || toGreg)) {
+        const itemTime = new Date(r.createdAt).getTime();
+        if (fromGreg && itemTime < fromGreg.getTime()) matchesDate = false;
+        if (toGreg && itemTime > toGreg.getTime()) matchesDate = false;
+      }
+
+      return matchesSearch && matchesEncoder && matchesDate;
     });
-  }, [reports, searchTerm, selectedEncoder]);
+  }, [reports, searchTerm, selectedEncoder, fromDate, toDate]);
 
   // Group similar user credits into one row
   const groupedStaffCredits = useMemo(() => {
@@ -898,6 +954,37 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
                 <List className="w-3.5 h-3.5" />
                 Individual ({filteredReports.length})
               </button>
+            </div>
+
+            {/* Date Range: Start Date & Finish Date Filter */}
+            <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200 dark:border-slate-800">
+              <div className="w-36 sm:w-40">
+                <EthiopianDatePicker
+                  value={fromDate}
+                  onChange={(val) => handleDateChange("from", val)}
+                  placeholder="ከ ቀን (Start Date)"
+                  mode="ethiopian-date"
+                />
+              </div>
+              <span className="text-xs text-slate-400 font-bold px-0.5">-</span>
+              <div className="w-36 sm:w-40">
+                <EthiopianDatePicker
+                  value={toDate}
+                  onChange={(val) => handleDateChange("to", val)}
+                  placeholder="እስከ ቀን (Finish Date)"
+                  mode="ethiopian-date"
+                />
+              </div>
+              {(fromDate || toDate) && (
+                <button
+                  type="button"
+                  onClick={handleClearDates}
+                  className="p-1 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                  title="Clear Date Filter"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
             {/* Search Filter */}

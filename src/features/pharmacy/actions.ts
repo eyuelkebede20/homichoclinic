@@ -148,26 +148,47 @@ export const dispensePrescription = createSafeAction({
 import { z } from "zod";
 
 export const cancelPrescription = createSafeAction({
-  schema: z.object({ prescriptionId: z.string() }),
+  schema: z.object({ 
+    prescriptionId: z.string(),
+    reason: z.string().optional() 
+  }),
   requiredPermission: PERMISSIONS.PRESCRIPTION_DISPENSE,
   handler: async (data, ctx) => {
-    const rx = await prisma.prescription.findUnique({ where: { id: data.prescriptionId } });
+    const rx = await prisma.prescription.findUnique({ 
+      where: { id: data.prescriptionId },
+      include: { items: true, patient: true }
+    });
     if (!rx) throw new Error("Prescription not found");
     if (rx.status === "dispensed") throw new Error("Cannot cancel a dispensed prescription");
 
+    const returnReason = data.reason?.trim() || "Returned by pharmacy to doctor";
+
+    // Update first item's instructions to note the return reason clearly for the doctor
+    if (rx.items.length > 0) {
+      await prisma.prescriptionItem.update({
+        where: { id: rx.items[0].id },
+        data: {
+          instructions: `[RETURNED BY PHARMACY: ${returnReason}] - ${rx.items[0].instructions}`
+        }
+      });
+    }
+
     const updated = await prisma.prescription.update({
       where: { id: data.prescriptionId },
-      data: { status: "cancelled" }
+      data: { status: "returned" }
     });
 
     await logAudit({
       actorId: ctx.userId,
-      action: "CANCEL_PRESCRIPTION",
+      action: "RETURN_PRESCRIPTION",
       resourceId: updated.id,
-      newValue: { status: "cancelled" },
+      reason: returnReason,
+      newValue: { status: "returned", reason: returnReason },
     });
 
     revalidatePath("/pharmacy");
+    revalidatePath(`/patients/${rx.patientId}`);
+    revalidatePath("/dashboard");
     return updated;
   }
 });

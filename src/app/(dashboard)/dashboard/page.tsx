@@ -108,9 +108,11 @@ export default async function DashboardPage() {
               labRequests: {
                 where: {
                   status: { in: ["urgent", "requested", "completed"] },
-                  createdAt: { gte: today },
+                  deletedAt: null,
                 },
-                include: { test: true },
+                include: { test: true, result: true },
+                orderBy: { createdAt: "desc" },
+                take: 10,
               },
             },
           },
@@ -118,7 +120,15 @@ export default async function DashboardPage() {
         orderBy: { updatedAt: "desc" }
       }),
       prisma.labResult.findMany({
-        where: { request: { requestedBy: session.user.id } },
+        where: {
+          OR: [
+            { request: { requestedBy: session.user.id } },
+            ...(currentOpdRoom ? [
+              { request: { patient: { visits: { some: { opdRoom: currentOpdRoom, status: { in: ["scheduled", "in_progress"] }, deletedAt: null } } } } }
+            ] : []),
+            { request: { patient: { visits: { some: { doctorId: session.user.id, status: { in: ["scheduled", "in_progress"] }, deletedAt: null } } } } }
+          ]
+        },
         include: { request: { include: { patient: true, test: true } } },
         orderBy: { createdAt: "desc" },
         take: 100,

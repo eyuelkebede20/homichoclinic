@@ -29,7 +29,7 @@ export async function getNotifications() {
       visitDate: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
     };
 
-    const [pending, totalCount] = await Promise.all([
+    const [pending, totalCount, returnedRx] = await Promise.all([
       prisma.visit.findMany({
         where,
         select: {
@@ -40,17 +40,40 @@ export async function getNotifications() {
         orderBy: { updatedAt: "desc" },
         take: 5
       }),
-      prisma.visit.count({ where })
+      prisma.visit.count({ where }),
+      prisma.prescription.findMany({
+        where: {
+          doctorId: session.user.id,
+          status: "returned",
+          updatedAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        },
+        select: {
+          id: true,
+          patientId: true,
+          updatedAt: true,
+          patient: { select: { firstName: true, lastName: true } }
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 5
+      })
     ]);
 
-    count = totalCount;
-    items = pending.map(p => ({
+    const returnedItems = returnedRx.map(rx => ({
+      id: rx.id,
+      title: "⚠️ Prescription Returned by Pharmacy",
+      desc: `Pharmacy returned prescription for ${rx.patient.firstName} ${rx.patient.lastName}.`,
+      time: rx.updatedAt.toLocaleTimeString(),
+      link: `/patients/${rx.patientId}`
+    }));
+
+    count = totalCount + returnedRx.length;
+    items = [...returnedItems, ...pending.map(p => ({
       id: p.id,
       title: "New Patient in Queue",
       desc: `${p.patient.firstName} ${p.patient.lastName} was assigned to your room.`,
       time: p.updatedAt.toLocaleTimeString(),
       link: `/dashboard`
-    }));
+    }))].slice(0, 5);
   } 
   
   else if (role === "Pharmacy") {

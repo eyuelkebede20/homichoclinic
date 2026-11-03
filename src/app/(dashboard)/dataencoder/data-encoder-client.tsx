@@ -48,6 +48,13 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
     router.push(`${pathname}?${params.toString()}`);
   };
 
+  const handleClearDates = () => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("from");
+    params.delete("to");
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh();
@@ -268,27 +275,35 @@ export function DataEncoderClient({ initialInvoices }: { initialInvoices: Invoic
         </div>
         
         <div className="flex flex-wrap items-center gap-2 pb-4 sm:pb-0 w-full sm:w-auto">
-          {activeTab !== "pending" && (
-            <div className="flex items-center gap-2 mr-2">
-              <div className="w-44">
-                <EthiopianDatePicker
-                  value={fromDate}
-                  onChange={(val) => handleDateChange("from", val)}
-                  placeholder="ከ ቀን (From date)"
-                  mode="ethiopian-date"
-                />
-              </div>
-              <span className="text-sm text-slate-500">-</span>
-              <div className="w-44">
-                <EthiopianDatePicker
-                  value={toDate}
-                  onChange={(val) => handleDateChange("to", val)}
-                  placeholder="እስከ ቀን (To date)"
-                  mode="ethiopian-date"
-                />
-              </div>
+          <div className="flex items-center gap-2 mr-2">
+            <div className="w-40 sm:w-44">
+              <EthiopianDatePicker
+                value={fromDate}
+                onChange={(val) => handleDateChange("from", val)}
+                placeholder="ከ ቀን (Start Date)"
+                mode="ethiopian-date"
+              />
             </div>
-          )}
+            <span className="text-sm text-slate-500">-</span>
+            <div className="w-40 sm:w-44">
+              <EthiopianDatePicker
+                value={toDate}
+                onChange={(val) => handleDateChange("to", val)}
+                placeholder="እስከ ቀን (Finish Date)"
+                mode="ethiopian-date"
+              />
+            </div>
+            {(fromDate || toDate) && (
+              <button
+                type="button"
+                onClick={handleClearDates}
+                className="p-1.5 text-slate-400 hover:text-red-500 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
+                title="Clear Date Filter"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
           <div className="relative flex-1 sm:w-48">
             <Search className="absolute left-2.5 top-2.5 w-4 h-4 text-slate-400" />
             <input

@@ -90,6 +90,31 @@ export function getLabPanelType(testName: string): LabPanelType | null {
   return null;
 }
 
+function tryParseOrRepairJson(str: string): any | null {
+  const trimmed = str.trim();
+  if (!trimmed.startsWith("{")) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {}
+
+  const attempts = [
+    trimmed + '"}',
+    trimmed + '}',
+    trimmed.replace(/,"[^"]*"?:?$/, "") + "}",
+    trimmed.replace(/,"[^"]*":?"?$/, "") + "}",
+    trimmed.replace(/,"[^"]*$/, "") + "}",
+    trimmed.replace(/,"[^"]*":?$/, "") + "}",
+  ];
+
+  for (const a of attempts) {
+    try {
+      const p = JSON.parse(a);
+      if (p && typeof p === "object") return p;
+    } catch {}
+  }
+  return null;
+}
+
 export function parseLabFindings(findings: string | null | undefined): {
   isStructured: boolean;
   type: LabPanelType | null;
@@ -101,71 +126,65 @@ export function parseLabFindings(findings: string | null | undefined): {
   }
 
   const trimmed = findings.trim();
-  if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
-    try {
-      const parsed = JSON.parse(trimmed);
-      if (parsed && typeof parsed === "object") {
-        const t = (parsed.type || "").toUpperCase();
+  const parsed = tryParseOrRepairJson(trimmed);
+  if (parsed && typeof parsed === "object") {
+    const t = (parsed.type || "").toUpperCase();
 
-        // 1. Explicit or auto-detected STOOL panel
-        if (
-          t === "STOOL" ||
-          "consistence" in parsed ||
-          "ovaAndParasite" in parsed ||
-          "bloodGross" in parsed
-        ) {
-          return {
-            isStructured: true,
-            type: "STOOL",
-            data: { ...parsed, type: "STOOL" },
-            rawText: parsed.remarks || "",
-          };
-        }
-
-        // 2. Explicit or auto-detected URINE panel
-        if (
-          t === "URINE" ||
-          "specificGravity" in parsed ||
-          "albuminQualitative" in parsed ||
-          "sugarQualitative" in parsed ||
-          "diaceticAcid" in parsed
-        ) {
-          return {
-            isStructured: true,
-            type: "URINE",
-            data: { ...parsed, type: "URINE" },
-            rawText: parsed.remarks || "",
-          };
-        }
-
-        // 3. Explicit or auto-detected HEMATOLOGY panel
-        if (
-          t === "HEMATOLOGY" ||
-          "wbc" in parsed ||
-          "hemoglobin" in parsed ||
-          "platelets" in parsed ||
-          "esr" in parsed ||
-          "neutrophils" in parsed
-        ) {
-          return {
-            isStructured: true,
-            type: "HEMATOLOGY",
-            data: { ...parsed, type: "HEMATOLOGY" },
-            rawText: parsed.remarks || "",
-          };
-        }
-
-        // 4. Any other structured JSON object - parse as GENERIC_JSON
-        return {
-          isStructured: true,
-          type: "GENERIC_JSON",
-          data: parsed,
-          rawText: parsed.remarks || parsed.comments || parsed.interpretation || "",
-        };
-      }
-    } catch {
-      // Not valid JSON, fallback to raw text
+    // 1. Explicit or auto-detected STOOL panel
+    if (
+      t === "STOOL" ||
+      "consistence" in parsed ||
+      "ovaAndParasite" in parsed ||
+      "bloodGross" in parsed
+    ) {
+      return {
+        isStructured: true,
+        type: "STOOL",
+        data: { ...parsed, type: "STOOL" },
+        rawText: parsed.remarks || "",
+      };
     }
+
+    // 2. Explicit or auto-detected URINE panel
+    if (
+      t === "URINE" ||
+      "specificGravity" in parsed ||
+      "albuminQualitative" in parsed ||
+      "sugarQualitative" in parsed ||
+      "diaceticAcid" in parsed
+    ) {
+      return {
+        isStructured: true,
+        type: "URINE",
+        data: { ...parsed, type: "URINE" },
+        rawText: parsed.remarks || "",
+      };
+    }
+
+    // 3. Explicit or auto-detected HEMATOLOGY panel
+    if (
+      t === "HEMATOLOGY" ||
+      "wbc" in parsed ||
+      "hemoglobin" in parsed ||
+      "platelets" in parsed ||
+      "esr" in parsed ||
+      "neutrophils" in parsed
+    ) {
+      return {
+        isStructured: true,
+        type: "HEMATOLOGY",
+        data: { ...parsed, type: "HEMATOLOGY" },
+        rawText: parsed.remarks || "",
+      };
+    }
+
+    // 4. Any other structured JSON object - parse as GENERIC_JSON
+    return {
+      isStructured: true,
+      type: "GENERIC_JSON",
+      data: parsed,
+      rawText: parsed.remarks || parsed.comments || parsed.interpretation || "",
+    };
   }
 
   // Also check if string contains unescaped JSON object

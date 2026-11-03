@@ -33,12 +33,34 @@ export function DoctorLabResultsInbox({
   const [filter, setFilter] = useState<"unread" | "reviewed" | "all">("unread");
   const [searchQuery, setSearchQuery] = useState("");
   const [diagnosingResult, setDiagnosingResult] = useState<LabResultInboxItem | null>(null);
+  const [showReviewedHistory, setShowReviewedHistory] = useState(false);
   const router = useRouter();
 
   if (results.length === 0) return null;
 
   const unreadResults = results.filter((r) => !r.isReadByDoctor);
   const reviewedResults = results.filter((r) => r.isReadByDoctor);
+
+  // If there are no new/unread results, hide the inbox completely by default
+  if (unreadResults.length === 0 && !showReviewedHistory) {
+    if (reviewedResults.length === 0) return null;
+    return (
+      <div className="flex justify-end mb-4 -mt-2">
+        <button
+          type="button"
+          onClick={() => {
+            setShowReviewedHistory(true);
+            setFilter("reviewed");
+          }}
+          className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 dark:hover:border-indigo-700 transition-all shadow-2xs"
+          title="View previously reviewed lab reports"
+        >
+          <FlaskConical className="w-3.5 h-3.5 text-indigo-500" />
+          View Reviewed Lab Reports ({reviewedResults.length})
+        </button>
+      </div>
+    );
+  }
 
   const tabFilteredResults =
     filter === "unread"
@@ -50,8 +72,10 @@ export function DoctorLabResultsInbox({
   const queryLower = searchQuery.toLowerCase().trim();
   const displayedResults = tabFilteredResults.filter((r) => {
     if (!queryLower) return true;
-    const patientName = `${r.request.patient.firstName} ${r.request.patient.lastName}`.toLowerCase();
-    const testName = (r.request.test.name || "").toLowerCase();
+    const patientName = r.request?.patient
+      ? `${r.request.patient.firstName || ""} ${r.request.patient.lastName || ""}`.toLowerCase()
+      : "";
+    const testName = (r.request?.test?.name || "").toLowerCase();
     const findingsStr = (r.findings || "").toLowerCase();
     return patientName.includes(queryLower) || testName.includes(queryLower) || findingsStr.includes(queryLower);
   });
@@ -163,6 +187,16 @@ export function DoctorLabResultsInbox({
             >
               All ({results.length})
             </button>
+            {showReviewedHistory && (
+              <button
+                type="button"
+                onClick={() => setShowReviewedHistory(false)}
+                className="px-2.5 py-1 rounded-lg font-semibold text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors ml-1"
+                title="Hide reviewed lab reports"
+              >
+                Hide
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -186,15 +220,24 @@ export function DoctorLabResultsInbox({
             <div className="space-y-1">
               <CheckCheck className="w-8 h-8 text-emerald-500 mx-auto mb-2 opacity-80" />
               <p className="font-semibold text-slate-700 dark:text-slate-300">All lab results have been reviewed!</p>
-              {reviewedResults.length > 0 && (
+              <div className="flex items-center justify-center gap-3 pt-1">
+                {reviewedResults.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setFilter("reviewed")}
+                    className="text-xs text-indigo-600 dark:text-indigo-400 underline font-medium hover:text-indigo-700"
+                  >
+                    View {reviewedResults.length} previously reviewed result{reviewedResults.length > 1 ? "s" : ""}
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setFilter("reviewed")}
-                  className="text-xs text-indigo-600 dark:text-indigo-400 underline font-medium hover:text-indigo-700"
+                  onClick={() => setShowReviewedHistory(false)}
+                  className="text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 underline font-medium"
                 >
-                  View {reviewedResults.length} previously reviewed result{reviewedResults.length > 1 ? "s" : ""}
+                  Hide inbox
                 </button>
-              )}
+              </div>
             </div>
           ) : filter === "reviewed" ? (
             <p>No reviewed lab results yet.</p>
@@ -231,14 +274,14 @@ export function DoctorLabResultsInbox({
                         {getIcon()}
                       </div>
                       <Link
-                        href={`/patients/${(res.request as any).patientId || (res.request.patient as any).id}`}
+                        href={`/patients/${(res.request as any).patientId || res.request?.patient?.id || ""}`}
                         className="font-bold text-slate-900 dark:text-slate-100 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors text-sm flex items-center gap-1"
                       >
-                        {res.request.patient.firstName} {res.request.patient.lastName}
+                        {res.request?.patient ? `${res.request.patient.firstName || ""} ${res.request.patient.lastName || ""}` : "Patient"}
                         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
                       </Link>
                       <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                        {res.request.test.name}
+                        {res.request?.test?.name || "Lab Test"}
                       </span>
                       {res.isReadByDoctor ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
@@ -266,8 +309,8 @@ export function DoctorLabResultsInbox({
                       type="button"
                       onClick={() => {
                         openPrintLabResultWindow({
-                          patient: res.request.patient,
-                          testName: res.request.test.name,
+                          patient: res.request?.patient || { firstName: "Patient", lastName: "" },
+                          testName: res.request?.test?.name || "Lab Investigation",
                           findings: res.findings,
                           date: res.createdAt,
                           isReadByDoctor: res.isReadByDoctor,
@@ -338,9 +381,9 @@ export function DoctorLabResultsInbox({
         <FinalDiagnosisModal
           isOpen={!!diagnosingResult}
           onClose={() => setDiagnosingResult(null)}
-          patientName={`${diagnosingResult.request.patient.firstName} ${diagnosingResult.request.patient.lastName}`}
-          patientId={(diagnosingResult.request as any).patientId || (diagnosingResult.request.patient as any).id || ""}
-          labTestName={diagnosingResult.request.test?.name}
+          patientName={diagnosingResult.request?.patient ? `${diagnosingResult.request.patient.firstName || ""} ${diagnosingResult.request.patient.lastName || ""}` : "Patient"}
+          patientId={(diagnosingResult.request as any)?.patientId || diagnosingResult.request?.patient?.id || ""}
+          labTestName={diagnosingResult.request?.test?.name}
           labFindings={diagnosingResult.findings || undefined}
           title="Diagnosed Generalized Diseases & Mark Reviewed"
           confirmLabel="Done"

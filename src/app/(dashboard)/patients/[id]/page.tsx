@@ -5,8 +5,7 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
-import { PaperImportForm } from "@/features/clinical/components/paper-import-form";
-import { DoctorOrders } from "@/features/clinical/components/doctor-orders";
+import { DoctorConsultationWorkspace } from "@/features/clinical/components/doctor-consultation-workspace";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PrintButton } from "@/components/print-button";
@@ -138,7 +137,7 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     }
 
     [labTests, drugs] = await Promise.all([
-      prisma.labTest.findMany({ where: { isOperational: true }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+      prisma.labTest.findMany({ where: { isOperational: { not: false }, deletedAt: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
       prisma.drug.findMany({
         where: { isOperational: true, batches: { some: { quantity: { gt: 0 } } } },
         select: { id: true, name: true },
@@ -357,27 +356,32 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
           )}
 
           <div className="print:hidden space-y-6">
-            {canWriteHistory && (
-              <>
-                <ClinicalDashboard 
-                  patientId={patient.id} 
-                  admissionStatus={patient.admissionStatus} 
-                  activeVisit={patient.visits.find(v => 
-                    (v.status === "scheduled" || v.status === "in_progress") && 
-                    v.opdRoom !== null &&
-                    (Date.now() - new Date(v.visitDate).getTime() < 24 * 60 * 60 * 1000)
-                  )} 
-                />
-                <PaperImportForm patientId={patient.id} />
-              </>
+            {(canWriteHistory || canPrescribe || canRequestLab) ? (
+              <DoctorConsultationWorkspace
+                patient={patient}
+                activeVisit={patient.visits.find(v => 
+                  (v.status === "scheduled" || v.status === "in_progress") && 
+                  v.opdRoom !== null &&
+                  (Date.now() - new Date(v.visitDate).getTime() < 24 * 60 * 60 * 1000)
+                )}
+                timeline={timeline}
+                labTests={labTests}
+                drugs={drugs}
+                doctorsList={doctorsList}
+                referralDestinations={referralDestinations}
+                clinicNames={{ clinicName, clinicNameAmharic, clinicLogo }}
+                admissionStatus={patient.admissionStatus}
+                canWriteHistory={canWriteHistory}
+                canPrescribe={canPrescribe}
+                canRequestLab={canRequestLab}
+                canCreateVisit={canCreateVisit}
+              />
+            ) : (
+              canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />
             )}
-
-            {(canPrescribe || canRequestLab || canWriteHistory) && <DoctorOrders patient={patient} labTests={labTests} drugs={drugs} referralDestinations={referralDestinations} clinicNames={{ clinicName, clinicNameAmharic, clinicLogo }} />}
-
-            {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
           </div>
 
-{canReadHistory && (
+{canReadHistory && (!canWriteHistory && !canPrescribe) && (
   <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
     <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
     <div className="space-y-4">
@@ -393,8 +397,8 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
     </div>
   </div>
 )}
-{canReadHistory && (
-          <PatientLabResultsCard labRequests={patient.labRequests} patientInfo={patient} />
+{canReadHistory && (!canWriteHistory && !canPrescribe) && (
+  <PatientLabResultsCard labRequests={patient.labRequests} patientInfo={patient} />
 )}
         </div>
 

@@ -8,7 +8,7 @@ import { logAudit } from "@/lib/audit";
 import { visitCreateSchema, visitUpdateSchema, medicalRecordCreateSchema, labRequestSchema, labResultSchema, prescriptionCreateSchema, vitalsUpdateSchema } from "./schemas";
 import { revalidatePath } from "next/cache";
 import { getStartOfDayLocal, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
-import { isHematologyTest, isStoolTest, isUrineTest } from "./types/lab-panels";
+import { isHematologyTest, isStoolTest, isUrineTest, formatLabSummary } from "./types/lab-panels";
 import { ClinicDisease, DEFAULT_CLINIC_DISEASES, DEFAULT_MOST_PICKED_DISEASES, getSuggestedMedicinesForDisease } from "./types/diseases";
 
 /**
@@ -1126,7 +1126,7 @@ export const dismissLabResult = createSafeAction({
           temp: null,
           weight: null,
           subjective: `Post-investigation review: ${result.request.test?.name || "Lab Investigation"}`,
-          objective: `Lab Findings: ${result.findings}`,
+          objective: `Lab Findings: ${formatLabSummary(result.findings)}`,
           assessment: diag,
           plan: data.notes?.trim() || "Confirmed upon doctor review of diagnostic findings.",
           content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? `\nClinical Notes: ${data.notes.trim()}` : ""}`,

@@ -22,7 +22,7 @@ export function DoctorOrders({
 }) {
   const patientId = patient.id;
   const [loading, setLoading] = useState(false);
-  const [rxItems, setRxItems] = useState([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
+  const [rxItems, setRxItems] = useState<Array<{ drugId: string; search: string; quantity: number | string; instructions: string }>>([{ drugId: "", search: "", quantity: 1, instructions: "" }]);
   const [selectedTests, setSelectedTests] = useState<Set<string>>(new Set());
   const [labSearch, setLabSearch] = useState("");
   const [isUrgent, setIsUrgent] = useState(false);
@@ -117,7 +117,7 @@ export function DoctorOrders({
     const filledItems = rxItems.filter(i => i.search || i.drugId || i.instructions);
     
     // Check if any filled item is invalid
-    const invalidItems = filledItems.filter(i => !i.drugId || i.quantity <= 0 || !i.instructions.trim());
+    const invalidItems = filledItems.filter(i => !i.drugId || Number(i.quantity) <= 0 || !i.instructions.trim());
     
     if (filledItems.length === 0) {
       toast.success("Please complete at least one prescription item.");
@@ -131,7 +131,14 @@ export function DoctorOrders({
       return;
     }
 
-    const res = await createPrescription({ patientId, items: filledItems as any });
+    const res = await createPrescription({ 
+      patientId, 
+      items: filledItems.map(i => ({
+        drugId: i.drugId,
+        quantity: Math.max(1, Number(i.quantity) || 1),
+        instructions: i.instructions.trim(),
+      }))
+    });
     setLoading(false);
     if (res.error) toast.error(res.error);
     else {
@@ -721,8 +728,16 @@ export function DoctorOrders({
                   value={item.quantity}
                   onChange={e => {
                     const newItems = [...rxItems];
-                    newItems[index].quantity = parseInt(e.target.value) || 1;
+                    const val = e.target.value;
+                    newItems[index].quantity = val === "" ? "" : parseInt(val);
                     setRxItems(newItems);
+                  }}
+                  onBlur={() => {
+                    if (!item.quantity || Number(item.quantity) < 1) {
+                      const newItems = [...rxItems];
+                      newItems[index].quantity = 1;
+                      setRxItems(newItems);
+                    }
                   }}
                   className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
                 />

@@ -35,6 +35,7 @@ export const createDrug = createSafeAction({
           category: data.category || null,
           unit: data.unit || null,
           price: data.price,
+          isOperational: true,
           initialStock: initialStock,
           amountInStock: initialStock,
         },
@@ -141,6 +142,7 @@ export const createLabTest = createSafeAction({
           unit: data.unit || null,
           options: data.options || null,
           price: data.price,
+          isOperational: true,
         },
       });
       await logAudit({
@@ -152,6 +154,7 @@ export const createLabTest = createSafeAction({
       });
       revalidatePath("/catalogs");
       revalidatePath("/laboratory/catalog");
+      revalidatePath("/patients");
       return test;
     } else {
       await prisma.catalogChangeRequest.create({
@@ -164,6 +167,7 @@ export const createLabTest = createSafeAction({
       });
       revalidatePath("/catalogs");
       revalidatePath("/laboratory/catalog");
+      revalidatePath("/patients");
       return { success: "Approval request submitted." };
     }
   },
@@ -184,6 +188,7 @@ export const updateDrug = createSafeAction({
           category: data.category,
           unit: data.unit,
           price: data.price,
+          isOperational: true,
         },
       });
 
@@ -458,6 +463,7 @@ export const updateLabTest = createSafeAction({
           options: data.options,
           unit: data.unit,
           price: data.price,
+          isOperational: true,
         },
       });
       await logAudit({
@@ -469,6 +475,7 @@ export const updateLabTest = createSafeAction({
       });
       revalidatePath("/catalogs");
       revalidatePath("/laboratory/catalog");
+      revalidatePath("/patients");
       return test;
     } else {
       await prisma.catalogChangeRequest.create({
@@ -482,6 +489,7 @@ export const updateLabTest = createSafeAction({
       });
       revalidatePath("/catalogs");
       revalidatePath("/laboratory/catalog");
+      revalidatePath("/patients");
       return { success: "Approval request submitted." };
     }
   },

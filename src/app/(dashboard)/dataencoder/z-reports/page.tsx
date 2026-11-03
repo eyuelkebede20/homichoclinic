@@ -4,9 +4,9 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { ZReportsClient } from "./z-reports-client";
-import { formatToEthiopianDate } from "@/lib/date-utils";
+import { formatToEthiopianDate, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
 
-export default async function ZReportsPage() {
+export default async function ZReportsPage({ searchParams }: { searchParams: Promise<{ from?: string; to?: string }> }) {
   const session = await auth.api.getSession({
     headers: await headers()
   });
@@ -20,9 +20,42 @@ export default async function ZReportsPage() {
     redirect("/dashboard");
   }
 
-  // Fetch all paid invoices and their items
+  const resolvedParams = await searchParams;
+  let fromDate: Date | undefined;
+  if (resolvedParams?.from) {
+    const eth = parseEthiopianDateString(resolvedParams.from);
+    if (eth) {
+      fromDate = ethiopianToGregorian(eth.year, eth.month, eth.day, 0, 0, 0);
+    } else {
+      const d = new Date(resolvedParams.from);
+      if (!isNaN(d.getTime())) fromDate = d;
+    }
+  }
+
+  let toDate: Date | undefined;
+  if (resolvedParams?.to) {
+    const eth = parseEthiopianDateString(resolvedParams.to);
+    if (eth) {
+      toDate = ethiopianToGregorian(eth.year, eth.month, eth.day, 23, 59, 59, 999);
+    } else {
+      const d = new Date(resolvedParams.to);
+      if (!isNaN(d.getTime())) {
+        d.setHours(23, 59, 59, 999);
+        toDate = d;
+      }
+    }
+  }
+
+  const whereClause: any = { status: "paid" };
+  if (fromDate || toDate) {
+    whereClause.createdAt = {};
+    if (fromDate) whereClause.createdAt.gte = fromDate;
+    if (toDate) whereClause.createdAt.lte = toDate;
+  }
+
+  // Fetch all paid invoices and their items matching date filter
   const invoices = await prisma.invoice.findMany({
-    where: { status: "paid" },
+    where: whereClause,
     include: {
       patient: {
         include: {

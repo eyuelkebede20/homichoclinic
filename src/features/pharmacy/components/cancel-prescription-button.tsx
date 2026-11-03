@@ -9,11 +9,17 @@ export function CancelPrescriptionButton({ prescriptionId }: { prescriptionId: s
   const [loading, setLoading] = useState(false);
 
   async function handleCancel() {
-    if (!confirm("Are you sure you want to cancel/reject this prescription?")) return;
+    const reason = prompt("Enter reason for returning this prescription back to the doctor (e.g. Wrong dosage, Drug interaction, Out of stock):");
+    if (reason === null) return; // User cancelled prompt
+    
     setLoading(true);
-    const res = await cancelPrescription({ prescriptionId });
+    const res = await cancelPrescription({ 
+      prescriptionId,
+      reason: reason.trim() || "Wrong medication / dosage specified by doctor"
+    });
     setLoading(false);
     if (res.error) toast.error(res.error);
+    else toast.success("Prescription returned back to doctor with reason.");
   }
 
   return (

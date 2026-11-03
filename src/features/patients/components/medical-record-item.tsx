@@ -1,6 +1,7 @@
 import { MedicalRecord } from "@prisma/client";
 import { formatToEthiopianDate } from "@/lib/date-utils";
 import { Stethoscope, Tag, CheckCircle2, FileText, UserCheck } from "lucide-react";
+import { formatLabSummary } from "@/features/clinical/types/lab-panels";
 
 export type MedicalRecordWithAuthor = MedicalRecord & {
   enteredByName?: string | null;
@@ -148,7 +149,14 @@ export function MedicalRecordItem({ record }: { record: MedicalRecordWithAuthor 
           {record.objective && (
             <div>
               <span className="font-bold text-slate-900 dark:text-slate-100">Objective: </span>
-              {record.objective}
+              {record.objective.includes("{") ? (
+                <span>
+                  {record.objective.startsWith("Lab Findings:") ? "Lab Findings: " : ""}
+                  {formatLabSummary(record.objective.replace(/^Lab Findings:\s*/i, ""))}
+                </span>
+              ) : (
+                record.objective
+              )}
             </div>
           )}
           {record.plan && (
