@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 import { NotificationPing } from "@/components/notification-ping";
 import { groupPendingLabRequests } from "@/features/clinical/types/lab-panels";
 import { CompletedLabLogs } from "@/features/clinical/components/completed-lab-logs";
@@ -31,12 +31,15 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
     );
   }
 
-  // Auto-remove pings after a week (7 days) for pending items
+  // Keep completed logs to recent past (past 7 days), while pending requests remain active until fulfilled
   const oneWeekAgo = new Date();
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
   const statusFilter: import("@prisma/client").Prisma.LabRequestWhereInput = {
-    OR: [{ status: "completed" }, { status: { in: ["requested", "urgent"] }, createdAt: { gte: oneWeekAgo } }],
+    OR: [
+      { status: { in: ["requested", "urgent"] } },
+      { status: "completed", createdAt: { gte: oneWeekAgo } },
+    ],
   };
 
   const whereClause: import("@prisma/client").Prisma.LabRequestWhereInput = query
@@ -105,9 +108,19 @@ export default async function LaboratoryDashboardPage({ searchParams }: { search
             name="q"
             defaultValue={query}
             type="text"
+            aria-label="Search laboratory orders and history"
             placeholder="Search patient, MRN, test, findings..."
-            className="w-full pl-9 pr-4 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 focus:ring-blue-500 focus:border-blue-500 shadow-2xs"
+            className="w-full pl-9 pr-9 py-2 border border-slate-300 dark:border-slate-700 rounded-lg text-sm bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 shadow-2xs"
           />
+          {query && (
+            <a
+              href="/laboratory"
+              aria-label="Clear laboratory search"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <X className="w-4 h-4" />
+            </a>
+          )}
         </form>
       </div>
 

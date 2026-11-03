@@ -60,49 +60,78 @@ export function EditableLabTestRow({ test }: {
 
   if (isEditing) {
     return (
-      <tr className="bg-blue-50 dark:bg-blue-900/10 border-b border-blue-100 dark:border-blue-800">
+      <tr className="bg-blue-50/70 dark:bg-blue-900/20 border-b border-blue-100 dark:border-blue-800">
         <td colSpan={7} className="px-4 py-4">
           <div className="space-y-3 max-w-4xl">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Test Name</label>
-                <input value={name} onChange={e => setName(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                <label htmlFor={`edit-name-${test.id}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300">Test Name</label>
+                <input
+                  id={`edit-name-${test.id}`}
+                  value={name}
+                  onChange={e => setName(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Price (ETB)</label>
-                <input type="number" step="0.01" value={priceStr} onChange={e => setPriceStr(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                <label htmlFor={`edit-price-${test.id}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300">Price (ETB)</label>
+                <input
+                  id={`edit-price-${test.id}`}
+                  type="number"
+                  step="0.01"
+                  value={priceStr}
+                  onChange={e => setPriceStr(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Description</label>
-                <input value={description} onChange={e => setDescription(e.target.value)} className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" />
+                <label htmlFor={`edit-desc-${test.id}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300">Description</label>
+                <input
+                  id={`edit-desc-${test.id}`}
+                  value={description}
+                  onChange={e => setDescription(e.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Unit / Measuring Unit</label>
+                <label htmlFor={`edit-unit-${test.id}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300">Unit / Measuring Unit</label>
                 <input 
+                  id={`edit-unit-${test.id}`}
                   value={unit} 
                   onChange={e => setUnit(e.target.value)} 
                   placeholder="e.g. mg/dL, g/dL, %"
-                  className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" 
+                  className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
                 />
               </div>
             </div>
             <div>
-              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Result Options (comma-separated)</label>
+              <label htmlFor={`edit-options-${test.id}`} className="block text-xs font-medium text-slate-700 dark:text-slate-300">Result Options (comma-separated)</label>
               <input 
+                id={`edit-options-${test.id}`}
                 value={options} 
                 onChange={e => setOptions(e.target.value)} 
                 placeholder="e.g. Positive, Negative, Inconclusive or A+, A-, B+, B-, O+, O-"
-                className="mt-1 block w-full rounded border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-2 py-1 text-sm" 
+                className="mt-1 block w-full rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500" 
               />
             </div>
             <div className="flex justify-end gap-2 mt-2">
-              <button onClick={() => setIsEditing(false)} disabled={loading} className="px-3 py-1 text-xs border border-slate-300 dark:border-slate-700 rounded text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center">
-                <X className="w-3 h-3 mr-1" /> Cancel
+              <button
+                type="button"
+                onClick={() => setIsEditing(false)}
+                disabled={loading}
+                className="px-3 py-1.5 text-xs border border-slate-300 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center transition-colors"
+              >
+                <X className="w-3.5 h-3.5 mr-1" /> Cancel
               </button>
-              <button onClick={handleSave} disabled={loading} className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center disabled:opacity-50 font-medium">
-                {loading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Check className="w-3 h-3 mr-1" />} Save
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={loading}
+                className="px-3.5 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center disabled:opacity-50 font-medium transition-colors shadow-xs"
+              >
+                {loading ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1" />} Save Changes
               </button>
             </div>
           </div>
@@ -116,12 +145,18 @@ export function EditableLabTestRow({ test }: {
       <td className="px-4 py-3 align-top">
         <div className="flex items-center">
           <button
+            type="button"
+            role="switch"
+            aria-checked={isOperational}
+            aria-label={`Toggle operational status for ${test.name}`}
             onClick={handleToggleOperational}
             disabled={loading}
-            className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 ${isOperational ? "bg-blue-600" : "bg-slate-200 dark:bg-slate-700"}`}
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2 disabled:opacity-50 ${isOperational ? "bg-blue-600" : "bg-slate-300 dark:bg-slate-700"}`}
             title={isOperational ? "Mark as Out of Service" : "Mark as Operational"}
           >
-            <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOperational ? "translate-x-4" : "translate-x-0"}`} />
+            <span
+              className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isOperational ? "translate-x-5" : "translate-x-0"}`}
+            />
           </button>
         </div>
       </td>
@@ -156,11 +191,18 @@ export function EditableLabTestRow({ test }: {
         {(test.price / 100).toFixed(2)} ETB
       </td>
       <td className="px-4 py-3 align-top text-right print:hidden">
-        <div className="flex items-center justify-end gap-2">
-          <button onClick={() => setIsEditing(true)} className="text-slate-400 hover:text-blue-600" title="Edit Test Details & Options">
+        <div className="flex items-center justify-end gap-1">
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="p-2 text-slate-500 hover:text-blue-700 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-blue-300 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Edit Test Details & Options"
+            aria-label={`Edit ${test.name} details`}
+          >
             <Edit2 className="w-4 h-4" />
           </button>
           <button 
+            type="button"
             onClick={async () => {
               if (confirm(`Are you sure you want to remove ${test.name}?`)) {
                 setLoading(true);
@@ -170,7 +212,9 @@ export function EditableLabTestRow({ test }: {
                 else if (res?.data && typeof res.data === "object" && "success" in res.data) toast.success(res.data.success as string);
               }
             }} 
-            className="text-slate-400 hover:text-red-600" title="Remove Test"
+            className="p-2 text-slate-500 hover:text-rose-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-slate-800 rounded-lg transition-colors"
+            title="Remove Test"
+            aria-label={`Delete ${test.name} from catalog`}
           >
             <X className="w-4 h-4" />
           </button>

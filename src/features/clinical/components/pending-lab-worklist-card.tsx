@@ -44,6 +44,7 @@ export function PendingLabWorklistCard({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search pending tests by patient, MRN, or test"
               placeholder="Search pending tests by patient, MRN, or test..."
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
             />
@@ -51,6 +52,7 @@ export function PendingLabWorklistCard({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear pending tests search"
                 className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold w-4 h-4 flex items-center justify-center rounded"
               >
                 ×
@@ -81,7 +83,7 @@ export function PendingLabWorklistCard({
         ) : (
           <ul className="divide-y divide-slate-200 dark:divide-slate-800">
             {filtered.map((req) => (
-              <li key={req.id} className="p-4 bg-blue-50/30 dark:bg-blue-900/10 hover:bg-blue-50/50 transition-colors">
+              <li key={req.id} className="p-4 bg-blue-50/30 dark:bg-blue-900/10 hover:bg-blue-50/60 dark:hover:bg-slate-800/60 transition-colors">
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <span className="font-bold text-slate-900 dark:text-slate-100 block">

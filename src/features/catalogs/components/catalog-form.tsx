@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { createDrug, createLabTest } from "../actions";
-import { Loader2, Package } from "lucide-react";
+import { Loader2, Package, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 
-export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
+export function CatalogForm({ type, collapsible = false }: { type: "drug" | "labTest"; collapsible?: boolean }) {
+  const [isOpen, setIsOpen] = useState(!collapsible);
   const [loading, setLoading] = useState(false);
   
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -60,6 +61,35 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
     }
   }
 
+  if (collapsible && !isOpen) {
+    return (
+      <div className="bg-white dark:bg-slate-900 p-4 shadow-sm rounded-xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-500 transition-colors">
+        <button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          className="w-full flex items-center justify-between text-left group"
+        >
+          <div className="flex items-center gap-3">
+            <span className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 group-hover:scale-105 transition-transform">
+              <Plus className="w-4 h-4" />
+            </span>
+            <div>
+              <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                {type === "drug" ? "Register New Medication" : "Register New Lab Test"}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {type === "drug" ? "Add drug definition, pricing, batch & initial stock" : "Add custom lab test, measuring unit, price & result options"}
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-800">
+            + Expand Form
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="bg-white dark:bg-slate-900 p-5 shadow rounded-xl border border-slate-200 dark:border-slate-800 space-y-4">
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
@@ -67,9 +97,20 @@ export function CatalogForm({ type }: { type: "drug" | "labTest" }) {
           <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
           {type === "drug" ? "Register New Medication" : "Register New Lab Test"}
         </h3>
-        <span className="text-xs text-slate-400">
-          {type === "drug" ? "Includes price, batch & initial stock" : "Catalog service definition"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-400 hidden sm:inline">
+            {type === "drug" ? "Includes price, batch & initial stock" : "Catalog service definition"}
+          </span>
+          {collapsible && (
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-xs font-medium text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 px-2 py-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Hide Form
+            </button>
+          )}
+        </div>
       </div>
 
       <div>

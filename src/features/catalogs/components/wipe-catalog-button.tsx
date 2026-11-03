@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Loader2, AlertTriangle } from "lucide-react";
 import { wipeAllMedicines, wipeAllLabTests } from "@/features/admin/actions-dev";
 import { toast } from "sonner";
 
 export function WipeCatalogButton({ type }: { type: "DRUG" | "LAB_TEST" }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const isDrug = type === "DRUG";
 
@@ -23,7 +25,7 @@ export function WipeCatalogButton({ type }: { type: "DRUG" | "LAB_TEST" }) {
         toast.error(res.error);
       } else {
         toast.success(`Successfully deleted ${itemName}.`);
-        window.location.reload();
+        router.refresh();
       }
     } catch (err: any) {
       toast.error("Error: " + err.message);

@@ -9,6 +9,7 @@ import { CatalogImporter } from "@/features/catalogs/components/catalog-importer
 import { WipeCatalogButton } from "@/features/catalogs/components/wipe-catalog-button";
 import { PrintButton } from "@/components/print-button";
 import { PrintHeader } from "@/components/print-header";
+import { X } from "lucide-react";
 
 export default async function LaboratoryCatalogPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const resolvedParams = await searchParams;
@@ -55,9 +56,9 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
         </div>
       </div>
 
-      <div className="max-w-3xl space-y-4 print:w-full print:break-inside-avoid">
-        <div className="print:hidden">
-          <form className="relative w-full">
+      <div className="w-full space-y-5 print:w-full print:break-inside-avoid">
+        <div className="print:hidden flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+          <form className="relative flex-1 max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <svg className="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
@@ -67,15 +68,25 @@ export default async function LaboratoryCatalogPage({ searchParams }: { searchPa
               name="q"
               defaultValue={query}
               type="text"
+              aria-label="Search tests by name"
               placeholder="Search tests by name..."
-              className="block w-full pl-10 pr-3 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="block w-full pl-10 pr-9 py-2 border border-slate-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
+            {query && (
+              <a
+                href="/laboratory/catalog"
+                aria-label="Clear catalog search"
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </a>
+            )}
           </form>
+          <CatalogImporter type="LAB_TEST" />
         </div>
 
-        <div className="print:hidden space-y-4">
-          <CatalogImporter type="LAB_TEST" />
-          <CatalogForm type="labTest" />
+        <div className="print:hidden">
+          <CatalogForm type="labTest" collapsible={true} />
         </div>
         
         <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-x-auto print:shadow-none print:border-none">

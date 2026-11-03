@@ -81,6 +81,7 @@ export function CompletedLabLogs({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              aria-label="Search completed logs by patient, MRN, test, findings"
               placeholder="Search completed logs by patient, MRN, test, findings..."
               className="w-full pl-8 pr-7 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-2xs"
             />
@@ -88,6 +89,7 @@ export function CompletedLabLogs({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
+                aria-label="Clear completed logs search"
                 className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 text-xs font-bold w-4 h-4 flex items-center justify-center rounded"
               >
                 ×
@@ -156,12 +158,15 @@ export function CompletedLabLogs({
                         }}
                         className="text-xs font-semibold px-2 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center gap-1 transition-colors"
                         title="Print official single-page A4 laboratory test slip"
+                        aria-label={`Print laboratory test slip for ${req.patient.firstName} ${req.patient.lastName} - ${req.test.name}`}
                       >
                         <Printer className="w-3 h-3" /> Print Slip
                       </button>
                       <button
                         type="button"
                         onClick={() => toggleExpand(req.id)}
+                        aria-expanded={isExpanded}
+                        aria-label={isExpanded ? `Hide details for ${req.test.name}` : `View full details for ${req.test.name}`}
                         className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
                       >
                         {isExpanded ? (

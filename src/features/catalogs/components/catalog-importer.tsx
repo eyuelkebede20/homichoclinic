@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { importCatalogCSV } from "../actions-import";
 import { Upload, Loader2, Download } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -38,10 +40,7 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
         setError(res.error);
       } else {
         toast.success(res?.data?.success || "Imported successfully.");
-        // Short delay to let the toast appear, then hard refresh to guarantee UI updates
-        setTimeout(() => {
-          window.location.reload();
-        }, 800);
+        router.refresh();
       }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to import");
@@ -56,7 +55,7 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
     <div className="flex flex-col sm:flex-row gap-2.5">
       <a 
         href={`/api/export/catalog?type=${downloadType}&format=xlsx`}
-        className="px-3.5 py-2 bg-emerald-700 text-white font-medium rounded hover:bg-emerald-600 shadow-sm text-xs sm:text-sm flex items-center justify-center transition-colors"
+        className="px-3.5 py-2 bg-emerald-700 text-white font-medium rounded-lg hover:bg-emerald-600 shadow-xs text-xs sm:text-sm flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-emerald-500"
         title="Download formatted Excel (.xlsx) file with hamle-input column"
       >
         <Download className="w-4 h-4 mr-1.5" />
@@ -65,25 +64,28 @@ export function CatalogImporter({ type }: { type: "DRUG" | "LAB_TEST" }) {
 
       <a 
         href={`/api/export/catalog?type=${downloadType}`}
-        className="px-3.5 py-2 bg-slate-800 text-white font-medium rounded hover:bg-slate-700 shadow-sm text-xs sm:text-sm flex items-center justify-center transition-colors"
+        className="px-3.5 py-2 bg-slate-800 text-white font-medium rounded-lg hover:bg-slate-700 shadow-xs text-xs sm:text-sm flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-slate-500"
         title="Download standard CSV file"
       >
         <Download className="w-4 h-4 mr-1.5" />
         Download CSV
       </a>
 
-      <div className="relative">
+      <div className="relative rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2">
         <input
           type="file"
           accept=".csv, .xlsx, .xls"
           onChange={handleFileChange}
           disabled={loading}
-          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+          aria-label="Upload CSV or Excel file to update or import catalog"
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-10"
           title="Upload CSV to update or import catalog"
         />
         <button
+          type="button"
+          tabIndex={-1}
           disabled={loading}
-          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 shadow-sm text-sm flex items-center justify-center disabled:opacity-50 transition-colors"
+          className="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 shadow-xs text-sm flex items-center justify-center disabled:opacity-50 transition-colors"
         >
           {loading ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
