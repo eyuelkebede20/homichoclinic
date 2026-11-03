@@ -37,12 +37,11 @@ import {
   addClinicalNote,
   requestLabTest,
   createPrescription,
-  deletePrescription,
-  deletePrescriptionItem,
   saveReferral,
   toggleAdmissionStatus,
   deactivatePatientOpd,
 } from "../actions";
+import { deletePrescription, deletePrescriptionItem } from "@/features/pharmacy/actions";
 import { FinalDiagnosisModal } from "./final-diagnosis-modal";
 import { StructuredLabResultView } from "./structured-lab-result-view";
 import { openPrintLabResultWindow } from "../utils/print-lab-result";

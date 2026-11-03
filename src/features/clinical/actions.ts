@@ -1693,4 +1693,12 @@ export const saveReferral = createSafeAction({
   }
 });
 
-export { deletePrescription, deletePrescriptionItem } from "@/features/pharmacy/actions";
+export async function deletePrescription(input: { prescriptionId: string; reason?: string }) {
+  const { deletePrescription: pharmacyDelete } = await import("@/features/pharmacy/actions");
+  return pharmacyDelete(input);
+}
+
+export async function deletePrescriptionItem(input: { itemId: string; reason?: string }) {
+  const { deletePrescriptionItem: pharmacyDeleteItem } = await import("@/features/pharmacy/actions");
+  return pharmacyDeleteItem(input);
+}
