@@ -494,3 +494,159 @@ export const updateLabTest = createSafeAction({
     }
   },
 });
+export const receiveBatchForDrug = createSafeAction({
+  schema: z.object({
+    drugId: z.string().min(1, "Drug is required"),
+    batchNumber: z.string().min(1, "Batch number is required"),
+    quantity: z.number().int().positive("Quantity must be greater than 0"),
+    expiryDate: z.string().min(1, "Expiry date is required"),
+    price: z.number().int().nonnegative().optional(), // In minor units (cents)
+    dateAddedToStock: z.string().optional(),
+    docNo: z.string().optional(),
+    unit: z.string().optional(),
+    category: z.string().optional(),
+    description: z.string().optional(),
+  }),
+  requiredPermission: PERMISSIONS.INVENTORY_ADJUST,
+  handler: async (data, ctx) => {
+    const drug = await prisma.drug.findUnique({
+      where: { id: data.drugId },
+    });
+    if (!drug) {
+      return { error: "Medication not found" };
+    }
+
+    let expiryDate: Date;
+    const parsedExp = parseEthiopianDateString(data.expiryDate);
+    if (parsedExp) {
+      expiryDate = ethiopianToGregorian(parsedExp.year, parsedExp.month, parsedExp.day);
+    } else {
+      const d = new Date(data.expiryDate);
+      expiryDate = !isNaN(d.getTime()) ? d : new Date("2099-12-31");
+    }
+
+    let dateAddedToStock: Date = new Date();
+    if (data.dateAddedToStock && data.dateAddedToStock.trim() !== "") {
+      const parsedAdded = parseEthiopianDateString(data.dateAddedToStock);
+      if (parsedAdded) {
+        dateAddedToStock = ethiopianToGregorian(parsedAdded.year, parsedAdded.month, parsedAdded.day);
+      } else {
+        const d = new Date(data.dateAddedToStock);
+        if (!isNaN(d.getTime())) dateAddedToStock = d;
+      }
+    }
+
+    const price = data.price !== undefined ? data.price : drug.price;
+
+    const newBatch = await prisma.$transaction(async (tx) => {
+      await tx.drug.update({
+        where: { id: drug.id },
+        data: {
+          price: price,
+          ...(data.unit?.trim() ? { unit: data.unit.trim() } : {}),
+          ...(data.category?.trim() ? { category: data.category.trim() } : {}),
+          ...(data.description !== undefined ? { description: data.description?.trim() || null } : {}),
+          amountInStock: (drug.amountInStock ?? drug.initialStock ?? 0) + data.quantity,
+        },
+      });
+
+      const batch = await tx.stockBatch.create({
+        data: {
+          drugId: drug.id,
+          batchNumber: data.batchNumber.trim(),
+          expiryDate: expiryDate,
+          quantity: data.quantity,
+          cost: price,
+          dateAddedToStock: dateAddedToStock,
+          docNo: data.docNo?.trim() || null,
+        },
+      });
+
+      await tx.stockMovement.create({
+        data: {
+          batchId: batch.id,
+          type: "receive",
+          quantity: data.quantity,
+          reason: "Batch intake received via pharmacy catalog",
+          actorId: ctx.userId,
+        },
+      });
+
+      return batch;
+    });
+
+    await logAudit({
+      actorId: ctx.userId,
+      action: PERMISSIONS.INVENTORY_ADJUST,
+      resourceId: newBatch.id,
+      newValue: {
+        drugId: drug.id,
+        drugName: drug.name,
+        batchNumber: newBatch.batchNumber,
+        quantity: newBatch.quantity,
+      },
+      reason: `Received stock batch ${newBatch.batchNumber} (${data.quantity} units) for ${drug.name}`,
+    });
+
+    revalidatePath("/pharmacy");
+    revalidatePath("/pharmacy/catalog");
+    revalidatePath("/catalogs");
+    revalidatePath("/dashboard");
+
+    return {
+      success: `Batch ${newBatch.batchNumber} (${data.quantity} units) added to ${drug.name}!`,
+      batch: newBatch,
+    };
+  },
+});
+
+export async function searchDrugsForIntake(query?: string) {
+  const where: any = { deletedAt: null, isOperational: true };
+  if (query && query.trim()) {
+    where.OR = [
+      { name: { contains: query.trim(), mode: "insensitive" } },
+      { category: { contains: query.trim(), mode: "insensitive" } },
+      { description: { contains: query.trim(), mode: "insensitive" } },
+    ];
+  }
+  const drugs = await prisma.drug.findMany({
+    where,
+    select: {
+      id: true,
+      name: true,
+      category: true,
+      unit: true,
+      price: true,
+      amountInStock: true,
+      initialStock: true,
+      batches: {
+        select: {
+          id: true,
+          batchNumber: true,
+          quantity: true,
+          expiryDate: true,
+          dateAddedToStock: true,
+        },
+        orderBy: { dateAddedToStock: "desc" },
+      },
+    },
+    orderBy: { name: "asc" },
+    take: 50,
+  });
+
+  return drugs.map((d) => {
+    const totalBatchStock = d.batches.reduce((sum, b) => sum + (b.quantity || 0), 0);
+    const effectiveStock = d.batches.length > 0 ? totalBatchStock : (d.amountInStock ?? d.initialStock ?? 0);
+    const latestBatch = d.batches[0];
+    return {
+      id: d.id,
+      name: d.name,
+      category: d.category,
+      unit: d.unit,
+      price: d.price,
+      stock: effectiveStock,
+      latestBatchNumber: latestBatch?.batchNumber || null,
+      latestExpiryDate: latestBatch?.expiryDate ? latestBatch.expiryDate.toISOString() : null,
+    };
+  });
+}

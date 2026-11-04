@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import Tesseract from "tesseract.js";
 import { toast } from "sonner";
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
+import { SymptomCardSelector } from "./symptom-card-selector";
 
 interface PaperImportFormProps {
   patientId: string;
@@ -124,24 +125,17 @@ export function PaperImportForm({ patientId }: PaperImportFormProps) {
           </div>
           </div>
         )}
-        <div className="space-y-2">
+        <div className="space-y-3">
           <div className="flex justify-between items-end">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Clinical Notes / Content</label>
           </div>
           
-          {/* Quick Symptoms Pills */}
-          <div className="flex flex-wrap gap-2 mb-2">
-            {["Headache", "Stomachache", "Dizziness", "Fever", "Cough", "Nausea", "Fatigue", "Back Pain"].map(symp => (
-              <button
-                key={symp}
-                type="button"
-                onClick={() => setContent(prev => prev ? `${prev.trim()}, ${symp}` : symp)}
-                className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-800/50 transition-colors border border-blue-200 dark:border-blue-800"
-              >
-                + {symp}
-              </button>
-            ))}
-          </div>
+          {/* Quick Symptoms Cards */}
+          <SymptomCardSelector
+            value={content}
+            onChange={setContent}
+            compact
+          />
 
           <textarea 
             required

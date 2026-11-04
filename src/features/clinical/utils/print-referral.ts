@@ -51,6 +51,10 @@ export function generateReferralHtml(data: ReferralSheetData): string {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Referral Sheet – ${clinicName}</title>
 <style>
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
   :root {
     --ink: #111;
     --paper: #ffffff;
@@ -59,7 +63,11 @@ export function generateReferralHtml(data: ReferralSheetData): string {
     --hint: #8a9399;
     --focus: #1a56c4;
   }
-  * { box-sizing: border-box; }
+  * { 
+    box-sizing: border-box; 
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
   html, body { margin: 0; padding: 0; }
   body {
     background: var(--desk);
@@ -71,7 +79,8 @@ export function generateReferralHtml(data: ReferralSheetData): string {
   }
 
   .sheet {
-    max-width: 780px;
+    max-width: 210mm;
+    width: 100%;
     margin: 0 auto;
     background: var(--paper);
     padding: 24px 32px;
@@ -127,6 +136,8 @@ export function generateReferralHtml(data: ReferralSheetData): string {
     gap: 14px;
     align-items: flex-end;
     margin-bottom: 9px;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
   .field {
     display: flex;
@@ -166,7 +177,11 @@ export function generateReferralHtml(data: ReferralSheetData): string {
   }
 
   /* Ruled text areas */
-  .block { margin-bottom: 8px; }
+  .block { 
+    margin-bottom: 8px;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   .block > label {
     display: block;
     margin-bottom: 1px;
@@ -198,10 +213,12 @@ export function generateReferralHtml(data: ReferralSheetData): string {
   .signoff {
     margin-top: 12px;
     margin-bottom: 0;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .actions {
-    max-width: 780px;
+    max-width: 210mm;
     margin: 12px auto 0;
     display: flex;
     gap: 8px;
@@ -229,24 +246,22 @@ export function generateReferralHtml(data: ReferralSheetData): string {
 
   /* Print Layout: Enforce exact 1 page fit on A4 */
   @media print {
-    @page {
-      size: A4 portrait;
-      margin: 8mm 10mm;
-    }
     html, body {
-      background: #fff;
-      padding: 0;
-      margin: 0;
-      height: 100%;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
+      background: #fff !important;
+      padding: 0 !important;
+      margin: 0 !important;
+      height: auto !important;
+      width: 100% !important;
     }
     .sheet {
-      box-shadow: none;
-      padding: 0;
-      max-width: 100%;
-      width: 100%;
+      box-shadow: none !important;
+      border: none !important;
+      padding: 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
       page-break-after: avoid;
+      break-after: avoid;
       page-break-inside: avoid;
       break-inside: avoid;
     }
@@ -254,10 +269,6 @@ export function generateReferralHtml(data: ReferralSheetData): string {
     ::placeholder { color: transparent; }
     input, textarea, select { border-color: #000; }
     select { background: none; }
-    * {
-      page-break-inside: avoid;
-      break-inside: avoid;
-    }
   }
 </style>
 </head>

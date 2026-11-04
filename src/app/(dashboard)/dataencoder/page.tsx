@@ -58,20 +58,35 @@ export default async function DataEncoderPage({ searchParams }: { searchParams: 
     if (toDate) whereClause.createdAt.lte = toDate;
   }
 
-  const rawInvoices = await prisma.invoice.findMany({
-    where: whereClause,
-    include: {
-      patient: true,
-      items: true,
-      labRequests: {
-        include: { test: true }
+  const [rawInvoices, nameSetting, amhSetting, logoSetting] = await Promise.all([
+    prisma.invoice.findMany({
+      where: whereClause,
+      include: {
+        patient: {
+          include: {
+            primaryPatient: true
+          }
+        },
+        items: true,
+        labRequests: {
+          include: { test: true }
+        },
+        prescriptionItems: {
+          include: { drug: true }
+        }
       },
-      prescriptionItems: {
-        include: { drug: true }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
+      orderBy: { createdAt: "desc" }
+    }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicName" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicNameAmharic" } }),
+    prisma.systemSetting.findUnique({ where: { key: "clinicLogo" } }),
+  ]);
+
+  const clinicInfo = {
+    name: nameSetting?.value || "Bure Card Clinic",
+    nameAmharic: amhSetting?.value || "ቡሬ ካርድ ክሊኒክ",
+    logo: logoSetting?.value || "/icon.png",
+  };
 
   // Map to the shape we need
   const invoices = rawInvoices.map(inv => {
@@ -90,26 +105,43 @@ export default async function DataEncoderPage({ searchParams }: { searchParams: 
     const discountAmount = Math.round((subtotal * inv.discountPercentApplied) / 100);
     const total = subtotal - discountAmount;
 
+    const labNames = inv.labRequests.map(lr => lr.test.name).filter(Boolean);
+    const drugNames = inv.prescriptionItems.map(pi => pi.drug.name).filter(Boolean);
+    let remarks = "";
+    if (labNames.length > 0 && drugNames.length > 0) {
+      remarks = `${labNames.join(", ")} | ${drugNames.join(", ")}`;
+    } else if (drugNames.length > 0) {
+      remarks = drugNames.join(", ");
+    } else if (labNames.length > 0) {
+      remarks = labNames.join(", ");
+    } else {
+      remarks = inv.items.map(it => it.description).join(", ") || "-";
+    }
+
     return {
       id: inv.id,
       createdAt: inv.createdAt.toISOString(),
       patientName: `${inv.patient.firstName} ${inv.patient.lastName}`,
-      patientType: inv.patient.patientType || "Unknown",
+      rank: inv.patient.rank || inv.patient.primaryPatient?.rank || inv.patient.salutation || "-",
+      patientType: inv.patient.patientType || inv.patient.primaryPatient?.patientType || "Unknown",
+      department: inv.patient.department || inv.patient.primaryPatient?.department || "-",
+      employeeId: inv.patient.employeeId || inv.patient.militaryId || inv.patient.primaryPatient?.employeeId || inv.patient.primaryPatient?.militaryId || "-",
       discountPercentApplied: inv.discountPercentApplied,
       labCost,
       pharmaCost,
       subtotal,
       total,
       status: inv.status,
-      labUsed: inv.labRequests.map(lr => lr.test.name).join(", ") || "-",
-      pharmaUsed: inv.prescriptionItems.map(pi => pi.drug.name).join(", ") || "-",
+      labUsed: labNames.join(", ") || "-",
+      pharmaUsed: drugNames.join(", ") || "-",
+      remarks,
       discountAmount,
     };
   });
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">Data Encoder</h1>
           <p className="text-slate-500 dark:text-slate-400 mt-2">
@@ -125,7 +157,11 @@ export default async function DataEncoderPage({ searchParams }: { searchParams: 
         </Link>
       </div>
 
-      <DataEncoderClient initialInvoices={invoices} />
+      <DataEncoderClient 
+        initialInvoices={invoices} 
+        clinicInfo={clinicInfo}
+        dateRange={{ from: resolvedParams.from, to: resolvedParams.to }}
+      />
     </div>
   );
 }

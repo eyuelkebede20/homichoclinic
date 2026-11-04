@@ -52,6 +52,7 @@ import { MedicalRecordItem, MedicalRecordWithAuthor } from "@/features/patients/
 import { PrescriptionHistoryItem } from "@/features/patients/components/prescription-history-item";
 import { PaperImportForm } from "./paper-import-form";
 import { ScheduleAppointmentForm } from "@/features/visits/components/schedule-appointment-form";
+import { SymptomCardSelector } from "./symptom-card-selector";
 
 export type DoctorConsultationWorkspaceProps = {
   patient: any;
@@ -149,6 +150,23 @@ export function DoctorConsultationWorkspace({
 
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
   const [showPaperImport, setShowPaperImport] = useState(false);
+
+  // Extract previous complaints from medical records in timeline for quick re-selection
+  const previousVisitComplaints = useMemo(() => {
+    return timeline
+      .filter((item) => item.type === "record" && (item.data?.subjective || item.data?.content))
+      .map((item) => {
+        const text = (item.data?.subjective || item.data?.content || "")
+          .replace(/^SOAP Entry\s*/i, "")
+          .replace(/Clinical Consultation Record\s*(?:-\s*)?/i, "")
+          .trim();
+        return {
+          date: item.date || item.data?.createdAt,
+          text: text.length > 80 ? `${text.substring(0, 80)}...` : text,
+        };
+      })
+      .filter((item) => item.text.length > 0 && !item.text.startsWith("Final Diagnosis:"));
+  }, [timeline]);
 
   async function handleSaveClinicalNote(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -656,24 +674,39 @@ export function DoctorConsultationWorkspace({
                 </div>
               )}
 
+              {/* Quick Select Symptoms Cards Tray */}
+              <SymptomCardSelector
+                value={subjective}
+                onChange={setSubjective}
+                previousVisitComplaints={previousVisitComplaints}
+              />
+
               {/* Subjective Chief Complaint Form */}
               <div className="bg-blue-50/40 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-200 dark:border-blue-900/50 space-y-3">
-                <label className="block text-xs font-bold text-blue-950 dark:text-blue-300">
-                  Subjective (Chief Complaint & History of Present Illness):
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-blue-950 dark:text-blue-300">
+                    Subjective (Chief Complaint & History of Present Illness):
+                  </label>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    {subjective ? `${subjective.length} chars` : "Select cards above or type below"}
+                  </span>
+                </div>
                 <textarea
                   value={subjective}
                   onChange={(e) => setSubjective(e.target.value)}
                   rows={3}
                   placeholder="Patient's primary complaints, symptoms onset, duration, severity, and medical background..."
-                  className="w-full text-xs rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-950 p-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full text-xs rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-950 p-3 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed"
                 />
-                <div className="flex justify-end">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    💡 Click symptom cards above to instantly toggle or append to this complaint.
+                  </p>
                   <button
                     type="button"
                     onClick={() => handleSaveClinicalNote()}
                     disabled={loading}
-                    className="flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
+                    className="flex items-center justify-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition-colors shadow-xs disabled:opacity-50"
                   >
                     {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
                     Save Note

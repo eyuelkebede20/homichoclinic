@@ -36,14 +36,57 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
     );
   }
 
-  const drugs = await prisma.drug.findMany({ 
-    where: query ? { name: { contains: query, mode: "insensitive" } } : {},
-    orderBy: { name: "asc" },
-    include: {
-      batches: {
-        orderBy: { dateAddedToStock: 'desc' }
+  const [drugs, allOperationalDrugs] = await Promise.all([
+    prisma.drug.findMany({ 
+      where: query ? { name: { contains: query, mode: "insensitive" } } : {},
+      orderBy: { name: "asc" },
+      include: {
+        batches: {
+          orderBy: { dateAddedToStock: 'desc' }
+        }
       }
-    }
+    }),
+    prisma.drug.findMany({
+      where: { deletedAt: null, isOperational: true },
+      select: {
+        id: true,
+        name: true,
+        category: true,
+        unit: true,
+        price: true,
+        amountInStock: true,
+        initialStock: true,
+        description: true,
+        batches: {
+          select: {
+            id: true,
+            batchNumber: true,
+            quantity: true,
+            expiryDate: true,
+            dateAddedToStock: true,
+          },
+          orderBy: { dateAddedToStock: 'desc' },
+        },
+      },
+      orderBy: { name: "asc" },
+    }),
+  ]);
+
+  const intakeDrugs = allOperationalDrugs.map((d) => {
+    const totalBatchStock = d.batches.reduce((sum, b) => sum + (b.quantity || 0), 0);
+    const effectiveStock = d.batches.length > 0 ? totalBatchStock : (d.amountInStock ?? d.initialStock ?? 0);
+    const latestBatch = d.batches[0];
+    return {
+      id: d.id,
+      name: d.name,
+      category: d.category,
+      unit: d.unit,
+      price: d.price,
+      stock: effectiveStock,
+      description: d.description,
+      latestBatchNumber: latestBatch?.batchNumber || null,
+      latestExpiryDate: latestBatch?.expiryDate ? latestBatch.expiryDate.toISOString() : null,
+    };
   });
 
   return (
@@ -68,7 +111,7 @@ export default async function PharmacyCatalogPage({ searchParams }: { searchPara
 
         <div className="print:hidden space-y-4">
           <CatalogImporter type="DRUG" />
-          <CatalogForm type="drug" />
+          <CatalogForm type="drug" initialDrugs={intakeDrugs} />
         </div>
         
         <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 overflow-x-auto print:shadow-none print:border-none">

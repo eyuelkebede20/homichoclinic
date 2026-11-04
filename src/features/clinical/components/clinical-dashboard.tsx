@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Loader2, Activity, Heart, Thermometer, Scale, Save, CheckCircle2, Stethoscope, Plus } from "lucide-react";
 import { FinalDiagnosisModal } from "./final-diagnosis-modal";
 import { addClinicalNote, toggleAdmissionStatus, deactivatePatientOpd } from "../actions";
+import { SymptomCardSelector } from "./symptom-card-selector";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -18,6 +19,7 @@ export function ClinicalDashboard({
 }) {
   const [loading, setLoading] = useState(false);
   const [assessmentValue, setAssessmentValue] = useState("");
+  const [subjective, setSubjective] = useState("");
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
   const router = useRouter();
 
@@ -65,6 +67,7 @@ export function ClinicalDashboard({
     else {
       (e.target as HTMLFormElement).reset();
       setAssessmentValue("");
+      setSubjective("");
       router.refresh();
     }
   }
@@ -220,6 +223,13 @@ export function ClinicalDashboard({
             <span className="text-[11px] text-slate-400">Assessment is required</span>
           </div>
 
+          {/* Quick Symptoms Cards Tray */}
+          <SymptomCardSelector
+            value={subjective}
+            onChange={setSubjective}
+            compact
+          />
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
@@ -228,6 +238,8 @@ export function ClinicalDashboard({
               <textarea
                 name="subjective"
                 rows={2}
+                value={subjective}
+                onChange={(e) => setSubjective(e.target.value)}
                 placeholder="Patient symptoms and complaints..."
                 className="block w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-2.5 py-1.5 text-xs text-slate-900 dark:text-slate-100 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none transition-all"
               />
