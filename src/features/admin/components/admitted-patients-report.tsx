@@ -29,6 +29,13 @@ import {
 } from "lucide-react";
 import { toggleAdmissionStatus } from "@/features/clinical/actions";
 import { formatLabSummary } from "@/features/clinical/types/lab-panels";
+import {
+  ETHIOPIAN_MONTHS,
+  ethiopianToGregorian,
+  formatToEthiopianDate,
+  getCurrentEthiopianDate,
+  getDaysInEthiopianMonth,
+} from "@/lib/date-utils";
 import { toast } from "sonner";
 
 export type DossierPatient = {
@@ -131,6 +138,8 @@ export type DossierPatient = {
   attendingDoctors: string[];
   primaryAssessments: string[];
   lastEncounterDate?: string;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type AdmittedPatientsReportProps = {
@@ -150,6 +159,7 @@ export type AdmittedPatientsReportProps = {
 export function AdmittedPatientsReport({
   patients,
   clinicInfo,
+  defaultPeriodDays = 90,
   currentEthiopianDateStr,
   threeMonthsAgoEthiopianDateStr,
 }: AdmittedPatientsReportProps) {
@@ -158,9 +168,15 @@ export function AdmittedPatientsReport({
   const initialPatientId = searchParams.get("patientId") || "";
   const initialTab = (searchParams.get("tab") as "all" | "inpatient" | "search") || "inpatient";
 
+  const currentEth = useMemo(() => getCurrentEthiopianDate(), []);
   const [activeTab, setActiveTab] = useState<"all" | "inpatient" | "search">(initialTab);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedPeriod, setSelectedPeriod] = useState<"30" | "90" | "180" | "all">("90");
+  const [selectedPeriod, setSelectedPeriod] = useState<"30" | "90" | "180" | "month" | "all">(
+    defaultPeriodDays === 30 ? "30" : "90"
+  );
+  const [selectedEthMonth, setSelectedEthMonth] = useState<number>(() => currentEth.month);
+  const [selectedEthYear, setSelectedEthYear] = useState<number>(() => currentEth.year);
+  const [requireActivityInPeriod, setRequireActivityInPeriod] = useState<boolean>(false);
   const [printingMode, setPrintingMode] = useState<"batch" | "census" | "single">("batch");
   const [singlePrintPatientId, setSinglePrintPatientId] = useState<string>(initialPatientId);
   const [expandedPatientIds, setExpandedPatientIds] = useState<Record<string, boolean>>(() => {
@@ -170,14 +186,84 @@ export function AdmittedPatientsReport({
   });
   const [isUpdatingAdmission, setIsUpdatingAdmission] = useState<string | null>(null);
 
-  // Compute cutoff date based on selected period
-  const cutoffDate = useMemo(() => {
-    if (selectedPeriod === "all") return new Date(0);
-    const days = parseInt(selectedPeriod, 10);
-    return new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  }, [selectedPeriod]);
+  // Compute active date range and dynamic titles based on selected period
+  const dateRange = useMemo(() => {
+    const now = new Date();
+    if (selectedPeriod === "all") {
+      return {
+        startDate: new Date(0),
+        endDate: now,
+        periodLabel: "All History (የሙሉ ጊዜ ታሪክ)",
+        periodDaysLabel: "All History",
+        periodHeaderEn: "INPATIENT COMPLETE CLINICAL DOSSIER & ENCOUNTER HISTORY",
+        periodHeaderAm: "የተኝቶ ታካሚ የተሟላ የህክምና ታሪክ ማጠቃለያ (ለህክምና ካርድ ማያያዣ የተዘጋጀ)",
+        periodStartEthStr: "All History",
+        periodEndEthStr: formatToEthiopianDate(now),
+        periodAmharicDays: "ሙሉ ጊዜ",
+      };
+    }
 
-  // Filter patients based on tab, date cutoffs, and search query
+    if (selectedPeriod === "month") {
+      const monthMeta = ETHIOPIAN_MONTHS.find((m) => m.id === selectedEthMonth) || ETHIOPIAN_MONTHS[0];
+      const maxDays = getDaysInEthiopianMonth(selectedEthYear, selectedEthMonth);
+      const start = ethiopianToGregorian(selectedEthYear, selectedEthMonth, 1, 0, 0, 0);
+      const end = ethiopianToGregorian(selectedEthYear, selectedEthMonth, maxDays, 23, 59, 59, 999);
+      const startEth = `${monthMeta.amharic} 01, ${selectedEthYear} ዓ.ም.`;
+      const endEth = `${monthMeta.amharic} ${maxDays < 10 ? '0' + maxDays : maxDays}, ${selectedEthYear} ዓ.ም.`;
+      return {
+        startDate: start,
+        endDate: end,
+        periodLabel: `${monthMeta.amharic} (${monthMeta.name}) ${selectedEthYear}`,
+        periodDaysLabel: `${monthMeta.name} ${selectedEthYear} (${maxDays} Days)`,
+        periodHeaderEn: `INPATIENT ${monthMeta.name.toUpperCase()} ${selectedEthYear} MEDICAL REPORT & CLINICAL DOSSIER`,
+        periodHeaderAm: `የተኝቶ ታካሚ የ${monthMeta.amharic} ${selectedEthYear} ዓ.ም. የህክምና ታሪክ ማጠቃለያ (ለህክምና ካርድ ማያያዣ የተዘጋጀ)`,
+        periodStartEthStr: startEth,
+        periodEndEthStr: endEth,
+        periodAmharicDays: `${monthMeta.amharic} ወር`,
+      };
+    }
+
+    const days = parseInt(selectedPeriod, 10);
+    const start = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+    const label = days === 30 ? "1 Month (30 Days)" : days === 90 ? "3 Months (90 Days)" : `${days} Days`;
+    const labelAm = days === 30 ? "የ1 ወር (30 ቀን)" : days === 90 ? "የ3 ወር (90 ቀን)" : `የ${days} ቀን`;
+    const titleEn = days === 30
+      ? "INPATIENT 1-MONTH (30-DAY) MEDICAL REPORT & CLINICAL DOSSIER"
+      : days === 90
+      ? "INPATIENT 3-MONTH MEDICAL REPORT & CLINICAL DOSSIER"
+      : `INPATIENT ${days}-DAY MEDICAL REPORT & CLINICAL DOSSIER`;
+    const titleAm = `የተኝቶ ታካሚ ${labelAm} የህክምና ታሪክ ማጠቃለያ (ለህክምና ካርድ ማያያዣ የተዘጋጀ)`;
+
+    return {
+      startDate: start,
+      endDate: now,
+      periodLabel: label,
+      periodDaysLabel: `${days} Days`,
+      periodHeaderEn: titleEn,
+      periodHeaderAm: titleAm,
+      periodStartEthStr: formatToEthiopianDate(start),
+      periodEndEthStr: formatToEthiopianDate(now),
+      periodAmharicDays: labelAm,
+    };
+  }, [selectedPeriod, selectedEthMonth, selectedEthYear]);
+
+  // Check if a date string falls inside the active period
+  const isWithinPeriod = (rawDate?: string | null) => {
+    if (!rawDate) return false;
+    const time = new Date(rawDate).getTime();
+    return time >= dateRange.startDate.getTime() && time <= dateRange.endDate.getTime();
+  };
+
+  const patientHasActivityInPeriod = (p: DossierPatient) => {
+    return (
+      p.visits.some((v) => isWithinPeriod(v.rawDate)) ||
+      p.medicalRecords.some((mr) => isWithinPeriod(mr.rawDate)) ||
+      p.labRequests.some((l) => isWithinPeriod(l.rawDate)) ||
+      p.prescriptions.some((rx) => isWithinPeriod(rx.rawDate))
+    );
+  };
+
+  // Filter patients based on tab, date cutoffs, search query, and activity
   const filteredPatients = useMemo(() => {
     return patients.filter((p) => {
       // Tab filter
@@ -201,22 +287,52 @@ export function AdmittedPatientsReport({
         }
       }
 
-      // Period filter: Check if patient has any activity within cutoffDate OR is currently Inpatient
+      // Period activity filter
       if (selectedPeriod !== "all") {
-        const hasRecentVisit = p.visits.some((v) => new Date(v.rawDate) >= cutoffDate);
-        const hasRecentRecord = p.medicalRecords.some((r) => new Date(r.rawDate) >= cutoffDate);
-        const hasRecentLab = p.labRequests.some((l) => new Date(l.rawDate) >= cutoffDate);
-        const hasRecentRx = p.prescriptions.some((rx) => new Date(rx.rawDate) >= cutoffDate);
-        const isCurrentInpatient = p.admissionStatus === "Inpatient";
-
-        if (!hasRecentVisit && !hasRecentRecord && !hasRecentLab && !hasRecentRx && !isCurrentInpatient) {
-          return false;
+        const hasActivity = patientHasActivityInPeriod(p);
+        if (requireActivityInPeriod || activeTab !== "inpatient") {
+          if (!hasActivity) return false;
         }
       }
 
       return true;
     });
-  }, [patients, activeTab, searchQuery, selectedPeriod, cutoffDate]);
+  }, [patients, activeTab, searchQuery, selectedPeriod, dateRange, requireActivityInPeriod]);
+
+  // Pre-filter records for each patient to strictly match the selected period
+  const periodPatientData = useMemo(() => {
+    const dataMap: Record<
+      string,
+      {
+        visits: DossierPatient["visits"];
+        medicalRecords: DossierPatient["medicalRecords"];
+        labRequests: DossierPatient["labRequests"];
+        prescriptions: DossierPatient["prescriptions"];
+        totalEncounters: number;
+        hasActivity: boolean;
+      }
+    > = {};
+
+    patients.forEach((p) => {
+      const visits = selectedPeriod === "all" ? p.visits : p.visits.filter((v) => isWithinPeriod(v.rawDate));
+      const medicalRecords = selectedPeriod === "all" ? p.medicalRecords : p.medicalRecords.filter((mr) => isWithinPeriod(mr.rawDate));
+      const labRequests = selectedPeriod === "all" ? p.labRequests : p.labRequests.filter((l) => isWithinPeriod(l.rawDate));
+      const prescriptions = selectedPeriod === "all" ? p.prescriptions : p.prescriptions.filter((rx) => isWithinPeriod(rx.rawDate));
+      const totalEncounters = visits.length + medicalRecords.length;
+      const hasActivity = visits.length > 0 || medicalRecords.length > 0 || labRequests.length > 0 || prescriptions.length > 0;
+
+      dataMap[p.id] = {
+        visits,
+        medicalRecords,
+        labRequests,
+        prescriptions,
+        totalEncounters,
+        hasActivity,
+      };
+    });
+
+    return dataMap;
+  }, [patients, selectedPeriod, dateRange]);
 
   // Patients to render when printing
   const printTargetPatients = useMemo(() => {
@@ -316,7 +432,7 @@ export function AdmittedPatientsReport({
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2.5">
               <Hospital className="w-6 h-6 text-indigo-400" />
-              Admitted Patients: 3-Month Report & Dossier
+              Admitted Patients: {dateRange.periodLabel} Report & Dossier
             </h1>
             <p className="text-xs text-slate-300 mt-1">
               Official clinical summaries & patient history for physical chart attachments (የታካሚ ካርድ ማያያዣ የህክምና ታሪክ)
@@ -329,7 +445,7 @@ export function AdmittedPatientsReport({
               onClick={handlePrintBatch}
               disabled={filteredPatients.length === 0}
               className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl shadow-sm transition-all"
-              title="Print full 3-month dossier for all displayed patients (one per page break)"
+              title={`Print full ${dateRange.periodDaysLabel} dossier for all displayed patients (one per page break)`}
             >
               <Printer className="w-4 h-4" />
               Print All Dossiers ({filteredPatients.length})
@@ -376,7 +492,7 @@ export function AdmittedPatientsReport({
                 }`}
               >
                 <Activity className="w-3.5 h-3.5" />
-                All 3-Month Activity
+                All {dateRange.periodDaysLabel} Activity
                 <span className="ml-1 text-[10px] px-1.5 py-0.2 rounded-full bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300">
                   {patients.length}
                 </span>
@@ -396,50 +512,107 @@ export function AdmittedPatientsReport({
             </div>
 
             {/* Period selector */}
-            <div className="flex items-center gap-1.5 text-xs">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
               <span className="text-slate-500 font-medium">History Window:</span>
               <div className="inline-flex bg-slate-100 dark:bg-slate-800 p-0.5 rounded-lg font-semibold">
                 <button
+                  type="button"
                   onClick={() => setSelectedPeriod("30")}
                   className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                     selectedPeriod === "30"
-                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs"
+                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
-                  30 Days
+                  30 Days (1 Month)
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSelectedPeriod("90")}
                   className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                     selectedPeriod === "90"
-                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs"
+                      ? "bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-xs font-bold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
                   3 Months (Standard)
                 </button>
                 <button
+                  type="button"
                   onClick={() => setSelectedPeriod("180")}
                   className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                     selectedPeriod === "180"
-                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs"
+                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
                   6 Months
                 </button>
                 <button
+                  type="button"
+                  onClick={() => setSelectedPeriod("month")}
+                  className={`px-2.5 py-1 rounded-md text-xs transition-all ${
+                    selectedPeriod === "month"
+                      ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold"
+                      : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
+                  }`}
+                >
+                  Specific Month (በወር)
+                </button>
+                <button
+                  type="button"
                   onClick={() => setSelectedPeriod("all")}
                   className={`px-2.5 py-1 rounded-md text-xs transition-all ${
                     selectedPeriod === "all"
-                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs"
+                      ? "bg-white dark:bg-slate-900 text-blue-600 dark:text-blue-400 shadow-xs font-bold"
                       : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
                   }`}
                 >
                   All History
                 </button>
               </div>
+
+              {/* If "month" selected, render Ethiopian Month and Year dropdowns */}
+              {selectedPeriod === "month" && (
+                <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-1 rounded-lg">
+                  <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <select
+                    value={selectedEthMonth}
+                    onChange={(e) => setSelectedEthMonth(Number(e.target.value))}
+                    aria-label="Ethiopian Month"
+                    className="bg-transparent text-xs font-bold text-emerald-950 dark:text-emerald-200 outline-none cursor-pointer"
+                  >
+                    {ETHIOPIAN_MONTHS.map((m) => (
+                      <option key={m.id} value={m.id} className="text-black bg-white">
+                        {m.amharic} ({m.name})
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={selectedEthYear}
+                    onChange={(e) => setSelectedEthYear(Number(e.target.value))}
+                    aria-label="Ethiopian Year"
+                    className="bg-transparent text-xs font-bold text-emerald-950 dark:text-emerald-200 outline-none cursor-pointer border-l border-emerald-300 dark:border-emerald-700 pl-1.5"
+                  >
+                    {[2017, 2018, 2019, 2020].map((y) => (
+                      <option key={y} value={y} className="text-black bg-white">
+                        {y} ዓ.ም.
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Checkbox for strict activity filtering */}
+              <label className="flex items-center gap-1.5 cursor-pointer ml-auto text-xs text-slate-600 dark:text-slate-300 hover:text-slate-900 select-none">
+                <input
+                  type="checkbox"
+                  checked={requireActivityInPeriod}
+                  onChange={(e) => setRequireActivityInPeriod(e.target.checked)}
+                  className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span>Only with encounters in this period</span>
+              </label>
             </div>
           </div>
 
@@ -490,10 +663,10 @@ export function AdmittedPatientsReport({
             </h1>
             <p className="text-sm font-semibold text-slate-800">{clinicInfo.nameAmharic}</p>
             <h2 className="text-base font-bold uppercase mt-2 text-black">
-              ADMITTED PATIENTS 3-MONTH CENSUS & ACTIVITY LOG / የተኝቶ ታካሚዎች የ3 ወር ማጠቃለያ መዝገብ
+              ADMITTED PATIENTS {dateRange.periodDaysLabel.toUpperCase()} CENSUS & ACTIVITY LOG / የተኝቶ ታካሚዎች የ{dateRange.periodAmharicDays} ማጠቃለያ መዝገብ
             </h2>
             <div className="flex justify-between items-center text-xs text-slate-600 mt-3 font-mono">
-              <span>Period: {threeMonthsAgoEthiopianDateStr} — {currentEthiopianDateStr}</span>
+              <span>Period: {dateRange.periodStartEthStr} — {dateRange.periodEndEthStr}</span>
               <span>Generated by: {clinicInfo.userName} ({clinicInfo.userRole})</span>
               <span>Total Admitted: {filteredPatients.length}</span>
             </div>
@@ -534,7 +707,7 @@ export function AdmittedPatientsReport({
                     {p.admissionStatus === "Inpatient" ? "🏥 INPATIENT" : "Outpatient"}
                   </td>
                   <td className="p-2 border-r border-slate-300 text-center font-bold">
-                    {p.visits.length}
+                    {periodPatientData[p.id]?.visits.length ?? 0}
                   </td>
                   <td className="p-2 border-r border-slate-300 font-mono text-[10px]">
                     {p.latestVitals?.bp ? `BP:${p.latestVitals.bp}` : "—"}
@@ -546,8 +719,8 @@ export function AdmittedPatientsReport({
                   <td className="p-2 text-[10px]">
                     {p.primaryAssessments.length > 0
                       ? p.primaryAssessments.slice(0, 2).join("; ")
-                      : p.prescriptions.length > 0
-                      ? `${p.prescriptions.length} Prescriptions`
+                      : (periodPatientData[p.id]?.prescriptions.length ?? 0) > 0
+                      ? `${periodPatientData[p.id]?.prescriptions.length} Prescriptions`
                       : "Routine Observation"}
                   </td>
                 </tr>
@@ -581,13 +754,21 @@ export function AdmittedPatientsReport({
                 No admitted patients found
               </h3>
               <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                No patients match the active filter or have admission/inpatient records within the selected 3-month period.
-                Try selecting &ldquo;All 3-Month Activity&rdquo; or searching for a specific patient.
+                No patients match the active filter or have admission/inpatient records within the selected {dateRange.periodLabel} period.
+                Try selecting &ldquo;All {dateRange.periodDaysLabel} Activity&rdquo; or searching for a specific patient.
               </p>
             </div>
           ) : (
             printTargetPatients.map((patient, pIdx) => {
               const isExpanded = expandedPatientIds[patient.id] ?? false;
+              const pData = periodPatientData[patient.id] || {
+                visits: [],
+                medicalRecords: [],
+                labRequests: [],
+                prescriptions: [],
+                totalEncounters: 0,
+                hasActivity: false,
+              };
 
               return (
                 <article
@@ -617,7 +798,7 @@ export function AdmittedPatientsReport({
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          ID: {patient.militaryId || patient.employeeId || "N/A"} • Category: {patient.patientType} • {patient.visits.length} Visits in Period
+                          ID: {patient.militaryId || patient.employeeId || "N/A"} • Category: {patient.patientType} • {pData.visits.length} Visits in Period
                         </p>
                       </div>
                     </div>
@@ -684,10 +865,10 @@ export function AdmittedPatientsReport({
                             {clinicInfo.nameAmharic}
                           </p>
                           <h2 className="text-xs sm:text-sm font-extrabold uppercase tracking-wide text-black mt-1">
-                            INPATIENT 3-MONTH MEDICAL REPORT & CLINICAL DOSSIER
+                            {dateRange.periodHeaderEn}
                           </h2>
                           <p className="text-[11px] font-semibold text-slate-600">
-                            የተኝቶ ታካሚ የ3 ወር የህክምና ታሪክ ማጠቃለያ (ለህክምና ካርድ ማያያዣ የተዘጋጀ)
+                            {dateRange.periodHeaderAm}
                           </p>
                         </div>
 
@@ -700,7 +881,7 @@ export function AdmittedPatientsReport({
                       </div>
 
                       <div className="flex justify-between items-center text-[10px] text-slate-600 pt-2 border-t border-slate-300 font-mono">
-                        <span>Report Window: {threeMonthsAgoEthiopianDateStr} — {currentEthiopianDateStr} (90 Days)</span>
+                        <span>Report Window: {dateRange.periodStartEthStr} — {dateRange.periodEndEthStr} ({dateRange.periodDaysLabel})</span>
                         <span>Date Printed: {currentEthiopianDateStr} (Eth) / {new Date().toLocaleDateString()}</span>
                         <span className="font-bold text-black">
                           Status: {patient.admissionStatus === "Inpatient" ? "🏥 ADMITTED INPATIENT" : "OUTPATIENT"}
@@ -796,10 +977,10 @@ export function AdmittedPatientsReport({
                     <section className="grid grid-cols-1 sm:grid-cols-4 gap-3 print:grid-cols-4 text-xs">
                       <div className="p-2.5 border border-black rounded-lg bg-slate-50 print:bg-white text-center">
                         <span className="text-[10px] font-bold uppercase tracking-wider text-slate-700 block">
-                          3-Month Encounters
+                          {dateRange.periodDaysLabel} Encounters
                         </span>
                         <strong className="text-lg font-black text-black">
-                          {patient.visits.length} Visits
+                          {pData.visits.length} Visits
                         </strong>
                       </div>
 
@@ -838,16 +1019,16 @@ export function AdmittedPatientsReport({
                           <Stethoscope className="w-3.5 h-3.5" />
                           1. Clinical Encounters & SOAP Progress Notes (የህክምና ምርመራ እና የዶክተር ማስታወሻ)
                         </span>
-                        <span>{patient.visits.length + patient.medicalRecords.length} Records</span>
+                        <span>{pData.totalEncounters} Records</span>
                       </div>
 
-                      {patient.visits.length === 0 && patient.medicalRecords.length === 0 ? (
+                      {pData.visits.length === 0 && pData.medicalRecords.length === 0 ? (
                         <p className="text-xs text-slate-500 italic p-3 border border-dashed border-slate-300 rounded-lg">
-                          No clinical consultation notes or OPD visits recorded in this 3-month window.
+                          No clinical consultation notes or OPD visits recorded in this period ({dateRange.periodLabel}).
                         </p>
                       ) : (
                         <div className="space-y-3">
-                          {patient.visits.map((v) => (
+                          {pData.visits.map((v) => (
                             <div
                               key={v.id}
                               className="border border-slate-400 rounded-lg p-3 text-xs space-y-2 bg-white print:border-slate-800"
@@ -881,7 +1062,7 @@ export function AdmittedPatientsReport({
                           ))}
 
                           {/* SOAP Progress Notes from MedicalRecord */}
-                          {patient.medicalRecords.map((mr) => (
+                          {pData.medicalRecords.map((mr) => (
                             <div
                               key={mr.id}
                               className="border border-slate-400 rounded-lg p-3 text-xs space-y-2 bg-white print:border-slate-800"
@@ -949,12 +1130,12 @@ export function AdmittedPatientsReport({
                           <FlaskConical className="w-3.5 h-3.5" />
                           2. Diagnostic Laboratory Tests & Findings (የላቦራቶሪ ምርመራ ውጤቶች)
                         </span>
-                        <span>{patient.labRequests.length} Tests</span>
+                        <span>{pData.labRequests.length} Tests in Period</span>
                       </div>
 
-                      {patient.labRequests.length === 0 ? (
+                      {pData.labRequests.length === 0 ? (
                         <p className="text-xs text-slate-500 italic p-3 border border-dashed border-slate-300 rounded-lg">
-                          No diagnostic laboratory investigations conducted in this 3-month window.
+                          No diagnostic laboratory investigations conducted in this period ({dateRange.periodLabel}).
                         </p>
                       ) : (
                         <table className="w-full text-left border-collapse text-xs border border-slate-400">
@@ -968,7 +1149,7 @@ export function AdmittedPatientsReport({
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-300 text-[11px]">
-                            {patient.labRequests.map((lab) => (
+                            {pData.labRequests.map((lab) => (
                               <tr key={lab.id}>
                                 <td className="p-2 border-r border-slate-300 font-mono text-[10px]">
                                   {lab.date}
@@ -1016,13 +1197,13 @@ export function AdmittedPatientsReport({
                           3. Prescriptions & Medication Administration (የታዘዙ መድኃኒቶች)
                         </span>
                         <span>
-                          {patient.prescriptions.reduce((sum, rx) => sum + rx.items.length, 0)} Items Prescribed
+                          {pData.prescriptions.reduce((sum, rx) => sum + rx.items.length, 0)} Items Prescribed in Period
                         </span>
                       </div>
 
-                      {patient.prescriptions.length === 0 ? (
+                      {pData.prescriptions.length === 0 ? (
                         <p className="text-xs text-slate-500 italic p-3 border border-dashed border-slate-300 rounded-lg">
-                          No pharmacy prescriptions issued in this 3-month window.
+                          No pharmacy prescriptions issued in this period ({dateRange.periodLabel}).
                         </p>
                       ) : (
                         <table className="w-full text-left border-collapse text-xs border border-slate-400">
@@ -1036,7 +1217,7 @@ export function AdmittedPatientsReport({
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-300 text-[11px]">
-                            {patient.prescriptions.flatMap((rx) =>
+                            {pData.prescriptions.flatMap((rx) =>
                               rx.items.map((item) => (
                                 <tr key={item.id}>
                                   <td className="p-2 border-r border-slate-300 font-mono text-[10px]">

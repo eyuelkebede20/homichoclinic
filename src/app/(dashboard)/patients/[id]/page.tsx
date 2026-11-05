@@ -5,6 +5,7 @@ import { ROLE_PERMISSIONS, PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { calculateAge, formatToEthiopianDate } from "@/lib/date-utils";
 import { DiscountSlider } from "@/features/patients/components/discount-slider";
+import { CompactPatientBanner } from "@/features/patients/components/compact-patient-banner";
 import { DoctorConsultationWorkspace } from "@/features/clinical/components/doctor-consultation-workspace";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -224,221 +225,78 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   const isNanSince = patient.patientType === "Civilian Staff" && (!patient.permanentSince || patient.permanentSince === "NaN");
+  const isDoctor = canWriteHistory || canPrescribe || canRequestLab;
+  const activeVisit = patient.visits.find(v => 
+    (v.status === "scheduled" || v.status === "in_progress") && 
+    v.opdRoom !== null &&
+    (Date.now() - new Date(v.visitDate).getTime() < 24 * 60 * 60 * 1000)
+  );
+  const canEditPatient = (role === "Admin" || role === "Manager" || (role === "Reception" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000)));
 
   return (
-    <div className="p-8 max-w-5xl mx-auto space-y-6 print:p-0 print:max-w-none">
+    <div className={`mx-auto space-y-4 print:p-0 print:max-w-none ${isDoctor ? "max-w-[1600px] w-full p-3 sm:p-5 lg:p-6" : "max-w-6xl w-full p-4 sm:p-6 lg:p-8 space-y-6"}`}>
       <PrintHeader title="Patient Medical Record" subtitle={`Record for ${patient.firstName} ${patient.lastName}`} />
-
-      <div className="flex items-center justify-between mb-6 print:hidden">
-        <Link href="/patients" className="text-blue-600 hover:underline">
-          &larr; Back to Patients
-        </Link>
-        {canReadHistory && <PrintButton label="Print Medical History" />}
-      </div>
 
       {patient.status === "PENDING" && (
         <PendingApprovalBanner patientId={patient.id} canApprove={role === "Admin" || role === "Manager"} />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 print:block print:space-y-6">
-        {/* Patient Info Card */}
-        <div className="col-span-1 md:col-span-2 space-y-6 print:w-full">
-          <div
-            className={`shadow-sm rounded-xl border p-6 ${isNanSince ? "bg-red-50 dark:bg-red-900/20 border-red-300 dark:border-red-800/60" : "bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800/60"}`}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">
-                Patient Profile
-                {isNanSince && (
-                  <span className="ml-2 text-xs text-red-600 dark:text-red-400 font-normal border border-red-300 dark:border-red-700 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/50">
-                    Missing &apos;Since&apos; Date
-                  </span>
-                )}
-              </h2>
-              {(role === "Admin" || role === "Manager" || (role === "Reception" && patient.patientType !== "Soldier" && (isNanSince || new Date().getTime() - patient.createdAt.getTime() < 86400000))) && (
-                <Link
-                  href={`/patients/${patient.id}/edit`}
-                  className="text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 py-1 px-3 rounded border border-slate-300 dark:border-slate-700 transition-colors"
-                >
-                  Edit Details
-                </Link>
-              )}
-            </div>
+      {/* High-Density Minimal Patient Profile Banner (Takes only ~68px, expandable on demand) */}
+      <CompactPatientBanner
+        patient={patient}
+        canEdit={canEditPatient}
+        canUpdateDiscount={canUpdateDiscount}
+        canReadHistory={canReadHistory}
+        opdRoom={activeVisit?.opdRoom}
+        printButtonSlot={canReadHistory ? <PrintButton label="Print Medical History" /> : undefined}
+      />
 
-            <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-6">
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Full name</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">
-                  {patient.salutation ? `${patient.salutation}. ` : ""}{patient.firstName} {patient.lastName}
-                </dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Age</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{calculateAge(patient.yob)}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Sex</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 capitalize">{patient.gender || "N/A"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Contact Number</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.contactNumber || "N/A"}</dd>
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">ID / Gov ID</dt>
-                <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.employeeId || patient.militaryId || "N/A"}</dd>
-              </div>
-              {patient.patientType === "Civilian Staff" && (
-                <div>
-                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Permanent Since (ቋሚ የሆነበት ቀን)</dt>
-                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.permanentSince ? formatToEthiopianDate(patient.permanentSince) : "N/A"}</dd>
-                </div>
-              )}
-              {patient.department && (
-                <div>
-                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">Department / Division</dt>
-                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100">{patient.department}</dd>
-                </div>
-              )}
-              {patient.c_m && (
-                <div>
-                  <dt className="text-sm font-medium text-slate-500 dark:text-slate-400">C/M</dt>
-                  <dd className="mt-1 text-sm text-slate-900 dark:text-slate-100 uppercase">{patient.c_m}</dd>
-                </div>
-              )}
-            </dl>
-
-            {/* Linked Primary Staff / Soldier Section */}
-            {patient.primaryPatient && (
-              <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800 bg-blue-50/60 dark:bg-blue-950/20 p-4 rounded-xl border border-blue-200 dark:border-blue-900/40">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-blue-900 dark:text-blue-300">
-                    Linked Primary Staff Member / Soldier
-                  </h3>
-                  <Link
-                    href={`/patients/${patient.primaryPatient.id}`}
-                    className="text-xs text-blue-600 hover:text-blue-700 dark:text-blue-400 font-semibold underline"
-                  >
-                    View Primary Profile &rarr;
-                  </Link>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 block">Name:</span>
-                    <strong className="text-slate-800 dark:text-slate-200">{patient.primaryPatient.firstName} {patient.primaryPatient.lastName}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 block">Card / Military / Employee ID:</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-mono">{patient.primaryPatient.militaryId || patient.primaryPatient.employeeId || "N/A"}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500 dark:text-slate-400 block">Relationship & Type:</span>
-                    <strong className="text-slate-800 dark:text-slate-200">{patient.relationship || "Dependent"} • {patient.primaryPatient.patientType}</strong>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Family Tree / Dependents Section */}
-          {patient.dependents && patient.dependents.length > 0 && (
-            <div className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
-                <div>
-                  <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                    Family Tree & Dependents ({patient.dependents.length})
-                  </h3>
-                  <p className="text-xs text-slate-500">Registered family members linked to this staff record</p>
-                </div>
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300">
-                  {patient.patientType === "Soldier" ? "100% Family Benefit" : "95% Family Benefit"}
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {patient.dependents.map((dep) => (
-                  <div key={dep.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40 flex justify-between items-center hover:border-blue-400 transition-colors">
-                    <div>
-                      <Link href={`/patients/${dep.id}`} className="font-bold text-sm text-slate-800 dark:text-slate-200 hover:text-blue-600">
-                        {dep.firstName} {dep.lastName}
-                      </Link>
-                      <div className="text-xs text-slate-500 mt-0.5 flex gap-2">
-                        <span>Relation: <strong className="text-slate-700 dark:text-slate-300">{dep.relationship || "Dependent"}</strong></span>
-                        <span>• Type: {dep.patientType}</span>
-                        {dep.yob && <span>• Age: {calculateAge(dep.yob)}</span>}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="inline-block text-xs font-extrabold px-2 py-0.5 rounded bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
-                        {dep.discountPercent}% Off
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <div className="print:hidden space-y-6">
-            {(canWriteHistory || canPrescribe || canRequestLab) ? (
-              <DoctorConsultationWorkspace
-                patient={patient}
-                activeVisit={patient.visits.find(v => 
-                  (v.status === "scheduled" || v.status === "in_progress") && 
-                  v.opdRoom !== null &&
-                  (Date.now() - new Date(v.visitDate).getTime() < 24 * 60 * 60 * 1000)
-                )}
-                timeline={timeline}
-                labTests={labTests}
-                drugs={drugs}
-                doctorsList={doctorsList}
-                referralDestinations={referralDestinations}
-                clinicNames={{ clinicName, clinicNameAmharic, clinicLogo }}
-                admissionStatus={patient.admissionStatus}
-                canWriteHistory={canWriteHistory}
-                canPrescribe={canPrescribe}
-                canRequestLab={canRequestLab}
-                canCreateVisit={canCreateVisit}
-              />
-            ) : (
-              canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />
-            )}
-          </div>
-
-{canReadHistory && (!canWriteHistory && !canPrescribe) && (
-  <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
-    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
-    <div className="space-y-4">
-      {timeline.length === 0 ? (
-        <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
+      {isDoctor ? (
+        /* Doctor Mode: Consultation Workspace takes 100% FULL GRID */
+        <div className="w-full print:hidden">
+          <DoctorConsultationWorkspace
+            patient={patient}
+            activeVisit={activeVisit}
+            timeline={timeline}
+            labTests={labTests}
+            drugs={drugs}
+            doctorsList={doctorsList}
+            referralDestinations={referralDestinations}
+            clinicNames={{ clinicName, clinicNameAmharic, clinicLogo }}
+            admissionStatus={patient.admissionStatus}
+            canWriteHistory={canWriteHistory}
+            canPrescribe={canPrescribe}
+            canRequestLab={canRequestLab}
+            canCreateVisit={canCreateVisit}
+          />
+        </div>
       ) : (
-        timeline.map((item) => 
-          item.type === "record" 
-            ? <MedicalRecordItem key={item.data.id} record={item.data as any} />
-            : <PrescriptionHistoryItem key={item.data.id} prescription={item.data as any} />
-        )
+        /* Non-Doctor Mode: Reception / Appointment scheduling */
+        <div className="space-y-6 print:hidden">
+          {canCreateVisit && <ScheduleAppointmentForm patientId={patient.id} doctors={doctorsList} />}
+        </div>
       )}
-    </div>
-  </div>
-)}
-{canReadHistory && (!canWriteHistory && !canPrescribe) && (
-  <PatientLabResultsCard labRequests={patient.labRequests} patientInfo={patient} />
-)}
-        </div>
 
-        {/* Sidebar / Manager Actions */}
-        <div className="col-span-1 space-y-6 print:hidden">
-          {canUpdateDiscount ? (
-            <DiscountSlider patientId={patient.id} initialDiscount={patient.discountPercent} />
-          ) : (
-            <div className="bg-slate-50 dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-800">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Current Discount</h3>
-              <p className="mt-2 text-3xl font-extrabold text-blue-600">{patient.discountPercent}%</p>
-              <p className="mt-1 text-xs text-slate-400">Read-only (Manager privileges required to update)</p>
+      {/* Medical History section: Rendered on screen for non-doctors, and for printouts */}
+      {canReadHistory && (
+        <div className={`${isDoctor ? "hidden print:block" : "block"} space-y-6`}>
+          <div id="medical-history" className="bg-white dark:bg-slate-900/50 shadow-sm rounded-xl border border-slate-200 dark:border-slate-800/60 p-6 scroll-mt-24">
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100 mb-4">Medical History</h2>
+            <div className="space-y-4">
+              {timeline.length === 0 ? (
+                <p className="text-sm text-slate-500 dark:text-slate-400">No records found.</p>
+              ) : (
+                timeline.map((item) => 
+                  item.type === "record" 
+                    ? <MedicalRecordItem key={item.data.id} record={item.data as any} />
+                    : <PrescriptionHistoryItem key={item.data.id} prescription={item.data as any} />
+                )
+              )}
             </div>
-          )}
+          </div>
+          <PatientLabResultsCard labRequests={patient.labRequests} patientInfo={patient} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

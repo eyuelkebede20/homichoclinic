@@ -98,7 +98,7 @@ export default async function AdmittedReportPage() {
         },
       },
       orderBy: { updatedAt: "desc" },
-      take: 200,
+      take: 1000,
     }),
   ]);
 
@@ -270,6 +270,8 @@ export default async function AdmittedReportPage() {
       attendingDoctors: Array.from(docNames),
       primaryAssessments: assessments,
       lastEncounterDate: visits[0]?.visitDate || medicalRecords[0]?.date,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString(),
     };
   });
 
