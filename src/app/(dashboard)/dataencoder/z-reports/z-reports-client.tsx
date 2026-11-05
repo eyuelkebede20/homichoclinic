@@ -4,6 +4,11 @@ import { Printer, Download, Banknote, FileSpreadsheet, LayoutDashboard, Search, 
 import { useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
+import { 
+  exportStyledLedgerExcel, 
+  type ExcelSheetData, 
+  type ExcelRow 
+} from "@/lib/excel-export";
 import { toast } from "sonner";
 import { 
   formatToEthiopianDate, 
@@ -291,6 +296,7 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
     | "staffMemberName"
     | "staffId"
     | "transactionCount"
+    | "patientsCovered"
     | "discountPercent"
     | "laboratoryCost"
     | "pharmacyCost"
@@ -339,6 +345,12 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
   const sortedGroupedStaffCredits = useMemo(() => {
     const list = [...groupedStaffCredits];
     list.sort((a, b) => {
+      if (groupedSortField === "patientsCovered") {
+        const aVal = (a.patientsCovered || []).join(", ");
+        const bVal = (b.patientsCovered || []).join(", ");
+        const cmp = aVal.localeCompare(bVal);
+        return groupedSortDirection === "asc" ? cmp : -cmp;
+      }
       const aVal = a[groupedSortField];
       const bVal = b[groupedSortField];
       if (typeof aVal === "string" && typeof bVal === "string") {
@@ -757,20 +769,31 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
     }, 250);
   };
 
-// Build Divided Master Sheet for "All" list matching 123.xlsx
+  // Build Divided Master Sheet for "All" list matching 123.xlsx with borders & colors
   const buildDividedMasterSheet = (
+    sheetTitle: string,
     items: (GroupedStaffCredit | InvoiceReport)[],
     dateHeaderStr: string,
     isGrouped: boolean
-  ) => {
-    const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
+  ): ExcelSheetData => {
+    const columns = [
+      { width: 8 },   // ተ.ቁ
+      { width: 14 },  // ማዕረግ
+      { width: 32 },  // ስም ዝርዝር 
+      { width: 8 },   // 1
+      { width: 24 },  // የሚቆረጥበቸው የብር መጠን
+      { width: 14 },  // በፐርሰንት 
+      { width: 18 },  // የቅጥር ሁኔታ
+      { width: 38 },  // መግለጫ
+    ];
+
     const headers = [
       "ተ.ቁ",
       "ማዕረግ",
-      "ስም ዝርዝር ",
-      1,
-      "የሚቆረጥበቸው\n  የብር መጠን ",
-      "በፐርሰንት ",
+      "ስም ዝርዝር",
+      "1",
+      "የሚቆረጥባቸው\n  የብር መጠን",
+      "በፐርሰንት",
       "የቅጥር ሁኔታ",
       "መግለጫ"
     ];
@@ -784,10 +807,7 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
     });
 
     const sortedPcts = Array.from(discountGroups.keys()).sort((a, b) => b - a);
-    const aoa: any[][] = [row1, headers];
-    const merges: XLSX.Range[] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Row 1 A1:H1
-    ];
+    const rows: ExcelRow[] = [];
 
     let seq = 1;
     let grandGross = 0;
@@ -813,99 +833,73 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
         const empStatus = formatEmploymentStatus(it.staffType);
         const remarks = it.remarks || (isGrouped ? (it as GroupedStaffCredit).patientsCovered.join("; ") || "የህክምና ወጪ" : "-");
 
-        aoa.push([
-          seq++,
+        rows.push({
+          type: "data",
+          rowIndex: rows.filter(r => r.type === "data").length,
+          seq: seq++,
           rank,
           name,
-          1,
-          Number((it.afterDiscount / 100).toFixed(2)),
-          `${pct}%`,
+          count: 1,
+          amount: Number((it.afterDiscount / 100).toFixed(2)),
+          percent: `${pct}%`,
           empStatus,
           remarks
-        ]);
+        });
       });
 
       // Additional content row dividing the discounts
-      const subRowIdx = aoa.length;
-      aoa.push([
-        `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
-        "",
-        "",
-        groupItems.length,
-        Number((groupNet / 100).toFixed(2)),
-        `${pct}%`,
-        "",
-        `ጠቅላላ ወጪ: ETB ${(groupGross / 100).toFixed(2)}`
-      ]);
-
-      merges.push({ s: { r: subRowIdx, c: 0 }, e: { r: subRowIdx, c: 2 } });
+      rows.push({
+        type: "subtotal",
+        label: `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
+        count: groupItems.length,
+        amount: Number((groupNet / 100).toFixed(2)),
+        percent: `${pct}%`,
+        remarks: `ጠቅላላ ወጪ: ETB ${(groupGross / 100).toFixed(2)}`
+      });
 
       // Empty separator row after this discount group
-      aoa.push(["", "", "", "", "", "", "", ""]);
+      rows.push({ type: "separator" });
     });
 
-    // Empty separator row before grand totals
-    aoa.push(["", "", "", "", "", "", "", ""]);
-
-    // Finally put the total one (matching Row 5 & 6 in 123.xlsx)
-    const rTot1 = aoa.length;
-    aoa.push([
-      "                                         ጠቅላላ ድምር 100%",
-      "",
-      "",
-      "",
-      Number((grandGross / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ]);
-
-    const rTot2 = aoa.length;
-    aoa.push([
-      "አጠቃላይ የሚቆረጥባቸው ብር ",
-      "",
-      "",
-      "",
-      Number((grandNet / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ]);
-
-    merges.push({ s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } });
-    merges.push({ s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } });
-    merges.push({ s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } });
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!merges"] = merges;
-    ws["!cols"] = [
-      { wch: 8 },   // ተ.ቁ
-      { wch: 14 },  // ማዕረግ
-      { wch: 32 },  // ስም ዝርዝር 
-      { wch: 8 },   // 1
-      { wch: 24 },  // የሚቆረጥበቸው የብር መጠን
-      { wch: 14 },  // በፐርሰንት 
-      { wch: 18 },  // የቅጥር ሁኔታ
-      { wch: 38 },  // መግለጫ
-    ];
-
-    return ws;
+    return {
+      sheetName: sheetTitle,
+      dateHeader: dateHeaderStr,
+      columns,
+      headers,
+      rows,
+      totals: {
+        grossAmount: Number((grandGross / 100).toFixed(2)),
+        netAmount: Number((grandNet / 100).toFixed(2)),
+        subsidyAmount: Number(((grandGross - grandNet) / 100).toFixed(2))
+      }
+    };
   };
 
-  // Build Single Discount Sheet for individual % tabs
+  // Build Single Discount Sheet for individual % tabs with borders & colors
   const buildSingleDiscountSheet = (
+    sheetTitle: string,
     items: (GroupedStaffCredit | InvoiceReport)[],
     dateHeaderStr: string,
     isGrouped: boolean
-  ) => {
-    const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
+  ): ExcelSheetData => {
+    const columns = [
+      { width: 8 },   // ተ.ቁ
+      { width: 14 },  // ማዕረግ
+      { width: 32 },  // ስም ዝርዝር 
+      { width: 8 },   // 1
+      { width: 24 },  // የሚቆረጥበቸው የብር መጠን
+      { width: 14 },  // በፐርሰንት 
+      { width: 18 },  // የቅጥር ሁኔታ
+      { width: 38 },  // መግለጫ
+    ];
+
     const headers = [
       "ተ.ቁ",
       "ማዕረግ",
-      "ስም ዝርዝር ",
-      1,
-      "የሚቆረጥበቸው\n  የብር መጠን ",
-      "በፐርሰንት ",
+      "ስም ዝርዝር",
+      "1",
+      "የሚቆረጥባቸው\n  የብር መጠን",
+      "በፐርሰንት",
       "የቅጥር ሁኔታ",
       "መግለጫ"
     ];
@@ -913,7 +907,7 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
     let grossSum = 0;
     let netSum = 0;
 
-    const dataRows = items.map((it, idx) => {
+    const rows: ExcelRow[] = items.map((it, idx) => {
       grossSum += it.total;
       netSum += it.afterDiscount;
       const rank = it.rank && it.rank !== "-" ? it.rank : "-";
@@ -925,84 +919,43 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
       const empStatus = formatEmploymentStatus(it.staffType);
       const remarks = it.remarks || (isGrouped ? (it as GroupedStaffCredit).patientsCovered.join("; ") || "የህክምና ወጪ" : "-");
 
-      return [
-        idx + 1,
+      return {
+        type: "data",
+        rowIndex: idx,
+        seq: idx + 1,
         rank,
         name,
-        1,
-        Number((it.afterDiscount / 100).toFixed(2)),
-        `${it.discountPercent}%`,
+        count: 1,
+        amount: Number((it.afterDiscount / 100).toFixed(2)),
+        percent: `${it.discountPercent}%`,
         empStatus,
         remarks
-      ];
+      };
     });
 
-    const emptyRow = ["", "", "", "", "", "", "", ""];
-    const totalRow1 = [
-      "                                         ጠቅላላ ድምር 100%",
-      "",
-      "",
-      "",
-      Number((grossSum / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ];
-    const totalRow2 = [
-      "አጠቃላይ የሚቆረጥባቸው ብር ",
-      "",
-      "",
-      "",
-      Number((netSum / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ];
-
-    const aoa = [
-      row1,
+    return {
+      sheetName: sheetTitle,
+      dateHeader: dateHeaderStr,
+      columns,
       headers,
-      ...dataRows,
-      emptyRow,
-      totalRow1,
-      totalRow2
-    ];
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    const rTot1 = 3 + items.length;
-    const rTot2 = 4 + items.length;
-
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-      { s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } },
-      { s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } },
-      { s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } },
-    ];
-
-    ws["!cols"] = [
-      { wch: 8 },
-      { wch: 14 },
-      { wch: 32 },
-      { wch: 8 },
-      { wch: 24 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 38 },
-    ];
-
-    return ws;
+      rows,
+      totals: {
+        grossAmount: Number((grossSum / 100).toFixed(2)),
+        netAmount: Number((netSum / 100).toFixed(2)),
+        subsidyAmount: Number(((grossSum - netSum) / 100).toFixed(2))
+      }
+    };
   };
 
-  // Export Excel
+  // Export Excel with borders and colors
   const handleExportExcel = () => {
-    const workbook = XLSX.utils.book_new();
     const timestamps = (reports || []).map(r => new Date(r.createdAt || "").getTime());
     const dateHeaderStr = formatEthDateRange(fromDate, toDate, timestamps);
+    const dateStr = new Date().toISOString().split("T")[0];
 
     if (viewMode === "grouped") {
       // 1. Master "All" Sheet: with divided discounts, additional content rows, and grand totals
-      const masterWorksheet = buildDividedMasterSheet(sortedGroupedStaffCredits, dateHeaderStr, true);
-      XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Staff Credits");
+      const masterWorksheet = buildDividedMasterSheet("All Staff Credits", sortedGroupedStaffCredits, dateHeaderStr, true);
 
       // 2. Multiple worksheets partitioned by % discounts
       const discountMap = new Map<number, GroupedStaffCredit[]>();
@@ -1013,18 +966,19 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
       });
 
       const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
-      sortedPcts.forEach(pct => {
+      const partitionSheets: ExcelSheetData[] = sortedPcts.map(pct => {
         const groupItems = discountMap.get(pct)!;
-        const sheet = buildSingleDiscountSheet(groupItems, dateHeaderStr, true);
-        XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
+        return buildSingleDiscountSheet(`${pct}% Discount`, groupItems, dateHeaderStr, true);
       });
 
-      XLSX.writeFile(workbook, `z-report-staff-credits-${new Date().toISOString().split("T")[0]}.xlsx`);
-      toast.success(`Exported Staff Credits with ${sortedPcts.length + 1} worksheets!`);
+      exportStyledLedgerExcel({
+        filename: `z-report-staff-credits-${dateStr}.xlsx`,
+        sheets: [masterWorksheet, ...partitionSheets]
+      });
+      toast.success(`Exported styled Staff Credits workbook with borders, colors & ${sortedPcts.length + 1} worksheets!`);
     } else {
       // Individual Transactions mode
-      const masterWorksheet = buildDividedMasterSheet(sortedIndividualReports, dateHeaderStr, false);
-      XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Transactions");
+      const masterWorksheet = buildDividedMasterSheet("All Transactions", sortedIndividualReports, dateHeaderStr, false);
 
       const discountMap = new Map<number, InvoiceReport[]>();
       sortedIndividualReports.forEach(r => {
@@ -1034,14 +988,16 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
       });
 
       const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
-      sortedPcts.forEach(pct => {
+      const partitionSheets: ExcelSheetData[] = sortedPcts.map(pct => {
         const groupItems = discountMap.get(pct)!;
-        const sheet = buildSingleDiscountSheet(groupItems, dateHeaderStr, false);
-        XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
+        return buildSingleDiscountSheet(`${pct}% Discount`, groupItems, dateHeaderStr, false);
       });
 
-      XLSX.writeFile(workbook, `z-report-itemized-${new Date().toISOString().split("T")[0]}.xlsx`);
-      toast.success(`Exported Itemized Ledger with ${sortedPcts.length + 1} worksheets!`);
+      exportStyledLedgerExcel({
+        filename: `z-report-itemized-${dateStr}.xlsx`,
+        sheets: [masterWorksheet, ...partitionSheets]
+      });
+      toast.success(`Exported styled Itemized Ledger workbook with borders, colors & ${sortedPcts.length + 1} worksheets!`);
     }
   };
 
@@ -1208,6 +1164,54 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
               </select>
             )}
 
+            {/* Quick Sort Dropdown with simple icon */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="text-slate-500 font-semibold hidden md:inline">Sort:</span>
+              {viewMode === "grouped" ? (
+                <select
+                  value={`${groupedSortField}-${groupedSortDirection}`}
+                  onChange={(e) => {
+                    const [f, d] = e.target.value.split("-") as [GroupedSortField, "asc" | "desc"];
+                    setGroupedSortField(f);
+                    setGroupedSortDirection(d);
+                  }}
+                  className="bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer font-medium text-xs pr-1"
+                  title="Sort grouped staff credits before printing or exporting"
+                >
+                  <option value="afterDiscount-desc">Net Salary Charge (High → Low)</option>
+                  <option value="afterDiscount-asc">Net Salary Charge (Low → High)</option>
+                  <option value="staffMemberName-asc">Staff Name (A → Z)</option>
+                  <option value="staffMemberName-desc">Staff Name (Z → A)</option>
+                  <option value="staffId-asc">Card / Military ID</option>
+                  <option value="transactionCount-desc">Invoices Count (High → Low)</option>
+                  <option value="discountPercent-desc">Discount % (High → Low)</option>
+                  <option value="total-desc">Gross Total (High → Low)</option>
+                  <option value="patientsCovered-asc">Beneficiaries Covered</option>
+                </select>
+              ) : (
+                <select
+                  value={`${indivSortField}-${indivSortDirection}`}
+                  onChange={(e) => {
+                    const [f, d] = e.target.value.split("-") as [IndivSortField, "asc" | "desc"];
+                    setIndivSortField(f);
+                    setIndivSortDirection(d);
+                  }}
+                  className="bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer font-medium text-xs pr-1"
+                  title="Sort individual ledger before printing or exporting"
+                >
+                  <option value="date-desc">Date (Newest First)</option>
+                  <option value="date-asc">Date (Oldest First)</option>
+                  <option value="patientName-asc">Patient Name (A → Z)</option>
+                  <option value="staffMemberName-asc">Staff Name (A → Z)</option>
+                  <option value="afterDiscount-desc">Salary Charge (High → Low)</option>
+                  <option value="afterDiscount-asc">Salary Charge (Low → High)</option>
+                  <option value="discountPercent-desc">Discount % (High → Low)</option>
+                  <option value="total-desc">Gross Total (High → Low)</option>
+                </select>
+              )}
+            </div>
+
             <button 
               onClick={handleExportExcel}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 border border-green-700 hover:bg-green-700 rounded-lg transition-all shadow-sm print:hidden focus:ring-2 focus:ring-green-500 outline-none"
@@ -1268,7 +1272,19 @@ export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: In
                       )}
                     </div>
                   </th>
-                  <th className="p-3.5 font-bold text-slate-500 dark:text-slate-400">Beneficiaries Covered</th>
+                  <th 
+                    onClick={() => toggleGroupedSort("patientsCovered")}
+                    className="p-3.5 font-bold text-slate-500 dark:text-slate-400 cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span>Beneficiaries Covered</span>
+                      {groupedSortField === "patientsCovered" ? (
+                        groupedSortDirection === "asc" ? <ArrowUp className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" /> : <ArrowDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                      ) : (
+                        <ArrowUpDown className="w-3.5 h-3.5 opacity-30 hover:opacity-100" />
+                      )}
+                    </div>
+                  </th>
                   <th 
                     onClick={() => toggleGroupedSort("discountPercent")}
                     className="p-3.5 font-bold text-slate-500 dark:text-slate-400 text-right cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors"

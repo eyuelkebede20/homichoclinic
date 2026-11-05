@@ -3,6 +3,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
+import { 
+  exportStyledLedgerExcel, 
+  type ExcelSheetData, 
+  type ExcelRow 
+} from "@/lib/excel-export";
 
 import { approveInvoice, disapproveInvoice } from "@/features/dataencoder/actions";
 import { toast } from "sonner";
@@ -192,7 +197,8 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
     | "subtotal" 
     | "discountAmount" 
     | "total" 
-    | "createdAt";
+    | "createdAt"
+    | "remarks";
 
   type SortDirection = "asc" | "desc";
 
@@ -204,7 +210,11 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
       setSortDirection(prev => (prev === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDirection(field === "createdAt" || field === "subtotal" || field === "total" ? "desc" : "asc");
+      setSortDirection(
+        field === "createdAt" || field === "subtotal" || field === "total" || field === "discountPercentApplied"
+          ? "desc" 
+          : "asc"
+      );
     }
   };
 
@@ -223,6 +233,13 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
   const sortedInvoices = useMemo(() => {
     const list = [...filtered];
     list.sort((a, b) => {
+      if (sortField === "remarks") {
+        const aRem = a.remarks || (a.pharmaUsed !== "-" ? a.pharmaUsed : a.labUsed !== "-" ? a.labUsed : "") || "";
+        const bRem = b.remarks || (b.pharmaUsed !== "-" ? b.pharmaUsed : b.labUsed !== "-" ? b.labUsed : "") || "";
+        const cmp = aRem.localeCompare(bRem);
+        return sortDirection === "asc" ? cmp : -cmp;
+      }
+
       let aVal = a[sortField];
       let bVal = b[sortField];
 
@@ -257,98 +274,64 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
     window.print();
   };
 
-  // Build Excel Worksheet matching 123.xlsx exactly
-  const buildSheetForInvoices = (
+  // Build Styled Excel Worksheet Data matching official ledger format with borders & colors
+  const buildStyledSheetForInvoices = (
+    sheetTitle: string,
     items: InvoiceDisplay[], 
     dateHeaderStr: string,
     divideDiscounts = false
-  ) => {
-    const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
+  ): ExcelSheetData => {
+    const columns = [
+      { width: 8 },   // ተ.ቁ
+      { width: 14 },  // ማዕረግ
+      { width: 30 },  // ስም ዝርዝር 
+      { width: 6 },   // 1
+      { width: 22 },  // የሚቆረጥባቸው\n  የብር መጠን 
+      { width: 12 },  // በፐርሰንት 
+      { width: 18 },  // የቅጥር ሁኔታ
+      { width: 35 },  // መግለጫ
+    ];
 
-    // Exact headers from c:\Users\kebe\Downloads\123.xlsx
     const headers = [
       "ተ.ቁ",
       "ማዕረግ",
-      "ስም ዝርዝር ",
-      1,
-      "የሚቆረጥበቸው\n  የብር መጠን ",
-      "በፐርሰንት ",
+      "ስም ዝርዝር",
+      "1",
+      "የሚቆረጥባቸው\n  የብር መጠን",
+      "በፐርሰንት",
       "የቅጥር ሁኔታ",
       "መግለጫ"
     ];
 
     if (!divideDiscounts) {
-      const dataRows = items.map((inv, idx) => [
-        idx + 1,
-        inv.rank && inv.rank !== "-" ? inv.rank : "-",
-        inv.patientName,
-        1,
-        Number((inv.total / 100).toFixed(2)),
-        `${inv.discountPercentApplied}%`,
-        formatEmploymentStatus(inv.patientType),
-        inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
-      ]);
+      const rows: ExcelRow[] = items.map((inv, idx) => ({
+        type: "data",
+        rowIndex: idx,
+        seq: idx + 1,
+        rank: inv.rank && inv.rank !== "-" ? inv.rank : "-",
+        name: inv.patientName,
+        count: 1,
+        amount: Number((inv.total / 100).toFixed(2)),
+        percent: `${inv.discountPercentApplied}%`,
+        empStatus: formatEmploymentStatus(inv.patientType),
+        remarks: inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
+      }));
 
-      const emptyRow = ["", "", "", "", "", "", "", ""];
       const subSum = items.reduce((sum, i) => sum + i.subtotal, 0);
       const afterSum = items.reduce((sum, i) => sum + i.total, 0);
 
-      // Exact Amharic total wording from 123.xlsx
-      const totalRow1 = [
-        "                                         ጠቅላላ ድምር 100%",
-        "",
-        "",
-        "",
-        Number((subSum / 100).toFixed(2)),
-        "",
-        "",
-        ""
-      ];
-
-      const totalRow2 = [
-        "አጠቃላይ የሚቆረጥባቸው ብር ",
-        "",
-        "",
-        "",
-        Number((afterSum / 100).toFixed(2)),
-        "",
-        "",
-        ""
-      ];
-
-      const aoa = [
-        row1,
+      return {
+        sheetName: sheetTitle,
+        dateHeader: dateHeaderStr,
+        columns,
         headers,
-        ...dataRows,
-        emptyRow,
-        totalRow1,
-        totalRow2
-      ];
-
-      const ws = XLSX.utils.aoa_to_sheet(aoa);
-      const rTot1 = 3 + items.length;
-      const rTot2 = 4 + items.length;
-
-      // Exact merges matching 123.xlsx: A1:H1, E5:F5, A6:D6, E6:F6
-      ws["!merges"] = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-        { s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } },
-        { s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } },
-        { s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } },
-      ];
-
-      ws["!cols"] = [
-        { wch: 8 },   // ተ.ቁ
-        { wch: 14 },  // ማዕረግ
-        { wch: 30 },  // ስም ዝርዝር 
-        { wch: 6 },   // 1
-        { wch: 22 },  // የሚቆረጥበቸው\n  የብር መጠን 
-        { wch: 12 },  // በፐርሰንት 
-        { wch: 18 },  // የቅጥር ሁኔታ
-        { wch: 35 },  // መግለጫ
-      ];
-
-      return ws;
+        rows,
+        totals: {
+          grossAmount: Number((subSum / 100).toFixed(2)),
+          netAmount: Number((afterSum / 100).toFixed(2)),
+          subsidyAmount: Number(((subSum - afterSum) / 100).toFixed(2))
+        }
+      };
     }
 
     // DIVIDED DISCOUNTS FOR "ALL" LIST
@@ -360,10 +343,7 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
     });
 
     const sortedPcts = Array.from(discountGroups.keys()).sort((a, b) => b - a);
-    const aoa: any[][] = [row1, headers];
-    const merges: XLSX.Range[] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-    ];
+    const rows: ExcelRow[] = [];
 
     let seq = 1;
     let grandSubtotal = 0;
@@ -380,83 +360,46 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
         groupSubtotal += inv.subtotal;
         groupDeduction += inv.total;
 
-        aoa.push([
-          seq++,
-          inv.rank && inv.rank !== "-" ? inv.rank : "-",
-          inv.patientName,
-          1,
-          Number((inv.total / 100).toFixed(2)),
-          `${inv.discountPercentApplied}%`,
-          formatEmploymentStatus(inv.patientType),
-          inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
-        ]);
+        rows.push({
+          type: "data",
+          rowIndex: rows.filter(r => r.type === "data").length,
+          seq: seq++,
+          rank: inv.rank && inv.rank !== "-" ? inv.rank : "-",
+          name: inv.patientName,
+          count: 1,
+          amount: Number((inv.total / 100).toFixed(2)),
+          percent: `${inv.discountPercentApplied}%`,
+          empStatus: formatEmploymentStatus(inv.patientType),
+          remarks: inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
+        });
       });
 
       // Additional content row dividing the discounts
-      const subRowIdx = aoa.length;
-      aoa.push([
-        `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
-        "",
-        "",
-        groupInvoices.length,
-        Number((groupDeduction / 100).toFixed(2)),
-        `${pct}%`,
-        "",
-        `ጠቅላላ ወጪ: ETB ${(groupSubtotal / 100).toFixed(2)}`
-      ]);
-
-      merges.push({ s: { r: subRowIdx, c: 0 }, e: { r: subRowIdx, c: 2 } });
+      rows.push({
+        type: "subtotal",
+        label: `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
+        count: groupInvoices.length,
+        amount: Number((groupDeduction / 100).toFixed(2)),
+        percent: `${pct}%`,
+        remarks: `ጠቅላላ ወጪ: ETB ${(groupSubtotal / 100).toFixed(2)}`
+      });
 
       // Empty separator row
-      aoa.push(["", "", "", "", "", "", "", ""]);
+      rows.push({ type: "separator" });
     });
 
-    // Empty separator row before grand totals
-    aoa.push(["", "", "", "", "", "", "", ""]);
-
-    // Finally put the total one
-    const rTot1 = aoa.length;
-    aoa.push([
-      "                                         ጠቅላላ ድምር 100%",
-      "",
-      "",
-      "",
-      Number((grandSubtotal / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ]);
-
-    const rTot2 = aoa.length;
-    aoa.push([
-      "አጠቃላይ የሚቆረጥባቸው ብር ",
-      "",
-      "",
-      "",
-      Number((grandDeduction / 100).toFixed(2)),
-      "",
-      "",
-      ""
-    ]);
-
-    merges.push({ s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } });
-    merges.push({ s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } });
-    merges.push({ s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } });
-
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-    ws["!merges"] = merges;
-    ws["!cols"] = [
-      { wch: 8 },
-      { wch: 14 },
-      { wch: 30 },
-      { wch: 6 },
-      { wch: 22 },
-      { wch: 12 },
-      { wch: 18 },
-      { wch: 35 },
-    ];
-
-    return ws;
+    return {
+      sheetName: sheetTitle,
+      dateHeader: dateHeaderStr,
+      columns,
+      headers,
+      rows,
+      totals: {
+        grossAmount: Number((grandSubtotal / 100).toFixed(2)),
+        netAmount: Number((grandDeduction / 100).toFixed(2)),
+        subsidyAmount: Number(((grandSubtotal - grandDeduction) / 100).toFixed(2))
+      }
+    };
   };
 
   const handleExport = () => {
@@ -465,12 +408,10 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
       return;
     }
 
-    const workbook = XLSX.utils.book_new();
     const dateHeaderStr = formatEthDateRange(fromDate, toDate, sortedInvoices);
 
     // 1. Master Worksheet: All Invoices (preserves current table sort order)
-    const masterSheet = buildSheetForInvoices(sortedInvoices, dateHeaderStr, true);
-    XLSX.utils.book_append_sheet(workbook, masterSheet, "All Invoices");
+    const masterSheet = buildStyledSheetForInvoices("All Invoices", sortedInvoices, dateHeaderStr, true);
 
     // 2. Multiple Worksheets partitioned by % discount (preserves current table sort order)
     const discountGroups = new Map<number, InvoiceDisplay[]>();
@@ -490,16 +431,17 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
       return b - a;
     });
 
-    sortedPercents.forEach(pct => {
+    const partitionSheets: ExcelSheetData[] = sortedPercents.map(pct => {
       const groupInvoices = discountGroups.get(pct)!;
-      const groupSheet = buildSheetForInvoices(groupInvoices, dateHeaderStr);
-      const sheetName = `${pct}% Discount`;
-      XLSX.utils.book_append_sheet(workbook, groupSheet, sheetName);
+      return buildStyledSheetForInvoices(`${pct}% Discount`, groupInvoices, dateHeaderStr, false);
     });
 
     const dateStr = new Date().toISOString().split("T")[0];
-    XLSX.writeFile(workbook, `DataEncoder-Invoices-${activeTab}-${dateStr}.xlsx`);
-    toast.success(`Exported Excel workbook matching ledger format with ${sortedPercents.length + 1} worksheets!`);
+    exportStyledLedgerExcel({
+      filename: `DataEncoder-Invoices-${activeTab}-${dateStr}.xlsx`,
+      sheets: [masterSheet, ...partitionSheets]
+    });
+    toast.success(`Exported styled Excel workbook with borders, colors & ${partitionSheets.length + 1} worksheets!`);
   };
 
   const dateHeaderDisplay = formatEthDateRange(fromDate, toDate, sortedInvoices);
@@ -654,6 +596,33 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
                 className="w-full pl-9 pr-4 py-1.5 text-sm border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100"
               />
             </div>
+            {/* Quick Sort Dropdown with simple icon */}
+            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-2.5 py-1.5 text-xs">
+              <ArrowUpDown className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <span className="text-slate-500 font-semibold hidden md:inline">Sort:</span>
+              <select
+                value={`${sortField}-${sortDirection}`}
+                onChange={(e) => {
+                  const [f, d] = e.target.value.split("-") as [SortField, SortDirection];
+                  setSortField(f);
+                  setSortDirection(d);
+                }}
+                className="bg-transparent text-slate-800 dark:text-slate-200 outline-none cursor-pointer font-medium text-xs pr-1"
+                title="Sort table order before printing or exporting"
+              >
+                <option value="createdAt-desc">Date (Newest First)</option>
+                <option value="createdAt-asc">Date (Oldest First)</option>
+                <option value="patientName-asc">Name (A → Z)</option>
+                <option value="patientName-desc">Name (Z → A)</option>
+                <option value="total-desc">Deduction (Highest First)</option>
+                <option value="total-asc">Deduction (Lowest First)</option>
+                <option value="discountPercentApplied-desc">Discount % (100% → 0%)</option>
+                <option value="discountPercentApplied-asc">Discount % (0% → 100%)</option>
+                <option value="rank-asc">Rank (ማዕረግ)</option>
+                <option value="patientType-asc">Employment Status (የቅጥር ሁኔታ)</option>
+                <option value="remarks-asc">Remarks (መግለጫ)</option>
+              </select>
+            </div>
             {activeTab !== "pending" && (
               <>
                 <button 
@@ -736,9 +705,23 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
                   </div>
                 </th>
 
-                {/* 4. 1 (Count/Quantity - matching 123.xlsx) */}
-                <th className="p-3 font-semibold text-center" style={{ width: "5%" }}>
-                  <span>1</span>
+                {/* 4. 1 (Count/Quantity & Date Order - matching 123.xlsx) */}
+                <th 
+                  onClick={() => toggleSort("createdAt")}
+                  className="p-3 font-semibold text-center cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors print:cursor-default" 
+                  style={{ width: "6%" }}
+                  title="በቀን / ቅደም ተከተል ደርድር (Sort by Date / Sequence)"
+                >
+                  <div className="flex items-center justify-center gap-1">
+                    <span>1</span>
+                    <span className="print:hidden">
+                      {sortField === "createdAt" ? (
+                        sortDirection === "asc" ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-30" />
+                      )}
+                    </span>
+                  </div>
                 </th>
 
                 {/* 5. የሚቆረጥባቸው የብር መጠን */}
@@ -796,8 +779,22 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
                 </th>
 
                 {/* 8. መግለጫ */}
-                <th className="p-3 font-semibold" style={{ width: "18%" }}>
-                  <span>መግለጫ</span>
+                <th 
+                  onClick={() => toggleSort("remarks")}
+                  className="p-3 font-semibold cursor-pointer select-none hover:text-blue-600 dark:hover:text-blue-400 transition-colors print:cursor-default" 
+                  style={{ width: "18%" }}
+                  title="በመግለጫ ደርድር (Sort by Remarks / Service)"
+                >
+                  <div className="flex items-center gap-1">
+                    <span>መግለጫ</span>
+                    <span className="print:hidden">
+                      {sortField === "remarks" ? (
+                        sortDirection === "asc" ? <ArrowUp className="w-3 h-3 text-blue-600" /> : <ArrowDown className="w-3 h-3 text-blue-600" />
+                      ) : (
+                        <ArrowUpDown className="w-3 h-3 opacity-30" />
+                      )}
+                    </span>
+                  </div>
                 </th>
 
                 {/* Signature column for print & queue */}
