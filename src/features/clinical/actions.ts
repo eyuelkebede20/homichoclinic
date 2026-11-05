@@ -527,7 +527,7 @@ let cachedClinicDiseases: { data: ClinicDisease[]; timestamp: number } | null = 
 let cachedTopDiseases: { key: string; data: TopDiagnosedDisease[]; timestamp: number } | null = null;
 const DISEASE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
 
-export function invalidateDiseasesCache() {
+export async function invalidateDiseasesCache() {
   cachedClinicDiseases = null;
   cachedTopDiseases = null;
 }
