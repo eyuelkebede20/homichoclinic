@@ -154,6 +154,8 @@ export type AdmittedPatientsReportProps = {
   defaultPeriodDays?: number;
   currentEthiopianDateStr: string;
   threeMonthsAgoEthiopianDateStr: string;
+  printedDateGregorianStr?: string;
+  printedDateTimeStr?: string;
 };
 
 export function AdmittedPatientsReport({
@@ -162,6 +164,8 @@ export function AdmittedPatientsReport({
   defaultPeriodDays = 90,
   currentEthiopianDateStr,
   threeMonthsAgoEthiopianDateStr,
+  printedDateGregorianStr,
+  printedDateTimeStr,
 }: AdmittedPatientsReportProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -882,7 +886,9 @@ export function AdmittedPatientsReport({
 
                       <div className="flex justify-between items-center text-[10px] text-slate-600 pt-2 border-t border-slate-300 font-mono">
                         <span>Report Window: {dateRange.periodStartEthStr} — {dateRange.periodEndEthStr} ({dateRange.periodDaysLabel})</span>
-                        <span>Date Printed: {currentEthiopianDateStr} (Eth) / {new Date().toLocaleDateString()}</span>
+                        <span suppressHydrationWarning>
+                          Date Printed: {currentEthiopianDateStr} (Eth) / {printedDateGregorianStr || currentEthiopianDateStr}
+                        </span>
                         <span className="font-bold text-black">
                           Status: {patient.admissionStatus === "Inpatient" ? "🏥 ADMITTED INPATIENT" : "OUTPATIENT"}
                         </span>
@@ -1275,8 +1281,8 @@ export function AdmittedPatientsReport({
                         </div>
                       </div>
 
-                      <div className="text-center text-[9px] text-slate-500 font-mono pt-3 border-t border-slate-300">
-                        Homicho Ammunition Engineering Industry Clinic • Inpatient Medical Record System • Printed: {new Date().toLocaleString()}
+                      <div suppressHydrationWarning className="text-center text-[9px] text-slate-500 font-mono pt-3 border-t border-slate-300">
+                        Homicho Ammunition Engineering Industry Clinic • Inpatient Medical Record System • Printed: {printedDateTimeStr || currentEthiopianDateStr}
                       </div>
                     </footer>
                   </div>

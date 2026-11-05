@@ -277,6 +277,17 @@ export default async function AdmittedReportPage() {
 
   const currentEthiopianDateStr = formatToEthiopianDate(now);
   const threeMonthsAgoEthiopianDateStr = formatToEthiopianDate(threeMonthsAgo);
+  const printedDateGregorianStr = now.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const printedDateTimeStr = `${printedDateGregorianStr}, ${now.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  })}`;
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto print:p-0 print:max-w-none">
@@ -292,6 +303,8 @@ export default async function AdmittedReportPage() {
         defaultPeriodDays={90}
         currentEthiopianDateStr={currentEthiopianDateStr}
         threeMonthsAgoEthiopianDateStr={threeMonthsAgoEthiopianDateStr}
+        printedDateGregorianStr={printedDateGregorianStr}
+        printedDateTimeStr={printedDateTimeStr}
       />
     </div>
   );
