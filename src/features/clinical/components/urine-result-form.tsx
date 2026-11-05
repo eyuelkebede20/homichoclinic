@@ -356,7 +356,7 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={v}
                   onClick={() => setReaction(v)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-amber-200 text-slate-600 dark:text-slate-300 hover:bg-amber-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors font-medium"
                 >
                   {v}
                 </button>
@@ -385,7 +385,7 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={v}
                   onClick={() => setSpecificGravity(v)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-amber-200 text-slate-600 dark:text-slate-300 hover:bg-amber-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors font-medium"
                 >
                   {v}
                 </button>
@@ -443,7 +443,7 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={v}
                   onClick={() => setAlbuminQualitative(v)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-amber-200 text-slate-600 dark:text-slate-300 hover:bg-amber-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors font-medium"
                 >
                   {v}
                 </button>
@@ -506,7 +506,7 @@ export function UrineResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={v}
                   onClick={() => setSugarQualitative(v)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-amber-200 text-slate-600 dark:text-slate-300 hover:bg-amber-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors font-medium"
                 >
                   {v}
                 </button>

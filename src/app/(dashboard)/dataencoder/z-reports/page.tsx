@@ -64,6 +64,12 @@ export default async function ZReportsPage({ searchParams }: { searchParams: Pro
       },
       items: true,
       payments: true,
+      labRequests: {
+        include: { test: true }
+      },
+      prescriptionItems: {
+        include: { drug: true }
+      }
     },
     orderBy: { createdAt: "desc" }
   });
@@ -129,6 +135,21 @@ export default async function ZReportsPage({ searchParams }: { searchParams: Pro
     const staffId = staffPatient.employeeId || staffPatient.militaryId || staffPatient.id || "N/A";
     const staffDept = staffPatient.department || "N/A";
     const staffType = staffPatient.patientType || "Staff";
+    const staffRank = staffPatient.rank || inv.patient.rank || staffPatient.salutation || "-";
+    const patientRank = inv.patient.rank || inv.patient.salutation || "-";
+
+    const labNames = inv.labRequests?.map((lr: any) => lr.test?.name).filter(Boolean) || [];
+    const drugNames = inv.prescriptionItems?.map((pi: any) => pi.drug?.name).filter(Boolean) || [];
+    let remarks = "";
+    if (labNames.length > 0 && drugNames.length > 0) {
+      remarks = `${labNames.join(", ")} | ${drugNames.join(", ")}`;
+    } else if (drugNames.length > 0) {
+      remarks = drugNames.join(", ");
+    } else if (labNames.length > 0) {
+      remarks = labNames.join(", ");
+    } else {
+      remarks = inv.items.map(it => it.description).join(", ") || "-";
+    }
 
     const encoderId = inv.payments[0]?.dataencoderId || auditMap.get(inv.id);
     const encoderName = encoderId ? (userMap.get(encoderId) || "Staff / Encoder") : "Staff / Encoder";
@@ -145,6 +166,9 @@ export default async function ZReportsPage({ searchParams }: { searchParams: Pro
       staffId,
       staffDepartment: staffDept,
       staffType,
+      rank: staffRank,
+      patientRank,
+      remarks,
       encoderName,
       discountPercent: inv.discountPercentApplied,
       laboratoryCost,
@@ -165,7 +189,11 @@ export default async function ZReportsPage({ searchParams }: { searchParams: Pro
         </p>
       </div>
 
-      <ZReportsClient reports={reports} clinicInfo={clinicInfo} />
+      <ZReportsClient 
+        reports={reports} 
+        clinicInfo={clinicInfo} 
+        dateRange={{ from: resolvedParams?.from, to: resolvedParams?.to }}
+      />
     </div>
   );
 }

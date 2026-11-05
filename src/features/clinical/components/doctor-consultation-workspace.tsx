@@ -40,6 +40,9 @@ import {
   saveReferral,
   toggleAdmissionStatus,
   deactivatePatientOpd,
+  dismissLabResult,
+  completeVisitWithDiagnosis,
+  toggleLabResultReadStatus,
 } from "../actions";
 import { deletePrescription, deletePrescriptionItem } from "@/features/pharmacy/actions";
 import { FinalDiagnosisModal } from "./final-diagnosis-modal";
@@ -149,7 +152,30 @@ export function DoctorConsultationWorkspace({
   const [plan, setPlan] = useState<string>("");
 
   const [showDiagnosisModal, setShowDiagnosisModal] = useState(false);
+  const [diagnosingLabReq, setDiagnosingLabReq] = useState<any | null>(null);
   const [showPaperImport, setShowPaperImport] = useState(false);
+
+  async function handleQuickDismissLab(resultId: string) {
+    setLoading(true);
+    const res = await dismissLabResult({ resultId });
+    setLoading(false);
+    if (res?.error) toast.error(res.error);
+    else {
+      toast.success("Lab result marked as reviewed.");
+      router.refresh();
+    }
+  }
+
+  async function handleMarkLabUnread(resultId: string) {
+    setLoading(true);
+    const res = await toggleLabResultReadStatus({ resultId, isRead: false });
+    setLoading(false);
+    if (res?.error) toast.error(res.error);
+    else {
+      toast.success("Lab result marked as unread.");
+      router.refresh();
+    }
+  }
 
   // Extract previous complaints from medical records in timeline for quick re-selection
   const previousVisitComplaints = useMemo(() => {
@@ -898,7 +924,7 @@ export function DoctorConsultationWorkspace({
                   className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
                     isUrgent
                       ? "bg-red-600 text-white border-red-700 shadow-md animate-pulse ring-2 ring-red-400/50"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
                   }`}
                 >
                   <AlertTriangle className={`w-3.5 h-3.5 ${isUrgent ? "text-white" : "text-amber-500"}`} />
@@ -1385,11 +1411,17 @@ export function DoctorConsultationWorkspace({
 
                 <button
                   type="button"
-                  onClick={() => setShowDiagnosisModal(true)}
+                  onClick={() => {
+                    const firstUnread = patient.labRequests?.find(
+                      (r: any) => r.status === "completed" && r.result && !r.result.isReadByDoctor
+                    );
+                    setDiagnosingLabReq(firstUnread || null);
+                    setShowDiagnosisModal(true);
+                  }}
                   className="flex items-center gap-1.5 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  Confirm Final Diagnosis (ICD-10)
+                  Confirm Final Diagnosis & Mark Reviewed
                 </button>
               </div>
 
@@ -1437,27 +1469,78 @@ export function DoctorConsultationWorkspace({
                               </span>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap justify-end">
                               <span className="text-xs text-slate-400">
                                 {formatToEthiopianDate(req.createdAt)}
                               </span>
                               {isCompleted && req.result && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openPrintLabResultWindow({
-                                      patient,
-                                      testName: req.test.name,
-                                      findings: req.result.findings,
-                                      date: req.result.createdAt,
-                                      clinicNames,
-                                    })
-                                  }
-                                  className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 rounded-lg transition-colors"
-                                  title="Print Lab Voucher"
-                                >
-                                  <Printer className="w-3.5 h-3.5" />
-                                </button>
+                                <>
+                                  {req.result.isReadByDoctor ? (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                      Reviewed
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800">
+                                      <Clock className="w-3 h-3 text-amber-600" />
+                                      Needs Doctor Review
+                                    </span>
+                                  )}
+
+                                  {!req.result.isReadByDoctor ? (
+                                    <div className="flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setDiagnosingLabReq(req);
+                                          setShowDiagnosisModal(true);
+                                        }}
+                                        disabled={loading}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-all shadow-xs"
+                                        title="Pick diagnosed disease and mark this lab result as reviewed"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Mark Reviewed & Pick Disease
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleQuickDismissLab(req.result.id)}
+                                        disabled={loading}
+                                        className="inline-flex items-center gap-1 px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-[11px] font-semibold transition-colors"
+                                        title="Quick mark as reviewed without choosing disease"
+                                      >
+                                        <Check className="w-3 h-3" /> Quick Mark
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleMarkLabUnread(req.result.id)}
+                                      disabled={loading}
+                                      className="text-[11px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline"
+                                      title="Mark back as unread"
+                                    >
+                                      Mark unread
+                                    </button>
+                                  )}
+
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      openPrintLabResultWindow({
+                                        patient,
+                                        testName: req.test.name,
+                                        findings: req.result.findings,
+                                        date: req.result.createdAt,
+                                        clinicNames,
+                                      })
+                                    }
+                                    className="p-1.5 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 rounded-lg transition-colors"
+                                    title="Print Lab Voucher"
+                                  >
+                                    <Printer className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
                               )}
                             </div>
                           </div>
@@ -1656,10 +1739,10 @@ export function DoctorConsultationWorkspace({
                                     }
                                   }}
                                   disabled={loading}
-                                  className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors"
+                                  className="p-1.5 rounded-md text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/50 transition-colors"
                                   title={`Remove ${item.drug?.name || "medicine"} before dispensing`}
                                 >
-                                  <X className="w-4 h-4 text-slate-400 hover:text-red-600" />
+                                  <X className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                                 </button>
                               </li>
                             ))}
@@ -1922,20 +2005,122 @@ export function DoctorConsultationWorkspace({
       {showDiagnosisModal && (
         <FinalDiagnosisModal
           isOpen={showDiagnosisModal}
-          onClose={() => setShowDiagnosisModal(false)}
+          onClose={() => {
+            setShowDiagnosisModal(false);
+            setDiagnosingLabReq(null);
+          }}
           patientName={`${patient.firstName} ${patient.lastName}`}
           patientId={patientId}
-          title="Select Diagnosed Generalized Diseases"
-          confirmLabel="Add to Assessment & Plan"
-          onConfirm={async ({ finalDiagnosis }) => {
-            setAssessment((prev) => (prev.trim() ? `${prev.trim()}; ${finalDiagnosis}` : finalDiagnosis));
-            setPlan((prev) =>
-              prev.trim()
-                ? `${prev.trim()}; Protocol instituted for ${finalDiagnosis}`
-                : `Treatment protocol instituted for: ${finalDiagnosis}`
-            );
-            setShowDiagnosisModal(false);
-            toast.success(`Added ${finalDiagnosis} to Assessment & Plan.`);
+          labTestName={diagnosingLabReq?.test?.name}
+          labFindings={diagnosingLabReq?.result?.findings}
+          title={
+            diagnosingLabReq
+              ? `Diagnose & Mark Reviewed: ${diagnosingLabReq.test?.name}`
+              : "Select Diagnosed Generalized Diseases & Mark Reviewed"
+          }
+          confirmLabel="Done & Mark Reviewed"
+          onConfirm={async ({ finalDiagnosis, selectedDiseases, practitionerName, notes, completeVisit }) => {
+            setLoading(true);
+            try {
+              // Update local state right away
+              setAssessment((prev) => (prev.trim() ? `${prev.trim()}; ${finalDiagnosis}` : finalDiagnosis));
+              setPlan((prev) =>
+                prev.trim()
+                  ? `${prev.trim()}; Protocol instituted for ${finalDiagnosis}`
+                  : `Treatment protocol instituted for: ${finalDiagnosis}`
+              );
+
+              // Auto-save draft consultation notes & vitals if entered so SOAP records are never lost
+              const hasDraftNotes = Boolean(
+                subjective.trim() ||
+                objective.trim() ||
+                assessment.trim() ||
+                plan.trim() ||
+                bp.trim() ||
+                heartRate.trim() ||
+                temp.trim() ||
+                weight.trim()
+              );
+
+              if (hasDraftNotes) {
+                try {
+                  await addClinicalNote({
+                    patientId,
+                    bp: bp.trim() || undefined,
+                    heartRate: heartRate && !isNaN(parseFloat(heartRate)) ? parseFloat(heartRate) : undefined,
+                    temp: temp && !isNaN(parseFloat(temp)) ? parseFloat(temp) : undefined,
+                    weight: weight && !isNaN(parseFloat(weight)) ? parseFloat(weight) : undefined,
+                    subjective: subjective.trim() || undefined,
+                    objective: objective.trim() || undefined,
+                    assessment: assessment.trim() ? `${assessment.trim()}; ${finalDiagnosis}` : finalDiagnosis,
+                    plan: plan.trim() || notes?.trim() || `Treatment protocol instituted for: ${finalDiagnosis}`,
+                    content: assessment.trim()
+                      ? `Clinical Consultation Record - ${assessment.trim()}`
+                      : `Clinical Consultation Record - ${finalDiagnosis}`,
+                  });
+                } catch (noteErr) {
+                  console.error("Auto-saving draft consultation note failed:", noteErr);
+                }
+              }
+
+              if (diagnosingLabReq?.result?.id) {
+                const res = await dismissLabResult({
+                  resultId: diagnosingLabReq.result.id,
+                  finalDiagnosis,
+                  selectedDiseases,
+                  practitionerName,
+                  notes,
+                  completeVisit: completeVisit !== false,
+                });
+                if (res?.error) toast.error(res.error);
+                else {
+                  toast.success(`Lab result and consultation marked as reviewed with "${finalDiagnosis}".`);
+                }
+              } else if (activeVisit?.id) {
+                const res = await completeVisitWithDiagnosis({
+                  visitId: activeVisit.id,
+                  patientId,
+                  finalDiagnosis,
+                  selectedDiseases,
+                  practitionerName,
+                  notes,
+                });
+                if (res?.error) toast.error(res.error);
+                else {
+                  toast.success(`Visit and lab results marked as reviewed with "${finalDiagnosis}".`);
+                }
+              } else {
+                const unreadLab = patient.labRequests?.find(
+                  (r: any) => r.status === "completed" && r.result && !r.result.isReadByDoctor
+                );
+                if (unreadLab?.result?.id) {
+                  await dismissLabResult({
+                    resultId: unreadLab.result.id,
+                    finalDiagnosis,
+                    selectedDiseases,
+                    practitionerName,
+                    notes,
+                    completeVisit: true,
+                  });
+                } else {
+                  await addClinicalNote({
+                    patientId,
+                    assessment: finalDiagnosis,
+                    plan: notes?.trim() || `Protocol instituted for ${finalDiagnosis}`,
+                    content: `Diagnosed Generalized Diseases: ${finalDiagnosis}\nAttending Practitioner: ${practitionerName || "Attending Doctor"}${notes?.trim() ? ` — Notes: ${notes.trim()}` : ""}`,
+                  });
+                }
+                toast.success(`Diagnosis "${finalDiagnosis}" recorded and marked as reviewed.`);
+              }
+
+              setShowDiagnosisModal(false);
+              setDiagnosingLabReq(null);
+              router.refresh();
+            } catch (err: any) {
+              toast.error(err.message || "Failed to mark as reviewed");
+            } finally {
+              setLoading(false);
+            }
           }}
         />
       )}

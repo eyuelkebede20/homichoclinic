@@ -126,30 +126,48 @@ export default async function PatientViewPage({ params }: { params: Promise<{ id
       { name: "Hematology - Blood Smear Morphology", price: 3500, description: "Peripheral blood smear examination and cellular morphology" },
     ];
 
-    for (const core of defaultCoreTests) {
-      const exists = await prisma.labTest.findFirst({
-        where: { name: { equals: core.name, mode: "insensitive" } }
-      });
-      if (!exists) {
-        await prisma.labTest.create({
-          data: {
-            name: core.name,
-            price: core.price,
-            description: core.description,
-            isOperational: true,
-          }
-        });
-      }
-    }
-
-    [labTests, drugs] = await Promise.all([
-      prisma.labTest.findMany({ where: { isOperational: { not: false }, deletedAt: null }, select: { id: true, name: true }, orderBy: { name: "asc" } }),
+    // Fetch existing operational lab tests in a single efficient query
+    const [existingLabTests, availableDrugs] = await Promise.all([
+      prisma.labTest.findMany({
+        where: { isOperational: { not: false }, deletedAt: null },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
       prisma.drug.findMany({
         where: { isOperational: true, batches: { some: { quantity: { gt: 0 } } } },
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       }),
     ]);
+
+    drugs = availableDrugs;
+
+    // Check if any default core tests are missing
+    const existingNames = new Set(existingLabTests.map((t) => t.name.toLowerCase().trim()));
+    const missingTests = defaultCoreTests.filter((c) => !existingNames.has(c.name.toLowerCase().trim()));
+
+    if (missingTests.length > 0) {
+      // Seed missing tests in parallel without blocking with sequential queries
+      await Promise.all(
+        missingTests.map((core) =>
+          prisma.labTest.create({
+            data: {
+              name: core.name,
+              price: core.price,
+              description: core.description,
+              isOperational: true,
+            },
+          })
+        )
+      );
+      labTests = await prisma.labTest.findMany({
+        where: { isOperational: { not: false }, deletedAt: null },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+    } else {
+      labTests = existingLabTests;
+    }
   }
 
   let referralDestinations: string[] = [];

@@ -198,7 +198,7 @@ export function DoctorOrders({
             className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
               isUrgent
                 ? "bg-red-600 text-white border-red-700 shadow-md animate-pulse ring-2 ring-red-400/50"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-700 hover:border-red-300"
+                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700"
             }`}
           >
             <AlertTriangle className={`w-3.5 h-3.5 ${isUrgent ? "text-white" : "text-amber-500"}`} />
@@ -695,34 +695,70 @@ export function DoctorOrders({
         <form onSubmit={handleRxSubmit} className="space-y-4">
           
           {rxItems.map((item, index) => (
-            <div key={index} className="flex gap-4 items-start border-b border-slate-100 dark:border-slate-800 pb-4">
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Search Drug</label>
-                <input 
-                  type="text"
-                  placeholder="Type to search..."
-                  value={item.search || ""}
-                  onChange={e => {
-                    const newItems = [...rxItems];
-                    newItems[index].search = e.target.value;
-                    const match = drugs.find(d => d.name.toLowerCase() === e.target.value.toLowerCase());
-                    newItems[index].drugId = match ? match.id : "";
-                    setRxItems(newItems);
-                  }}
-                  list={`drug-list-${index}`}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
-                />
-                <datalist id={`drug-list-${index}`}>
-                  {drugs.map(d => (
-                    <option key={d.id} value={d.name} />
-                  ))}
-                </datalist>
+            <div key={index} className="flex flex-col sm:flex-row gap-3 items-start border-b border-slate-100 dark:border-slate-800 pb-4">
+              <div className="flex-1 w-full relative">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Search Drug (Available Stock)</label>
+                <div className="relative">
+                  <input 
+                    type="text"
+                    placeholder="Type to search medication..."
+                    value={item.search || ""}
+                    onChange={e => {
+                      const val = e.target.value;
+                      const newItems = [...rxItems];
+                      newItems[index].search = val;
+                      const match = drugs.find(d => d.name.toLowerCase() === val.trim().toLowerCase());
+                      newItems[index].drugId = match ? match.id : "";
+                      setRxItems(newItems);
+                    }}
+                    className={`block w-full rounded-lg border px-3 py-2 text-xs outline-none transition-all ${
+                      item.drugId
+                        ? "border-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/20 text-slate-900 dark:text-slate-100"
+                        : "border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:border-indigo-500"
+                    }`}
+                  />
+                  {item.drugId && (
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded">
+                      <CheckCircle className="w-3 h-3" />
+                      Matched
+                    </span>
+                  )}
+                </div>
+
+                {item.search && !item.drugId && (
+                  <div className="absolute z-30 left-0 right-0 mt-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl max-h-48 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    {drugs
+                      .filter(d => d.name.toLowerCase().includes(item.search.toLowerCase()))
+                      .slice(0, 25)
+                      .map(d => (
+                        <button
+                          key={d.id}
+                          type="button"
+                          onClick={() => {
+                            const newItems = [...rxItems];
+                            newItems[index].drugId = d.id;
+                            newItems[index].search = d.name;
+                            setRxItems(newItems);
+                          }}
+                          className="w-full text-left p-2.5 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center justify-between font-medium text-slate-800 dark:text-slate-200 transition-colors"
+                        >
+                          <span>{d.name}</span>
+                          <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold uppercase">Select</span>
+                        </button>
+                      ))}
+                    {drugs.filter(d => d.name.toLowerCase().includes(item.search.toLowerCase())).length === 0 && (
+                      <div className="p-3 text-xs text-slate-500 dark:text-slate-400 text-center">
+                        No medication matched &ldquo;{item.search}&rdquo;
+                      </div>
+                    )}
+                  </div>
+                )}
                 {!item.drugId && item.search && (
-                  <p className="text-xs text-red-500 mt-1">Please select a valid drug from the list.</p>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">Please select a medication from the list.</p>
                 )}
               </div>
-              <div className="w-24">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Qty</label>
+              <div className="w-full sm:w-24">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Qty</label>
                 <input 
                   type="number" min="1"
                   value={item.quantity}
@@ -739,22 +775,22 @@ export function DoctorOrders({
                       setRxItems(newItems);
                     }
                   }}
-                  className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
+                  className="block w-full rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs font-mono font-bold text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500"
                 />
               </div>
-              <div className="flex-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Instructions (Dosage)</label>
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Instructions (Dosage)</label>
                 <div className="flex gap-2">
                   <input 
                     type="text"
-                    placeholder="e.g. Take 1 pill twice a day"
+                    placeholder="e.g. Take 1 pill twice a day after meals"
                     value={item.instructions}
                     onChange={e => {
                       const newItems = [...rxItems];
                       newItems[index].instructions = e.target.value;
                       setRxItems(newItems);
                     }}
-                    className="mt-1 block w-full rounded-md border border-slate-300 dark:border-slate-700 dark:bg-slate-950 px-3 py-2 text-sm focus:ring-1 focus:ring-indigo-500"
+                    className="flex-1 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 px-3 py-2 text-xs text-slate-900 dark:text-slate-100 outline-none focus:border-indigo-500"
                   />
                   {rxItems.length > 1 && (
                     <button
@@ -764,10 +800,10 @@ export function DoctorOrders({
                         newItems.splice(index, 1);
                         setRxItems(newItems);
                       }}
-                      className="mt-1 p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-md transition-colors"
+                      className="p-2 text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:text-rose-400 dark:hover:text-rose-300 dark:hover:bg-rose-950/40 rounded-lg transition-colors shrink-0"
                       title="Remove drug"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 text-rose-600 dark:text-rose-400" />
                     </button>
                   )}
                 </div>

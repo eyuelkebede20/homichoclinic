@@ -259,7 +259,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setAppearance(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -293,7 +293,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setConsistence(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -326,7 +326,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setBloodGross(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -360,7 +360,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setPus(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -393,7 +393,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setMucus(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -426,7 +426,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                   type="button"
                   key={val}
                   onClick={() => setBile(val)}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                  className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
                 >
                   {val}
                 </button>
@@ -472,7 +472,7 @@ export function StoolResultForm({ testName, initialData, onSubmit, onCancel, loa
                 type="button"
                 key={val}
                 onClick={() => setOccult(val)}
-                className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 text-slate-600 dark:text-slate-300 hover:bg-emerald-100"
+                className="text-[10px] px-2 py-0.5 rounded bg-emerald-50/60 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors font-medium"
               >
                 {val}
               </button>

@@ -212,7 +212,7 @@ export function ReceptionDashboard({
                       setClearWaitingToday(false);
                       setResetModal({ isOpen: true, room });
                     }}
-                    className="p-1.5 rounded-full text-slate-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-full text-amber-700 dark:text-amber-300 hover:text-amber-900 hover:bg-amber-100 dark:hover:text-amber-200 dark:hover:bg-amber-900/40 transition-colors cursor-pointer"
                     title={`Reset OPD ${room} Queue`}
                   >
                     <RotateCcw className="w-3.5 h-3.5" />

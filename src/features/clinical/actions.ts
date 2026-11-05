@@ -522,7 +522,22 @@ export const addClinicalNote = createSafeAction({
   }
 });
 
+// Fast In-Memory Cache for Diseases and Top Morbidity (Prevents DB overhead on modal open)
+let cachedClinicDiseases: { data: ClinicDisease[]; timestamp: number } | null = null;
+let cachedTopDiseases: { key: string; data: TopDiagnosedDisease[]; timestamp: number } | null = null;
+const DISEASE_CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
+export function invalidateDiseasesCache() {
+  cachedClinicDiseases = null;
+  cachedTopDiseases = null;
+}
+
 export async function getClinicDiseases(): Promise<ClinicDisease[]> {
+  const now = Date.now();
+  if (cachedClinicDiseases && now - cachedClinicDiseases.timestamp < DISEASE_CACHE_TTL_MS) {
+    return cachedClinicDiseases.data;
+  }
+
   try {
     const setting = await prisma.systemSetting.findUnique({
       where: { key: "clinicDiseasesList" },
@@ -531,10 +546,12 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
       try {
         const parsed = JSON.parse(setting.value);
         if (Array.isArray(parsed)) {
-          return parsed.map((d: any) => ({
+          const list = parsed.map((d: any) => ({
             ...d,
             recommendedMedicines: d.recommendedMedicines || getSuggestedMedicinesForDisease(d.name, d.category),
           }));
+          cachedClinicDiseases = { data: list, timestamp: now };
+          return list;
         }
       } catch (parseErr) {
         console.error("Malformed clinicDiseasesList JSON in DB:", parseErr);
@@ -550,10 +567,11 @@ export async function getClinicDiseases(): Promise<ClinicDisease[]> {
       update: { value: JSON.stringify(withMeds) },
       create: { key: "clinicDiseasesList", value: JSON.stringify(withMeds) },
     });
+    cachedClinicDiseases = { data: withMeds, timestamp: now };
     return withMeds;
   } catch (err) {
     console.error("Error fetching clinic diseases:", err);
-    return [];
+    return DEFAULT_CLINIC_DISEASES;
   }
 }
 
@@ -572,6 +590,12 @@ export async function getTopDiagnosedDiseases(
   limit: number = 20,
   timeRange: "week" | "month" | "all" = "all"
 ): Promise<TopDiagnosedDisease[]> {
+  const cacheKey = `${limit}_${timeRange}`;
+  const now = Date.now();
+  if (cachedTopDiseases && cachedTopDiseases.key === cacheKey && now - cachedTopDiseases.timestamp < DISEASE_CACHE_TTL_MS) {
+    return cachedTopDiseases.data;
+  }
+
   try {
     const whereClause: any = {
       deletedAt: null,
@@ -588,7 +612,8 @@ export async function getTopDiagnosedDiseases(
       prisma.medicalRecord.findMany({
         where: whereClause,
         select: { assessment: true },
-        take: 2000,
+        take: 500, // Reduced from 2000 to 500 for lightning-fast aggregation
+        orderBy: { createdAt: "desc" },
       }),
       getClinicDiseases(),
     ]);
@@ -651,7 +676,9 @@ export async function getTopDiagnosedDiseases(
       }
     }
 
-    return scoredList.slice(0, limit);
+    const result = scoredList.slice(0, limit);
+    cachedTopDiseases = { key: cacheKey, data: result, timestamp: now };
+    return result;
   } catch (err) {
     console.error("Error fetching top diagnosed diseases:", err);
     return DEFAULT_MOST_PICKED_DISEASES.map((d) => ({
@@ -1117,43 +1144,53 @@ export const dismissLabResult = createSafeAction({
         practitioner = doc?.name ? (doc.name.startsWith("Dr.") ? doc.name : `Dr. ${doc.name}`) : "Attending Doctor";
       }
 
-      await prisma.medicalRecord.create({
-        data: {
-          patientId,
-          source: "system",
-          bp: null,
-          heartRate: null,
-          temp: null,
-          weight: null,
-          subjective: `Post-investigation review: ${result.request.test?.name || "Lab Investigation"}`,
-          objective: `Lab Findings: ${formatLabSummary(result.findings)}`,
-          assessment: diag,
-          plan: data.notes?.trim() || "Confirmed upon doctor review of diagnostic findings.",
-          content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? `\nClinical Notes: ${data.notes.trim()}` : ""}`,
-          enteredById: ctx.userId,
-        },
-      });
+      const activeVisitPromise = data.completeVisit !== false
+        ? prisma.visit.findFirst({
+            where: {
+              patientId,
+              status: { in: ["scheduled", "in_progress"] },
+              visitDate: { gte: getStartOfDayLocal() },
+              deletedAt: null,
+            },
+          })
+        : Promise.resolve(null);
 
-      if (data.completeVisit !== false) {
-        const today = getStartOfDayLocal();
-        const activeVisit = await prisma.visit.findFirst({
-          where: {
+      const [activeVisit] = await Promise.all([
+        activeVisitPromise,
+        prisma.medicalRecord.create({
+          data: {
             patientId,
-            status: { in: ["scheduled", "in_progress"] },
-            visitDate: { gte: today },
-            deletedAt: null,
+            source: "system",
+            bp: null,
+            heartRate: null,
+            temp: null,
+            weight: null,
+            subjective: `Post-investigation review: ${result.request.test?.name || "Lab Investigation"}`,
+            objective: `Lab Findings: ${formatLabSummary(result.findings)}`,
+            assessment: diag,
+            plan: data.notes?.trim() || "Confirmed upon doctor review of diagnostic findings.",
+            content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? `\nClinical Notes: ${data.notes.trim()}` : ""}`,
+            enteredById: ctx.userId,
+          },
+        }),
+        // Also mark other completed lab results for this patient as reviewed
+        prisma.labResult.updateMany({
+          where: {
+            request: { patientId },
+            isReadByDoctor: false,
+          },
+          data: { isReadByDoctor: true },
+        }),
+      ]);
+
+      if (activeVisit) {
+        await prisma.visit.update({
+          where: { id: activeVisit.id },
+          data: {
+            status: "completed",
+            notes: (activeVisit.notes ? activeVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
           },
         });
-
-        if (activeVisit) {
-          await prisma.visit.update({
-            where: { id: activeVisit.id },
-            data: {
-              status: "completed",
-              notes: (activeVisit.notes ? activeVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
-            },
-          });
-        }
       }
 
       await logAudit({
@@ -1162,11 +1199,11 @@ export const dismissLabResult = createSafeAction({
         resourceId: result.id,
         newValue: { finalDiagnosis: diag, practitioner, notes: data.notes },
       });
+
+      invalidateDiseasesCache();
     }
 
     revalidatePath("/dashboard");
-    revalidatePath("/visits");
-    revalidatePath("/admin/admitted-report");
     if (result.request?.patientId) {
       revalidatePath(`/patients/${result.request.patientId}`);
     }
@@ -1215,26 +1252,36 @@ export const completeVisitWithDiagnosis = createSafeAction({
 
     const existingVisit = await prisma.visit.findUnique({
       where: { id: data.visitId },
+      select: { notes: true },
     });
 
-    const visit = await prisma.visit.update({
-      where: { id: data.visitId },
-      data: {
-        status: "completed",
-        notes: (existingVisit?.notes ? existingVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
-      },
-    });
-
-    await prisma.medicalRecord.create({
-      data: {
-        patientId: data.patientId,
-        source: "system",
-        assessment: diag,
-        plan: data.notes?.trim() || "Consultation concluded and marked completed.",
-        content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
-        enteredById: ctx.userId,
-      },
-    });
+    const [visit] = await Promise.all([
+      prisma.visit.update({
+        where: { id: data.visitId },
+        data: {
+          status: "completed",
+          notes: (existingVisit?.notes ? existingVisit.notes + " | " : "") + `Final Diagnosis: ${diag} (Attending: ${practitioner})`,
+        },
+      }),
+      prisma.medicalRecord.create({
+        data: {
+          patientId: data.patientId,
+          source: "system",
+          assessment: diag,
+          plan: data.notes?.trim() || "Consultation concluded and marked completed.",
+          content: `Diagnosed Generalized Diseases: ${diag}\nAttending Practitioner: ${practitioner}${data.notes?.trim() ? ` — Notes: ${data.notes.trim()}` : ""}`,
+          enteredById: ctx.userId,
+        },
+      }),
+      // Automatically mark all completed unreviewed lab results for this patient as reviewed!
+      prisma.labResult.updateMany({
+        where: {
+          request: { patientId: data.patientId },
+          isReadByDoctor: false,
+        },
+        data: { isReadByDoctor: true },
+      }),
+    ]);
 
     await logAudit({
       actorId: ctx.userId,
@@ -1243,8 +1290,9 @@ export const completeVisitWithDiagnosis = createSafeAction({
       newValue: { finalDiagnosis: diag, practitioner, notes: data.notes },
     });
 
+    invalidateDiseasesCache();
+
     revalidatePath("/dashboard");
-    revalidatePath("/visits");
     revalidatePath(`/patients/${data.patientId}`);
     revalidatePath("/admin/admitted-report");
 

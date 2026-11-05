@@ -119,7 +119,7 @@ export function DoctorLabResultsInbox({
             <FlaskConical className="w-4 h-4" />
           </div>
           <div>
-            <h2 className="text-base font-bold text-indigo-950 dark:text-indigo-100 flex items-center gap-2">
+            <h2 className="text-base font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
               Laboratory Reports Inbox
               {unreadResults.length > 0 && (
                 <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-indigo-200/80 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200">

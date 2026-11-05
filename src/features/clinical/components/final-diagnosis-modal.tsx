@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import {
   X,
   Search,
@@ -58,6 +58,9 @@ const CATEGORIES = [
   "General",
 ];
 
+let clientCachedDiseases: ClinicDisease[] | null = null;
+let clientCachedTopPick: ClinicDisease[] | null = null;
+
 export function FinalDiagnosisModal({
   isOpen,
   onClose,
@@ -71,8 +74,8 @@ export function FinalDiagnosisModal({
   confirmLabel = "Done",
 }: FinalDiagnosisModalProps) {
   const { data: session } = useSession();
-  const [diseases, setDiseases] = useState<ClinicDisease[]>(DEFAULT_CLINIC_DISEASES);
-  const [mostPicked, setMostPicked] = useState<ClinicDisease[]>(DEFAULT_MOST_PICKED_DISEASES);
+  const [diseases, setDiseases] = useState<ClinicDisease[]>(clientCachedDiseases || DEFAULT_CLINIC_DISEASES);
+  const [mostPicked, setMostPicked] = useState<ClinicDisease[]>(clientCachedTopPick || DEFAULT_MOST_PICKED_DISEASES);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDiseases, setSelectedDiseases] = useState<ClinicDisease[]>([]);
@@ -100,6 +103,58 @@ export function FinalDiagnosisModal({
   const [loading, setLoading] = useState(false);
   const [addingLoading, setAddingLoading] = useState(false);
 
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-focus search input on modal open
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        searchInputRef.current?.focus();
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  // Handle Escape key and Tab focus trap
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+
+      if (e.key === "Tab") {
+        if (!dialogRef.current) return;
+        const focusable = dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusable.length === 0) return;
+
+        const firstElement = focusable[0];
+        const lastElement = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen, onClose]);
+
   // Update practitioner name when session loads or prop changes
   useEffect(() => {
     if (defaultDocName) {
@@ -107,13 +162,20 @@ export function FinalDiagnosisModal({
     }
   }, [defaultDocName]);
 
-  // Load clinic diseases & most picked diagnoses from database when modal opens
+  // Load clinic diseases & most picked diagnoses once with client-side caching
   useEffect(() => {
     if (!isOpen) return;
+    if (clientCachedDiseases && clientCachedTopPick) {
+      setDiseases(clientCachedDiseases);
+      setMostPicked(clientCachedTopPick);
+      return;
+    }
+
     let isMounted = true;
     getClinicDiseases()
       .then((data) => {
         if (isMounted && data && data.length > 0) {
+          clientCachedDiseases = data;
           setDiseases(data);
         }
       })
@@ -122,15 +184,15 @@ export function FinalDiagnosisModal({
     getTopDiagnosedDiseases(18)
       .then((topList) => {
         if (isMounted && topList && topList.length > 0) {
-          setMostPicked(
-            topList.map((d) => ({
-              id: d.id || `dis-${d.name}`,
-              name: d.name,
-              code: d.code,
-              category: d.category,
-              amharic: d.amharic,
-            }))
-          );
+          const formatted = topList.map((d) => ({
+            id: d.id || `dis-${d.name}`,
+            name: d.name,
+            code: d.code,
+            category: d.category,
+            amharic: d.amharic,
+          }));
+          clientCachedTopPick = formatted;
+          setMostPicked(formatted);
         }
       })
       .catch((e) => console.error(e));
@@ -285,12 +347,13 @@ export function FinalDiagnosisModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/70 backdrop-blur-xs animate-in fade-in duration-200">
       <div
+        ref={dialogRef}
         className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl w-full max-w-3xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150"
         role="dialog"
         aria-modal="true"
       >
         {/* Modal Header */}
-        <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-start justify-between bg-gradient-to-r from-indigo-50/80 via-slate-50 to-indigo-50/40 dark:from-indigo-950/40 dark:via-slate-900 dark:to-indigo-950/20">
+        <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-start justify-between bg-slate-50 dark:bg-slate-900/90">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-600 text-white shadow-xs">
               <Stethoscope className="w-5 h-5" />
@@ -424,6 +487,7 @@ export function FinalDiagnosisModal({
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                 <input
+                  ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -650,7 +714,7 @@ export function FinalDiagnosisModal({
                       onClick={() => toggleDisease(d)}
                       className={`w-full text-left p-2.5 flex items-center justify-between gap-3 transition-all ${
                         isSelected
-                          ? "bg-indigo-50/90 dark:bg-indigo-950/70 text-indigo-950 dark:text-indigo-100 font-medium border-l-4 border-indigo-600"
+                          ? "bg-indigo-50 dark:bg-indigo-950/70 text-indigo-950 dark:text-indigo-100 font-medium ring-1 ring-inset ring-indigo-500/30"
                           : "hover:bg-white dark:hover:bg-slate-900/80 text-slate-800 dark:text-slate-200"
                       }`}
                     >
@@ -669,7 +733,11 @@ export function FinalDiagnosisModal({
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             {d.code && (
-                              <span className="font-mono text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.2 rounded shrink-0">
+                              <span className={`font-mono text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
+                                isSelected
+                                  ? "bg-indigo-200/80 dark:bg-indigo-900 text-indigo-900 dark:text-indigo-200"
+                                  : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400"
+                              }`}>
                                 {d.code}
                               </span>
                             )}
@@ -678,7 +746,11 @@ export function FinalDiagnosisModal({
                             </span>
                           </div>
                           {d.amharic && (
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 font-amharic truncate mt-0.5">
+                            <p className={`text-[10px] font-amharic truncate mt-0.5 ${
+                              isSelected
+                                ? "text-indigo-700 dark:text-indigo-300"
+                                : "text-slate-500 dark:text-slate-400"
+                            }`}>
                               {d.amharic}
                             </p>
                           )}
@@ -686,7 +758,11 @@ export function FinalDiagnosisModal({
                       </div>
 
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400">
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                          isSelected
+                            ? "bg-indigo-100/90 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300"
+                            : "bg-slate-200/80 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
+                        }`}>
                           {d.category}
                         </span>
                       </div>

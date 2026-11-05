@@ -277,7 +277,7 @@ export function SymptomCardSelector({
                   key={symptom.id}
                   type="button"
                   onClick={() => handleToggleSymptom(symptom)}
-                  className={`group relative flex flex-col items-start p-2 rounded-lg border text-left transition-all ${
+                  className={`group relative flex flex-col items-start justify-center min-h-[44px] p-2.5 rounded-xl border text-left transition-all ${
                     selected
                       ? "bg-blue-600 text-white border-blue-600 shadow-xs dark:bg-blue-600 dark:border-blue-500"
                       : "bg-slate-50/80 hover:bg-blue-50/50 dark:bg-slate-950/40 dark:hover:bg-blue-950/30 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 text-slate-800 dark:text-slate-200"
@@ -295,7 +295,7 @@ export function SymptomCardSelector({
                       className={`shrink-0 w-4 h-4 rounded-full flex items-center justify-center transition-transform ${
                         selected
                           ? "bg-white text-blue-600 scale-110"
-                          : "bg-slate-200 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-blue-600 group-hover:text-white"
+                          : "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-300 group-hover:bg-blue-600 group-hover:text-white"
                       }`}
                     >
                       {selected ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : <Plus className="w-2.5 h-2.5" />}
@@ -305,7 +305,7 @@ export function SymptomCardSelector({
                   {symptom.amharic && (
                     <span
                       className={`text-[10px] leading-tight truncate w-full ${
-                        selected ? "text-blue-100" : "text-slate-400 dark:text-slate-500"
+                        selected ? "text-blue-100" : "text-slate-500 dark:text-slate-400"
                       }`}
                     >
                       {symptom.amharic}

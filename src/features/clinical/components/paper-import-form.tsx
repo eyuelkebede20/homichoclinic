@@ -4,7 +4,6 @@ import { useState, useRef } from "react";
 import { createMedicalRecord } from "../actions";
 import { Loader2, ScanText } from "lucide-react";
 import { useRouter } from "next/navigation";
-import Tesseract from "tesseract.js";
 import { toast } from "sonner";
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 import { SymptomCardSelector } from "./symptom-card-selector";
@@ -32,6 +31,7 @@ export function PaperImportForm({ patientId }: PaperImportFormProps) {
     setOcrLoading(true);
     setSource("paper_import");
     try {
+      const { default: Tesseract } = await import("tesseract.js");
       const result = await Tesseract.recognize(file, 'eng');
       setContent((prev) => (prev ? prev + "\n" + result.data.text : result.data.text));
     } catch (err) {

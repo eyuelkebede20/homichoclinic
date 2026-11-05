@@ -5,7 +5,83 @@ import { useMemo, useState } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
-import { formatToEthiopianDate, parseEthiopianDateString, ethiopianToGregorian } from "@/lib/date-utils";
+import { 
+  formatToEthiopianDate, 
+  parseEthiopianDateString, 
+  ethiopianToGregorian,
+  gregorianToEthiopian,
+  getCurrentEthiopianDate,
+  ETHIOPIAN_MONTHS
+} from "@/lib/date-utils";
+
+function formatEmploymentStatus(type?: string): string {
+  if (!type) return "ቋሚ";
+  const lower = type.toLowerCase().trim();
+  if (lower.includes("civilian staff") || lower === "staff" || lower === "civilian") return "ቋሚ";
+  if (lower.includes("soldier") && !lower.includes("family")) return "ወታደር";
+  if (lower.includes("soldier family")) return "የሰራዊት ቤተሰብ";
+  if (lower.includes("civilian family") || lower.includes("family")) return "የሲቪል ቤተሰብ";
+  if (lower.includes("guest")) return "እንግዳ";
+  if (lower.includes("contract")) return "ኮንትራት";
+  if (lower.includes("permanent")) return "ቋሚ";
+  return type;
+}
+
+function formatEthDateRange(fromDateStr?: string, toDateStr?: string, timestamps: number[] = []): string {
+  const parsePart = (val?: string) => {
+    if (!val) return null;
+    const parsed = parseEthiopianDateString(val);
+    if (parsed) return parsed;
+    try {
+      const d = new Date(val);
+      if (!isNaN(d.getTime())) {
+        const eth = gregorianToEthiopian(d);
+        return { year: eth.year, month: eth.month, day: eth.date };
+      }
+    } catch {}
+    return null;
+  };
+
+  let fromPart = parsePart(fromDateStr);
+  let toPart = parsePart(toDateStr);
+
+  if (!fromPart || !toPart) {
+    if (timestamps.length > 0) {
+      const valid = timestamps.filter(t => !isNaN(t));
+      if (valid.length > 0) {
+        const minDate = new Date(Math.min(...valid));
+        const maxDate = new Date(Math.max(...valid));
+        if (!fromPart) {
+          const ethMin = gregorianToEthiopian(minDate);
+          fromPart = { year: ethMin.year, month: ethMin.month, day: ethMin.date };
+        }
+        if (!toPart) {
+          const ethMax = gregorianToEthiopian(maxDate);
+          toPart = { year: ethMax.year, month: ethMax.month, day: ethMax.date };
+        }
+      }
+    }
+  }
+
+  if (!fromPart) {
+    const today = getCurrentEthiopianDate();
+    fromPart = { year: today.year, month: today.month, day: today.date };
+  }
+  if (!toPart) {
+    const today = getCurrentEthiopianDate();
+    toPart = { year: today.year, month: today.month, day: today.date };
+  }
+
+  const getMonthNameAm = (m: number) => {
+    const found = ETHIOPIAN_MONTHS.find(item => item.id === m);
+    return found ? found.amharic : "መስከረም";
+  };
+
+  const fromMonthName = getMonthNameAm(fromPart.month);
+  const toMonthName = getMonthNameAm(toPart.month);
+
+  return `ከ ${fromMonthName}  ${String(fromPart.day).padStart(2, "0")}/${String(fromPart.month).padStart(2, "0")}/${fromPart.year} አስከ  ${toMonthName} ${String(toPart.day).padStart(2, "0")}/${String(toPart.month).padStart(2, "0")}/${toPart.year} ዓ.ም `;
+}
 import { EthiopianDatePicker } from "@/components/ethiopian-date-picker";
 
 export type InvoiceItemDetail = {
@@ -36,6 +112,9 @@ export type InvoiceReport = {
   total: number;
   discountAmount: number;
   afterDiscount: number;
+  rank?: string;
+  patientRank?: string;
+  remarks?: string;
   items: InvoiceItemDetail[];
 };
 
@@ -45,6 +124,8 @@ export type GroupedStaffCredit = {
   staffId: string;
   staffDepartment: string;
   staffType: string;
+  rank?: string;
+  remarks?: string;
   transactionCount: number;
   patientsCovered: string[];
   discountPercent: number;
@@ -62,13 +143,13 @@ export type ClinicInfo = {
   logo?: string;
 };
 
-export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport[]; clinicInfo?: ClinicInfo }) {
+export function ZReportsClient({ reports, clinicInfo, dateRange }: { reports: InvoiceReport[]; clinicInfo?: ClinicInfo; dateRange?: { from?: string; to?: string } }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const fromDate = searchParams.get("from") || "";
-  const toDate = searchParams.get("to") || "";
+  const fromDate = searchParams.get("from") || dateRange?.from || "";
+  const toDate = searchParams.get("to") || dateRange?.to || "";
 
   const handleDateChange = (type: "from" | "to", value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -159,6 +240,8 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
           staffId: r.staffId,
           staffDepartment: r.staffDepartment,
           staffType: r.staffType || "Staff",
+          rank: r.rank && r.rank !== "-" ? r.rank : (r.patientRank || "-"),
+          remarks: r.remarks || "የህክምና ወጪ",
           transactionCount: 0,
           patientsCovered: [],
           discountPercent: r.discountPercent,
@@ -674,69 +757,251 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
     }, 250);
   };
 
+// Build Divided Master Sheet for "All" list matching 123.xlsx
+  const buildDividedMasterSheet = (
+    items: (GroupedStaffCredit | InvoiceReport)[],
+    dateHeaderStr: string,
+    isGrouped: boolean
+  ) => {
+    const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
+    const headers = [
+      "ተ.ቁ",
+      "ማዕረግ",
+      "ስም ዝርዝር ",
+      1,
+      "የሚቆረጥበቸው\n  የብር መጠን ",
+      "በፐርሰንት ",
+      "የቅጥር ሁኔታ",
+      "መግለጫ"
+    ];
+
+    // Partition items by discount percentage
+    const discountGroups = new Map<number, (GroupedStaffCredit | InvoiceReport)[]>();
+    items.forEach(it => {
+      const pct = it.discountPercent ?? 0;
+      if (!discountGroups.has(pct)) discountGroups.set(pct, []);
+      discountGroups.get(pct)!.push(it);
+    });
+
+    const sortedPcts = Array.from(discountGroups.keys()).sort((a, b) => b - a);
+    const aoa: any[][] = [row1, headers];
+    const merges: XLSX.Range[] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }, // Row 1 A1:H1
+    ];
+
+    let seq = 1;
+    let grandGross = 0;
+    let grandNet = 0;
+
+    sortedPcts.forEach((pct) => {
+      const groupItems = discountGroups.get(pct)!;
+      let groupGross = 0;
+      let groupNet = 0;
+
+      groupItems.forEach((it) => {
+        grandGross += it.total;
+        grandNet += it.afterDiscount;
+        groupGross += it.total;
+        groupNet += it.afterDiscount;
+
+        const rank = it.rank && it.rank !== "-" ? it.rank : "-";
+        const name = isGrouped
+          ? (it as GroupedStaffCredit).staffMemberName
+          : ((it as InvoiceReport).patientName === (it as InvoiceReport).staffMemberName
+              ? (it as InvoiceReport).staffMemberName
+              : `${(it as InvoiceReport).staffMemberName} (${(it as InvoiceReport).patientName})`);
+        const empStatus = formatEmploymentStatus(it.staffType);
+        const remarks = it.remarks || (isGrouped ? (it as GroupedStaffCredit).patientsCovered.join("; ") || "የህክምና ወጪ" : "-");
+
+        aoa.push([
+          seq++,
+          rank,
+          name,
+          1,
+          Number((it.afterDiscount / 100).toFixed(2)),
+          `${pct}%`,
+          empStatus,
+          remarks
+        ]);
+      });
+
+      // Additional content row dividing the discounts
+      const subRowIdx = aoa.length;
+      aoa.push([
+        `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
+        "",
+        "",
+        groupItems.length,
+        Number((groupNet / 100).toFixed(2)),
+        `${pct}%`,
+        "",
+        `ጠቅላላ ወጪ: ETB ${(groupGross / 100).toFixed(2)}`
+      ]);
+
+      merges.push({ s: { r: subRowIdx, c: 0 }, e: { r: subRowIdx, c: 2 } });
+
+      // Empty separator row after this discount group
+      aoa.push(["", "", "", "", "", "", "", ""]);
+    });
+
+    // Empty separator row before grand totals
+    aoa.push(["", "", "", "", "", "", "", ""]);
+
+    // Finally put the total one (matching Row 5 & 6 in 123.xlsx)
+    const rTot1 = aoa.length;
+    aoa.push([
+      "                                         ጠቅላላ ድምር 100%",
+      "",
+      "",
+      "",
+      Number((grandGross / 100).toFixed(2)),
+      "",
+      "",
+      ""
+    ]);
+
+    const rTot2 = aoa.length;
+    aoa.push([
+      "አጠቃላይ የሚቆረጥባቸው ብር ",
+      "",
+      "",
+      "",
+      Number((grandNet / 100).toFixed(2)),
+      "",
+      "",
+      ""
+    ]);
+
+    merges.push({ s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } });
+    merges.push({ s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } });
+    merges.push({ s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } });
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws["!merges"] = merges;
+    ws["!cols"] = [
+      { wch: 8 },   // ተ.ቁ
+      { wch: 14 },  // ማዕረግ
+      { wch: 32 },  // ስም ዝርዝር 
+      { wch: 8 },   // 1
+      { wch: 24 },  // የሚቆረጥበቸው የብር መጠን
+      { wch: 14 },  // በፐርሰንት 
+      { wch: 18 },  // የቅጥር ሁኔታ
+      { wch: 38 },  // መግለጫ
+    ];
+
+    return ws;
+  };
+
+  // Build Single Discount Sheet for individual % tabs
+  const buildSingleDiscountSheet = (
+    items: (GroupedStaffCredit | InvoiceReport)[],
+    dateHeaderStr: string,
+    isGrouped: boolean
+  ) => {
+    const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
+    const headers = [
+      "ተ.ቁ",
+      "ማዕረግ",
+      "ስም ዝርዝር ",
+      1,
+      "የሚቆረጥበቸው\n  የብር መጠን ",
+      "በፐርሰንት ",
+      "የቅጥር ሁኔታ",
+      "መግለጫ"
+    ];
+
+    let grossSum = 0;
+    let netSum = 0;
+
+    const dataRows = items.map((it, idx) => {
+      grossSum += it.total;
+      netSum += it.afterDiscount;
+      const rank = it.rank && it.rank !== "-" ? it.rank : "-";
+      const name = isGrouped
+        ? (it as GroupedStaffCredit).staffMemberName
+        : ((it as InvoiceReport).patientName === (it as InvoiceReport).staffMemberName
+            ? (it as InvoiceReport).staffMemberName
+            : `${(it as InvoiceReport).staffMemberName} (${(it as InvoiceReport).patientName})`);
+      const empStatus = formatEmploymentStatus(it.staffType);
+      const remarks = it.remarks || (isGrouped ? (it as GroupedStaffCredit).patientsCovered.join("; ") || "የህክምና ወጪ" : "-");
+
+      return [
+        idx + 1,
+        rank,
+        name,
+        1,
+        Number((it.afterDiscount / 100).toFixed(2)),
+        `${it.discountPercent}%`,
+        empStatus,
+        remarks
+      ];
+    });
+
+    const emptyRow = ["", "", "", "", "", "", "", ""];
+    const totalRow1 = [
+      "                                         ጠቅላላ ድምር 100%",
+      "",
+      "",
+      "",
+      Number((grossSum / 100).toFixed(2)),
+      "",
+      "",
+      ""
+    ];
+    const totalRow2 = [
+      "አጠቃላይ የሚቆረጥባቸው ብር ",
+      "",
+      "",
+      "",
+      Number((netSum / 100).toFixed(2)),
+      "",
+      "",
+      ""
+    ];
+
+    const aoa = [
+      row1,
+      headers,
+      ...dataRows,
+      emptyRow,
+      totalRow1,
+      totalRow2
+    ];
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const rTot1 = 3 + items.length;
+    const rTot2 = 4 + items.length;
+
+    ws["!merges"] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+      { s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } },
+      { s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } },
+      { s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } },
+    ];
+
+    ws["!cols"] = [
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 32 },
+      { wch: 8 },
+      { wch: 24 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 38 },
+    ];
+
+    return ws;
+  };
+
   // Export Excel
   const handleExportExcel = () => {
     const workbook = XLSX.utils.book_new();
+    const timestamps = (reports || []).map(r => new Date(r.createdAt || "").getTime());
+    const dateHeaderStr = formatEthDateRange(fromDate, toDate, timestamps);
 
     if (viewMode === "grouped") {
-      const headers = [
-        "Staff Member (Salary Charge)",
-        "Employee / Military ID",
-        "Department",
-        "Staff Category",
-        "Total Invoices",
-        "Patients Covered",
-        "Discount %",
-        "Laboratory Cost (ETB)",
-        "Pharmacy Cost (ETB)",
-        "Total Pre-Discount (ETB)",
-        "Discount Subsidy (ETB)",
-        "Total Charged to Salary (ETB)"
-      ];
-
-      const formatGroupRow = (g: GroupedStaffCredit) => [
-        g.staffMemberName,
-        g.staffId,
-        g.staffDepartment,
-        g.staffType,
-        g.transactionCount,
-        g.patientsCovered.join("; "),
-        `${g.discountPercent}%`,
-        Number((g.laboratoryCost / 100).toFixed(2)),
-        Number((g.pharmacyCost / 100).toFixed(2)),
-        Number((g.total / 100).toFixed(2)),
-        Number((g.discountAmount / 100).toFixed(2)),
-        Number((g.afterDiscount / 100).toFixed(2))
-      ];
-
-      const computeGroupTotals = (items: GroupedStaffCredit[]) => {
-        const totalTx = items.reduce((sum, g) => sum + g.transactionCount, 0);
-        const totalLab = items.reduce((sum, g) => sum + g.laboratoryCost, 0);
-        const totalPharma = items.reduce((sum, g) => sum + g.pharmacyCost, 0);
-        const totalGross = items.reduce((sum, g) => sum + g.total, 0);
-        const totalDisc = items.reduce((sum, g) => sum + g.discountAmount, 0);
-        const totalAfter = items.reduce((sum, g) => sum + g.afterDiscount, 0);
-
-        return [
-          "TOTAL",
-          `${items.length} Staff Accounts`,
-          "-",
-          "-",
-          totalTx,
-          "-",
-          "-",
-          Number((totalLab / 100).toFixed(2)),
-          Number((totalPharma / 100).toFixed(2)),
-          Number((totalGross / 100).toFixed(2)),
-          Number((totalDisc / 100).toFixed(2)),
-          Number((totalAfter / 100).toFixed(2))
-        ];
-      };
-
-      // 1. Master sheet: All Staff Credits
-      const masterRows = sortedGroupedStaffCredits.map(formatGroupRow);
-      const masterTotals = computeGroupTotals(sortedGroupedStaffCredits);
-      const masterWorksheet = XLSX.utils.aoa_to_sheet([headers, ...masterRows, [], masterTotals]);
+      // 1. Master "All" Sheet: with divided discounts, additional content rows, and grand totals
+      const masterWorksheet = buildDividedMasterSheet(sortedGroupedStaffCredits, dateHeaderStr, true);
       XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Staff Credits");
 
       // 2. Multiple worksheets partitioned by % discounts
@@ -750,84 +1015,17 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
       const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
       sortedPcts.forEach(pct => {
         const groupItems = discountMap.get(pct)!;
-        const rows = groupItems.map(formatGroupRow);
-        const totals = computeGroupTotals(groupItems);
-        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows, [], totals]);
+        const sheet = buildSingleDiscountSheet(groupItems, dateHeaderStr, true);
         XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
       });
 
       XLSX.writeFile(workbook, `z-report-staff-credits-${new Date().toISOString().split("T")[0]}.xlsx`);
       toast.success(`Exported Staff Credits with ${sortedPcts.length + 1} worksheets!`);
     } else {
-      const headers = [
-        "Date",
-        "Invoice #",
-        "Patient Name",
-        "Relationship",
-        "Staff Member (Salary Charge)",
-        "Employee / Military ID",
-        "Department",
-        "Processed By (Encoder)",
-        "Services & Items Detail",
-        "Discount %",
-        "Laboratory Cost (ETB)",
-        "Pharmacy Cost (ETB)",
-        "Total Pre-Discount (ETB)",
-        "Discount Amount (ETB)",
-        "Total After Discount (ETB)"
-      ];
-
-      const formatIndivRow = (r: InvoiceReport) => [
-        r.date || "",
-        r.invoiceNumber,
-        r.patientName,
-        r.relationship || "Self",
-        r.staffMemberName,
-        r.staffId,
-        r.staffDepartment,
-        r.encoderName,
-        r.items.map(i => `${i.description} (x${i.quantity})`).join(", "),
-        `${r.discountPercent}%`,
-        Number((r.laboratoryCost / 100).toFixed(2)),
-        Number((r.pharmacyCost / 100).toFixed(2)),
-        Number((r.total / 100).toFixed(2)),
-        Number((r.discountAmount / 100).toFixed(2)),
-        Number((r.afterDiscount / 100).toFixed(2))
-      ];
-
-      const computeIndivTotals = (items: InvoiceReport[]) => {
-        const totalLab = items.reduce((sum, r) => sum + r.laboratoryCost, 0);
-        const totalPharma = items.reduce((sum, r) => sum + r.pharmacyCost, 0);
-        const totalGross = items.reduce((sum, r) => sum + r.total, 0);
-        const totalDisc = items.reduce((sum, r) => sum + r.discountAmount, 0);
-        const totalAfter = items.reduce((sum, r) => sum + r.afterDiscount, 0);
-
-        return [
-          "TOTAL",
-          `${items.length} Invoices`,
-          "-",
-          "-",
-          "-",
-          "-",
-          "-",
-          "-",
-          "-",
-          "-",
-          Number((totalLab / 100).toFixed(2)),
-          Number((totalPharma / 100).toFixed(2)),
-          Number((totalGross / 100).toFixed(2)),
-          Number((totalDisc / 100).toFixed(2)),
-          Number((totalAfter / 100).toFixed(2))
-        ];
-      };
-
-      // 1. Master sheet: All Transactions
-      const masterRows = sortedIndividualReports.map(formatIndivRow);
-      const masterTotals = computeIndivTotals(sortedIndividualReports);
-      const masterWorksheet = XLSX.utils.aoa_to_sheet([headers, ...masterRows, [], masterTotals]);
+      // Individual Transactions mode
+      const masterWorksheet = buildDividedMasterSheet(sortedIndividualReports, dateHeaderStr, false);
       XLSX.utils.book_append_sheet(workbook, masterWorksheet, "All Transactions");
 
-      // 2. Multiple worksheets partitioned by % discounts
       const discountMap = new Map<number, InvoiceReport[]>();
       sortedIndividualReports.forEach(r => {
         const pct = r.discountPercent ?? 0;
@@ -838,9 +1036,7 @@ export function ZReportsClient({ reports, clinicInfo }: { reports: InvoiceReport
       const sortedPcts = Array.from(discountMap.keys()).sort((a, b) => b - a);
       sortedPcts.forEach(pct => {
         const groupItems = discountMap.get(pct)!;
-        const rows = groupItems.map(formatIndivRow);
-        const totals = computeIndivTotals(groupItems);
-        const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows, [], totals]);
+        const sheet = buildSingleDiscountSheet(groupItems, dateHeaderStr, false);
         XLSX.utils.book_append_sheet(workbook, sheet, `${pct}% Discount`);
       });
 

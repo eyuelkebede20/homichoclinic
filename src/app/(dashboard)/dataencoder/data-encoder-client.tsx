@@ -258,7 +258,11 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
   };
 
   // Build Excel Worksheet matching 123.xlsx exactly
-  const buildSheetForInvoices = (items: InvoiceDisplay[], dateHeaderStr: string) => {
+  const buildSheetForInvoices = (
+    items: InvoiceDisplay[], 
+    dateHeaderStr: string,
+    divideDiscounts = false
+  ) => {
     const row1 = [dateHeaderStr, "", "", "", "", "", "", ""];
 
     // Exact headers from c:\Users\kebe\Downloads\123.xlsx
@@ -273,76 +277,183 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
       "መግለጫ"
     ];
 
-    const dataRows = items.map((inv, idx) => [
-      idx + 1,
-      inv.rank && inv.rank !== "-" ? inv.rank : "-",
-      inv.patientName,
-      1,
-      Number((inv.total / 100).toFixed(2)),
-      `${inv.discountPercentApplied}%`,
-      formatEmploymentStatus(inv.patientType),
-      inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
-    ]);
+    if (!divideDiscounts) {
+      const dataRows = items.map((inv, idx) => [
+        idx + 1,
+        inv.rank && inv.rank !== "-" ? inv.rank : "-",
+        inv.patientName,
+        1,
+        Number((inv.total / 100).toFixed(2)),
+        `${inv.discountPercentApplied}%`,
+        formatEmploymentStatus(inv.patientType),
+        inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
+      ]);
 
-    const emptyRow = ["", "", "", "", "", "", "", ""];
+      const emptyRow = ["", "", "", "", "", "", "", ""];
+      const subSum = items.reduce((sum, i) => sum + i.subtotal, 0);
+      const afterSum = items.reduce((sum, i) => sum + i.total, 0);
 
-    const subSum = items.reduce((sum, i) => sum + i.subtotal, 0);
-    const afterSum = items.reduce((sum, i) => sum + i.total, 0);
+      // Exact Amharic total wording from 123.xlsx
+      const totalRow1 = [
+        "                                         ጠቅላላ ድምር 100%",
+        "",
+        "",
+        "",
+        Number((subSum / 100).toFixed(2)),
+        "",
+        "",
+        ""
+      ];
 
-    // Exact Amharic total wording from 123.xlsx
-    const totalRow1 = [
+      const totalRow2 = [
+        "አጠቃላይ የሚቆረጥባቸው ብር ",
+        "",
+        "",
+        "",
+        Number((afterSum / 100).toFixed(2)),
+        "",
+        "",
+        ""
+      ];
+
+      const aoa = [
+        row1,
+        headers,
+        ...dataRows,
+        emptyRow,
+        totalRow1,
+        totalRow2
+      ];
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const rTot1 = 3 + items.length;
+      const rTot2 = 4 + items.length;
+
+      // Exact merges matching 123.xlsx: A1:H1, E5:F5, A6:D6, E6:F6
+      ws["!merges"] = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+        { s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } },
+        { s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } },
+        { s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } },
+      ];
+
+      ws["!cols"] = [
+        { wch: 8 },   // ተ.ቁ
+        { wch: 14 },  // ማዕረግ
+        { wch: 30 },  // ስም ዝርዝር 
+        { wch: 6 },   // 1
+        { wch: 22 },  // የሚቆረጥበቸው\n  የብር መጠን 
+        { wch: 12 },  // በፐርሰንት 
+        { wch: 18 },  // የቅጥር ሁኔታ
+        { wch: 35 },  // መግለጫ
+      ];
+
+      return ws;
+    }
+
+    // DIVIDED DISCOUNTS FOR "ALL" LIST
+    const discountGroups = new Map<number, InvoiceDisplay[]>();
+    items.forEach(inv => {
+      const pct = inv.discountPercentApplied ?? 0;
+      if (!discountGroups.has(pct)) discountGroups.set(pct, []);
+      discountGroups.get(pct)!.push(inv);
+    });
+
+    const sortedPcts = Array.from(discountGroups.keys()).sort((a, b) => b - a);
+    const aoa: any[][] = [row1, headers];
+    const merges: XLSX.Range[] = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
+    ];
+
+    let seq = 1;
+    let grandSubtotal = 0;
+    let grandDeduction = 0;
+
+    sortedPcts.forEach((pct) => {
+      const groupInvoices = discountGroups.get(pct)!;
+      let groupSubtotal = 0;
+      let groupDeduction = 0;
+
+      groupInvoices.forEach((inv) => {
+        grandSubtotal += inv.subtotal;
+        grandDeduction += inv.total;
+        groupSubtotal += inv.subtotal;
+        groupDeduction += inv.total;
+
+        aoa.push([
+          seq++,
+          inv.rank && inv.rank !== "-" ? inv.rank : "-",
+          inv.patientName,
+          1,
+          Number((inv.total / 100).toFixed(2)),
+          `${inv.discountPercentApplied}%`,
+          formatEmploymentStatus(inv.patientType),
+          inv.remarks || (inv.pharmaUsed !== "-" ? inv.pharmaUsed : inv.labUsed !== "-" ? inv.labUsed : "-")
+        ]);
+      });
+
+      // Additional content row dividing the discounts
+      const subRowIdx = aoa.length;
+      aoa.push([
+        `የ ${pct}% ቅናሽ ድምር (${pct}% Discount Subtotal)`,
+        "",
+        "",
+        groupInvoices.length,
+        Number((groupDeduction / 100).toFixed(2)),
+        `${pct}%`,
+        "",
+        `ጠቅላላ ወጪ: ETB ${(groupSubtotal / 100).toFixed(2)}`
+      ]);
+
+      merges.push({ s: { r: subRowIdx, c: 0 }, e: { r: subRowIdx, c: 2 } });
+
+      // Empty separator row
+      aoa.push(["", "", "", "", "", "", "", ""]);
+    });
+
+    // Empty separator row before grand totals
+    aoa.push(["", "", "", "", "", "", "", ""]);
+
+    // Finally put the total one
+    const rTot1 = aoa.length;
+    aoa.push([
       "                                         ጠቅላላ ድምር 100%",
       "",
       "",
       "",
-      Number((subSum / 100).toFixed(2)),
+      Number((grandSubtotal / 100).toFixed(2)),
       "",
       "",
       ""
-    ];
+    ]);
 
-    const totalRow2 = [
+    const rTot2 = aoa.length;
+    aoa.push([
       "አጠቃላይ የሚቆረጥባቸው ብር ",
       "",
       "",
       "",
-      Number((afterSum / 100).toFixed(2)),
+      Number((grandDeduction / 100).toFixed(2)),
       "",
       "",
       ""
-    ];
+    ]);
 
-    const aoa = [
-      row1,
-      headers,
-      ...dataRows,
-      emptyRow,
-      totalRow1,
-      totalRow2
-    ];
+    merges.push({ s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } });
+    merges.push({ s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } });
+    merges.push({ s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } });
 
     const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    const rTot1 = 3 + items.length;
-    const rTot2 = 4 + items.length;
-
-    // Exact merges matching 123.xlsx: A1:H1, E5:F5, A6:D6, E6:F6
-    ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 7 } },
-      { s: { r: rTot1, c: 4 }, e: { r: rTot1, c: 5 } },
-      { s: { r: rTot2, c: 0 }, e: { r: rTot2, c: 3 } },
-      { s: { r: rTot2, c: 4 }, e: { r: rTot2, c: 5 } },
-    ];
-
+    ws["!merges"] = merges;
     ws["!cols"] = [
-      { wch: 8 },   // ተ.ቁ
-      { wch: 14 },  // ማዕረግ
-      { wch: 30 },  // ስም ዝርዝር 
-      { wch: 6 },   // 1
-      { wch: 22 },  // የሚቆረጥበቸው\n  የብር መጠን 
-      { wch: 12 },  // በፐርሰንት 
-      { wch: 18 },  // የቅጥር ሁኔታ
-      { wch: 35 },  // መግለጫ
+      { wch: 8 },
+      { wch: 14 },
+      { wch: 30 },
+      { wch: 6 },
+      { wch: 22 },
+      { wch: 12 },
+      { wch: 18 },
+      { wch: 35 },
     ];
 
     return ws;
@@ -358,7 +469,7 @@ export function DataEncoderClient({ initialInvoices, clinicInfo, dateRange }: Da
     const dateHeaderStr = formatEthDateRange(fromDate, toDate, sortedInvoices);
 
     // 1. Master Worksheet: All Invoices (preserves current table sort order)
-    const masterSheet = buildSheetForInvoices(sortedInvoices, dateHeaderStr);
+    const masterSheet = buildSheetForInvoices(sortedInvoices, dateHeaderStr, true);
     XLSX.utils.book_append_sheet(workbook, masterSheet, "All Invoices");
 
     // 2. Multiple Worksheets partitioned by % discount (preserves current table sort order)
